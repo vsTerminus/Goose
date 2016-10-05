@@ -14,11 +14,12 @@ sub new
     my ($class, %params) = @_;
     my $self = {};
     
-    # Setting up this command module requires the Discord and Database connections to be passed in so it can utilize both.
+    # Setting up this command module requires the Discord connection 
+    # and Database info to be passed in so it can utilize them.
+    # It also needs the last.fm api key.
     $self->{'discord'} = $params{'discord'};
-    $self->{'dbh'} = $params{'dbh'};
-
-    # We also need the Last.FM API Key to set up a Net::Async::LastFM object.
+    $self->{'db_config'} = $params{'db_config'};
+    $self->{'dbh'} = undef;
     $self->{'api_key'} = $params{'api_key'};
     $self->{'lastfm'} = Net::Async::LastFM->new(api_key => $self->{'api_key'});
 
@@ -27,6 +28,21 @@ sub new
 
     bless $self, $class;
     return $self;
+}
+
+sub db_connect
+{
+    my $self = shift;
+
+    # MySQL Connection
+    my $dsn = 'DBI:' . $self->{'db_config'}->{'type'} . ':' . $self->{'db_config'}{'name'};
+    my $user = $self->{'db_config'}->{'user'};
+    my $pass = $self->{'db_config'}->{'pass'};
+
+    my $dbh = DBI->connect_cached($dsn, $user, $pass) or die "Could not connect to database\n$@";
+
+    $self->{'dbh'} = $dbh;
+    return $dbh;
 }
 
 # The main bot should call this for every module it has registered whenever a message comes in.
@@ -45,7 +61,7 @@ sub on_message_create
 
         say "Adding " . $author->{'username'} . " -> " . $message;
 
-        my $dbh = $self->{'dbh'};
+        my $dbh = db_connect($self);
         my $sql = "INSERT INTO lastfm VALUES (?, ?)";
         my $query = $dbh->prepare($sql);
         $query->execute($author->{'username'}, $message);
@@ -61,7 +77,7 @@ sub cmd_nowplaying
 {
     my ($self, $channel, $author, $user) = @_;
 
-    my $dbh = $self->{'dbh'};
+    my $dbh = db_connect($self); # Connect if necessary
     my $discord = $self->{'discord'};
     my $lastfm = $self->{'lastfm'};
 
@@ -69,6 +85,8 @@ sub cmd_nowplaying
     my $toquery = length $user ? $user : $author->{'username'};
     
     # Now, do we have a database entry for this user?
+    
+
     my $sql = "SELECT lastfm_name FROM lastfm WHERE discord_name = ?";
     my $query = $dbh->prepare($sql);
     $query->execute($toquery);
