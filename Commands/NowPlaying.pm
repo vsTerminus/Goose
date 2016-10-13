@@ -4,6 +4,9 @@ use v5.10;
 use strict;
 use warnings;
 
+use Exporter qw(import);
+our @EXPORT_OK = qw(cmd_nowplaying);
+
 use Net::Discord;
 use Net::Async::LastFM;
 use DBI;
@@ -23,10 +26,37 @@ sub new
     $self->{'api_key'} = $params{'api_key'};
     $self->{'lastfm'} = Net::Async::LastFM->new(api_key => $self->{'api_key'});
 
-    # This variable will be used for when the bot wants to have a "conversation" with the user to learn something, eg a username.
-    $self->{'expectingreply'} = {};
-
     bless $self, $class;
+
+    # Now register this command with the bot.
+    $self->{'bot'} = $params{'bot'};
+    my $bot = $self->{'bot'};
+
+    my $command = "NowPlaying";
+    my $description = "Fetches Now Playing info from Last.FM and displays it in the channel";
+    my $usage = <<EOF;
+Basic usage: !nowplaying or !lastfm or !np
+
+On first use, the bot will ask for your username. Repeat the command but this time also give it your Last.FM username.
+The bot will remember and you won't have to specify anymore.
+You can change your username with !np set <new username here> (eg, !np set xXxEdgelord69420xXx)
+
+You can also pass a username, optionally as a Discord username mention.
+Eg, !np vsTerminus and !np \@vsTerminus will both work.
+EOF
+    my $pattern = '^(np|nowplaying|lastfm) ?(.*)$';
+    $self->{'pattern'} = $pattern;
+    my $function = \&cmd_nowplaying;
+
+    $bot->add_command(
+        'command'       => $command,
+        'description'   => $description,
+        'usage'         => $usage,
+        'pattern'       => $pattern,
+        'function'      => $function,
+        'object'        => $self,
+    );    
+
     return $self;
 }
 
@@ -45,37 +75,26 @@ sub db_connect
     return $dbh;
 }
 
-# The main bot should call this for every module it has registered whenever a message comes in.
-sub on_message_create
+sub add_user
 {
-    my ($self, $channel, $author, $message) = @_;
+    my ($self, $discord_name, $lastfm_name) = @_;
+
+#    say localtime(time) . " Commands::NowPlaying is adding a new mapping: $discord_name -> $lastfm_name";
+
+    my $dbh = db_connect($self);
     
-    if ( $message =~ /^(np|nowplaying|lastfm) ?(\w*)/i)
-    {
-        cmd_nowplaying($self, $channel, $author, $2);
-    }
-    elsif ( exists $self->{'expectingreply'}->{$author->{'username'}} )
-    {
-        # If we are expecting a reply from a certain user, we can process it here.
-        # The only reply this command expects would be a last.fm username.
-
-        say "Adding " . $author->{'username'} . " -> " . $message;
-
-        my $dbh = db_connect($self);
-        my $sql = "INSERT INTO lastfm VALUES (?, ?)";
-        my $query = $dbh->prepare($sql);
-        $query->execute($author->{'username'}, $message);
-
-        delete $self->{'expectingreply'}->{$author->{'username'}};
-
-        # Now run the query and show them what they are listening to.
-        cmd_nowplaying($self, $channel, $author, $message);
-    }
+    my $sql = "INSERT INTO lastfm VALUES (?, ?) ON DUPLICATE KEY UPDATE lastfm_name = ?";
+    my $query = $dbh->prepare($sql);
+    $query->execute($discord_name, $lastfm_name, $lastfm_name);
 }
 
 sub cmd_nowplaying
 {
-    my ($self, $channel, $author, $user) = @_;
+    my ($self, $channel, $author, $msg) = @_;
+
+    my $user = $msg;
+    my $pattern = $self->{'pattern'};
+    $user =~ s/$pattern/$2/i;
 
     my $dbh = db_connect($self); # Connect if necessary
     my $discord = $self->{'discord'};
@@ -84,38 +103,47 @@ sub cmd_nowplaying
     my $replyto = '<@' . $author->{'id'} . '>';
     my $toquery = length $user ? $user : $author->{'username'};
     
-    # Now, do we have a database entry for this user?
-    
-
-    my $sql = "SELECT lastfm_name FROM lastfm WHERE discord_name = ?";
-    my $query = $dbh->prepare($sql);
-    $query->execute($toquery);
-
-    if ( my $row = $query->fetchrow_hashref )
+    # First handle the set command.
+    if ( $user =~ /^set (\w+)/i )
     {
-        # Yes, we have them.
-        my $lastfm_name = $row->{'lastfm_name'};
-#        say "Found Database Entry. Discord user '$toquery' maps to LastFM user '$lastfm_name'";
-        $toquery = $lastfm_name;
+        add_user($self, $author->{'username'}, $1);
+        $discord->send_message( $channel, "$replyto I have updated your Last.FM username to '$1'" );
 
-#        say "Querying Last.FM for user '$toquery'";
-
-        my $np = $lastfm->nowplaying($toquery, "artist - title (From album)");
+        my $np = $lastfm->nowplaying($1, "artist - title (From album)");
         $discord->send_message( $channel, "$replyto " . $np );
     }
-    elsif ( length $user )
-    {
-        # No, we don't know who they are. We'll just query LastFM directly
-#        say "Unrecognized user. Querying as-is.";
-        my $np = $lastfm->nowplaying($user, "artist - title (From album)");
-        $discord->send_message( $channel, "$replyto " . $np );
-    }
+    # Else, they are querying.
     else
     {
-#        say "Unrecognized user. Asking for Last.FM username";
-        # They are requesting their own, but we don't have their username. Let's ask for it.
-        $self->{'expectingreply'}->{$author->{'username'}} = 1; # This should tell the on_message_create function to look at the next message for a reply.
-        $discord->send_message( $channel, "$replyto What is your Last.FM username?" );
+   
+        # Now, do we have a database entry for this user?
+       
+        my $sql = "SELECT lastfm_name FROM lastfm WHERE discord_name = ?";
+        my $query = $dbh->prepare($sql);
+        $query->execute($toquery);
+    
+        # Yes, we have them.
+        if ( my $row = $query->fetchrow_hashref )
+        {
+            my $lastfm_name = $row->{'lastfm_name'};
+            $toquery = $lastfm_name;
+    
+            my $np = $lastfm->nowplaying($toquery, "artist - title (From album)");
+            $discord->send_message( $channel, "$replyto " . $np );
+        }
+        # We don't have them, but they gave us (hopefully) their username.
+        elsif ( length $user )
+        {
+            add_user($self, $author->{'username'}, $user);  # Add the new mapping.
+            $discord->send_message( $channel, "$replyto Thanks. I will remember you as '$user'. You can change this any time with 'lastfm set <new username>'" );
+            my $np = $lastfm->nowplaying($user, "artist - title (From album)");
+            $discord->send_message( $channel, "$replyto " . $np );
+        }
+        # We don't have them and they didn't specify a username. Ask for it.
+        else
+        {
+            $discord->send_message( $channel, "$replyto Sorry, I don't recognize you yet. Please try again, and this time include your Last.FM username." );
+        }
     }
 }
 

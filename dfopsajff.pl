@@ -7,8 +7,7 @@ use warnings;
 use Net::Discord;
 use Config::Tiny;
 use Mojo::IOLoop;
-use Commands::NowPlaying;
-use Commands::Comic;
+use Bot::Goose;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -16,14 +15,10 @@ my $config_file = $ARGV[0] // 'config.ini';
 my $config = Config::Tiny->read($config_file, 'utf8');
 say localtime(time) . " Loaded Config: $config_file";
 
-#######################
-#
-#   Discord
-#
-#######################
+my $self = {};  # For miscellaneous information about this bot such as discord id
 
-my $discord_name;
-my $discord_id;
+# Initialize the bot
+my $bot = Bot::Goose->new();
 
 my $discord = Net::Discord->new(
     'token'     => $config->{'discord'}->{'token'},
@@ -38,19 +33,37 @@ my $discord = Net::Discord->new(
     'verbose'   => $config->{'discord'}->{'verbose'},
 );
 
-# Set up commands
-my %commands = (
-    'nowplaying'   => Commands::NowPlaying->new('discord' => $discord, 'db_config' => $config->{'db'}, 'api_key' => $config->{'lastfm'}->{'api_key'}),
-    'comic'        => Commands::RCG->new('discord' => $discord),
-);
+# Now Playing command
+if ( $config->{'lastfm'}{'use_np'} )
+{
+    # Include the module
+    use Commands::NowPlaying;
 
+    # Instantiate it, which should register the command with the bot
+    # as part of its new() function.
+    Commands::NowPlaying->new(
+        'bot'       => $bot,
+        'discord'   => $discord, 
+        'db_config' => $config->{'db'}, 
+        'api_key'   => $config->{'lastfm'}->{'api_key'}
+    );
+}
+
+if ( $config->{'comic'}{'use_comic'} )
+{
+    use Commands::Comic;
+    Commands::Comic->new(
+        'bot'       => $bot,
+        'discord'   => $discord
+    );
+}
 
 sub discord_on_ready
 {
     my ($hash) = @_;
 
-    $discord_name   = $hash->{'user'}{'username'};
-    $discord_id     = $hash->{'user'}{'id'};
+    $self->{'discord_name'}     = $hash->{'user'}{'username'};
+    $self->{'discord_id'}       = $hash->{'user'}{'id'};
     
     $discord->status_update({'game' => 'Opulence'});
 
@@ -66,6 +79,8 @@ sub discord_on_message_create
     my $channel = $hash->{'channel_id'};
     my @mentions = @{$hash->{'mentions'}};
     my $trigger = $config->{'discord'}->{'trigger'};
+    my $discord_name = $self->{'discord_name'};
+    my $discord_id = $self->{'discord_id'};
 
     foreach my $mention (@mentions)
     {
@@ -82,22 +97,22 @@ sub discord_on_message_create
 
         if ( defined $msg )
         {
-            foreach my $command (keys %commands)
+            foreach my $pattern ($bot->get_patterns())
             {
-                $commands{$command}->on_message_create($channel, $author, $msg);
+                if ( $msg =~ /$pattern/i )
+                {
+                    my $command = $bot->get_command($pattern);
+                    my $object = $command->{'object'};
+                    my $function = $command->{'function'};
+                    $object->$function($channel, $author, $msg);
+                }
             }
         }
     }
 }
 
-if ( $config->{'discord'}->{'use_discord'} )
-{
-    # Configure the websocket connection for Discord Gateway
-    $discord->init();
-
-    # Kill the gateway every 15 seconds so we can test reconnecting
-    # Mojo::IOLoop->recurring(15 => sub { $discord->disconnect("Disconnect Timer Fired") });
-}
+# Configure the websocket connection for Discord Gateway
+$discord->init();
 
 # Start the IOLoop unless it is already running. 
 Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
