@@ -10,7 +10,24 @@ our @EXPORT_OK = qw(cmd_nowplaying);
 use Net::Discord;
 use Net::Async::LastFM;
 use DBI;
+use Components::Database;
 use Data::Dumper;
+
+# Command Info
+my $command = "NowPlaying";
+my $description = "Fetches Now Playing info from Last.FM and displays it in the channel";
+my $pattern = '^(np|nowplaying|lastfm) ?(.*)$';
+my $function = \&cmd_nowplaying;
+my $usage = <<EOF;
+Basic usage: !nowplaying or !lastfm or !np
+
+On first use, the bot will ask for your username. Repeat the command but this time also give it your Last.FM username.
+The bot will remember and you won't have to specify anymore.
+You can change your username with !np set <new username here> (eg, !np set xXxEdgelord69420xXx)
+
+You can also pass a username, optionally as a Discord username mention.
+Eg, !np vsTerminus and !np \@vsTerminus will both work.
+EOF
 
 sub new
 {
@@ -21,32 +38,16 @@ sub new
     # and Database info to be passed in so it can utilize them.
     # It also needs the last.fm api key.
     $self->{'discord'} = $params{'discord'};
-    $self->{'db_config'} = $params{'db_config'};
-    $self->{'dbh'} = undef;
     $self->{'api_key'} = $params{'api_key'};
     $self->{'lastfm'} = Net::Async::LastFM->new(api_key => $self->{'api_key'});
+    $self->{'db'} = $params{'db'};
+    $self->{'pattern'} = $pattern;
 
     bless $self, $class;
 
     # Now register this command with the bot.
     $self->{'bot'} = $params{'bot'};
     my $bot = $self->{'bot'};
-
-    my $command = "NowPlaying";
-    my $description = "Fetches Now Playing info from Last.FM and displays it in the channel";
-    my $usage = <<EOF;
-Basic usage: !nowplaying or !lastfm or !np
-
-On first use, the bot will ask for your username. Repeat the command but this time also give it your Last.FM username.
-The bot will remember and you won't have to specify anymore.
-You can change your username with !np set <new username here> (eg, !np set xXxEdgelord69420xXx)
-
-You can also pass a username, optionally as a Discord username mention.
-Eg, !np vsTerminus and !np \@vsTerminus will both work.
-EOF
-    my $pattern = '^(np|nowplaying|lastfm) ?(.*)$';
-    $self->{'pattern'} = $pattern;
-    my $function = \&cmd_nowplaying;
 
     $bot->add_command(
         'command'       => $command,
@@ -60,32 +61,16 @@ EOF
     return $self;
 }
 
-sub db_connect
-{
-    my $self = shift;
-
-    # MySQL Connection
-    my $dsn = 'DBI:' . $self->{'db_config'}->{'type'} . ':' . $self->{'db_config'}{'name'};
-    my $user = $self->{'db_config'}->{'user'};
-    my $pass = $self->{'db_config'}->{'pass'};
-
-    my $dbh = DBI->connect_cached($dsn, $user, $pass) or die "Could not connect to database\n$@";
-
-    $self->{'dbh'} = $dbh;
-    return $dbh;
-}
-
 sub add_user
 {
     my ($self, $discord_name, $lastfm_name) = @_;
 
 #    say localtime(time) . " Commands::NowPlaying is adding a new mapping: $discord_name -> $lastfm_name";
 
-    my $dbh = db_connect($self);
+    my $db = $self->{'db'};
     
     my $sql = "INSERT INTO lastfm VALUES (?, ?) ON DUPLICATE KEY UPDATE lastfm_name = ?";
-    my $query = $dbh->prepare($sql);
-    $query->execute($discord_name, $lastfm_name, $lastfm_name);
+    $db->query($sql, $discord_name, $lastfm_name, $lastfm_name);
 }
 
 sub cmd_nowplaying
@@ -96,7 +81,6 @@ sub cmd_nowplaying
     my $pattern = $self->{'pattern'};
     $user =~ s/$pattern/$2/i;
 
-    my $dbh = db_connect($self); # Connect if necessary
     my $discord = $self->{'discord'};
     my $lastfm = $self->{'lastfm'};
 
@@ -117,10 +101,10 @@ sub cmd_nowplaying
     {
    
         # Now, do we have a database entry for this user?
+        my $db = $self->{'db'};
        
         my $sql = "SELECT lastfm_name FROM lastfm WHERE discord_name = ?";
-        my $query = $dbh->prepare($sql);
-        $query->execute($toquery);
+        my $query = $db->query($sql, $toquery);
     
         # Yes, we have them.
         if ( my $row = $query->fetchrow_hashref )

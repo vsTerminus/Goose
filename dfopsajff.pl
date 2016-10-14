@@ -8,6 +8,7 @@ use Net::Discord;
 use Config::Tiny;
 use Mojo::IOLoop;
 use Bot::Goose;
+use Components::Database;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -33,6 +34,9 @@ my $discord = Net::Discord->new(
     'verbose'   => $config->{'discord'}->{'verbose'},
 );
 
+# Database
+my $db = Components::Database->new(%{$config->{'db'}});
+
 # Now Playing command
 if ( $config->{'lastfm'}{'use_np'} )
 {
@@ -44,7 +48,7 @@ if ( $config->{'lastfm'}{'use_np'} )
     Commands::NowPlaying->new(
         'bot'       => $bot,
         'discord'   => $discord, 
-        'db_config' => $config->{'db'}, 
+        'db'        => $db,
         'api_key'   => $config->{'lastfm'}->{'api_key'}
     );
 }
