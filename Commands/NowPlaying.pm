@@ -91,10 +91,10 @@ sub cmd_nowplaying
     if ( $user =~ /^set (\w+)/i )
     {
         add_user($self, $author->{'username'}, $1);
-        $discord->send_message( $channel, "$replyto I have updated your Last.FM username to '$1'" );
+        $discord->send_message( $channel, $author->{'username'} . ": I have updated your Last.FM username to `$1`" );
 
-        my $np = $lastfm->nowplaying($1, "artist - title (From album)");
-        $discord->send_message( $channel, "$replyto " . $np );
+        my $np = $lastfm->nowplaying($1, "`artist - title (From album)`");
+        $discord->send_message( $channel, $author->{'username'} . ": " . $np );
     }
     # Else, they are querying.
     else
@@ -112,21 +112,21 @@ sub cmd_nowplaying
             my $lastfm_name = $row->{'lastfm_name'};
             $toquery = $lastfm_name;
     
-            my $np = $lastfm->nowplaying($toquery, "artist - title (From album)");
-            $discord->send_message( $channel, "$replyto " . $np );
+            my $np = $lastfm->nowplaying($toquery, "`artist - title (From album)`");
+            $discord->send_message( $channel, $author->{'username'} . ": " . $np );
         }
         # We don't have them, but they gave us (hopefully) their username.
         elsif ( length $user )
         {
             add_user($self, $author->{'username'}, $user);  # Add the new mapping.
-            $discord->send_message( $channel, "$replyto Thanks. I will remember you as '$user'. You can change this any time with 'lastfm set <new username>'" );
-            my $np = $lastfm->nowplaying($user, "artist - title (From album)");
-            $discord->send_message( $channel, "$replyto " . $np );
+            $discord->send_message( $channel, "Thanks, " . $author->{'username'} . ". I will remember you as `$user`. You can change this any time with `lastfm set <new username>`" );
+            my $np = $lastfm->nowplaying($user, "`artist - title (From album)`");
+            $discord->send_message( $channel, $author->{'username'}  . ": " . $np );
         }
         # We don't have them and they didn't specify a username. Ask for it.
         else
         {
-            $discord->send_message( $channel, "$replyto Sorry, I don't recognize you yet. Please try again, and this time include your Last.FM username." );
+            $discord->send_message( $channel, "Sorry " . $author->{'username'} , ", I don't recognize you yet. Please try again, and this time include your Last.FM username." );
         }
     }
 }
