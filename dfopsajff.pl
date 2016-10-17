@@ -28,6 +28,7 @@ my $discord = Net::Discord->new(
     'version'   => '1.0',
     'callbacks' => {
         'on_ready'          => \&discord_on_ready,
+        'on_guild_create'   => \&discord_on_guild_create,
         'on_message_create' => \&discord_on_message_create,
     },
     'reconnect' => $config->{'discord'}->{'auto_reconnect'},
@@ -66,13 +67,21 @@ sub discord_on_ready
 {
     my ($hash) = @_;
 
-    $self->{'discord_name'}     = $hash->{'user'}{'username'};
-    $self->{'discord_id'}       = $hash->{'user'}{'id'};
+    $bot->add_me($hash->{'user'});
     
-    $discord->status_update({'game' => 'Opulence'});
+    $discord->status_update({'game' => $config->{'discord'}{'playing'}});
 
     say localtime(time) . " Connected to Discord.";
-};
+}
+
+sub discord_on_guild_create
+{
+    my ($hash) = @_;
+
+    say "Adding guild: " . $hash->{'id'} . " -> " . $hash->{'name'};
+
+    $bot->add_guild($hash);
+}
 
 sub discord_on_message_create
 {
@@ -83,8 +92,8 @@ sub discord_on_message_create
     my $channel = $hash->{'channel_id'};
     my @mentions = @{$hash->{'mentions'}};
     my $trigger = $config->{'discord'}->{'trigger'};
-    my $discord_name = $self->{'discord_name'};
-    my $discord_id = $self->{'discord_id'};
+    my $discord_name = $bot->my_name();
+    my $discord_id = $bot->my_id();
 
     foreach my $mention (@mentions)
     {

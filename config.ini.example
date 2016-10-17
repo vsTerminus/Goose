@@ -65,6 +65,9 @@ token = xxxxx
 # Set this to the name of your bot.
 name = DickButt9000
 
+# Set the "Playing" status of your bot
+playing = with myself
+
 # Set this to the same thing you entered for the Redirect/Callback URL in your Discord app.
 redirect_url = http://github.com/vsTerminus
 

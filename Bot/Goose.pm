@@ -9,7 +9,8 @@ use Data::Dumper;
 use Exporter qw(import);
 our @EXPORT_OK = qw(add_command command get_patterns);
 
-# This module mostly exists as a storage container for commands.
+# This module mostly exists as a storage container for commands and any
+# discord-related info that we might want to store, such as the guilds and channels we are connected to.
 sub new
 {
     my ($class, %params) = @_;
@@ -21,6 +22,75 @@ sub new
     
     bless $self, $class;
     return $self;
+}
+
+sub add_me
+{
+    my ($self, $user) = @_;
+    say "Adding my ID as " . $user->{'id'};
+    $self->{'id'} = $user->{'id'};
+    add_user($self, $user);
+}
+
+sub my_id
+{
+    my $self = shift;
+
+    return $self->{'id'};
+}
+
+sub my_name
+{
+    my $self = shift;
+    my $id = $self->{'id'};
+    return $self->{'users'}{$id}->{'username'}
+}
+
+sub my_user
+{
+    my $self = shift;
+    my $id = $self->{'id'};
+    return $self->{'users'}{$id};
+}
+
+sub add_user
+{
+    my ($self, $user) = @_;
+    my $id = $user->{'id'};
+    $self->{'users'}{$id} = $user;
+}
+
+sub remove_user
+{
+    my ($self, $id) = @_;
+
+    delete $self->{'users'}{$id};
+}
+
+
+# Tell the bot it has connected to a new guild.
+sub add_guild
+{
+    my ($self, $guild) = @_;
+
+    # Nice and simple. Just add what we're given.
+    $self->{'guilds'}{$guild->{'id'}} = $guild;
+}
+
+# Like adding, this removes the entry and then returns the list of connected guilds.
+sub remove_guild
+{
+    my ($self, $id) = @_;
+
+    delete $self->{'guilds'}{$id} if exists $self->{'guilds'}{$id};
+}
+
+# Return the list of guilds.
+sub get_guilds
+{
+    my $self = shift;
+
+    return keys %{$self->{'guilds'}};
 }
 
 sub get_patterns
