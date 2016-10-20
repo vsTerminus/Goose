@@ -248,4 +248,22 @@ sub command
     return 0;
 }
 
+# These last two probably shouldn't exist, and
+# I should create wrapper functions here in this module.
+# On the other hand, whatever. I'm good with the bot just acting as a container for this stuff.
+
+# Returns the discord object associated to this bot.
+sub discord
+{
+    my $self = shift;
+    return $self->{'discord'};
+}
+
+# returns the DB object associated to this bot
+sub db
+{
+    my $self = shift;
+    return $self->{'db'};
+}
+
 1;

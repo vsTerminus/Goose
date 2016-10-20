@@ -13,6 +13,7 @@ use Mojo::UserAgent;
 use DBI;
 use Data::Dumper;
 
+###########################################################################################
 # Command Info
 my $command = "Comic";
 my $description = "Displays a comic from the Cyanide & Happiness Random Comic Generator";
@@ -24,23 +25,22 @@ Keep panel 2 from previous comic: !comic 2
 Keep panels 1 and 3 from previous: !comic 13
 Re-order panels (often will not work): !comic order 312
 EOF
+###########################################################################################
 
 sub new
 {
     my ($class, %params) = @_;
     my $self = {};
-    
-    
+    bless $self, $class;
+     
     # Setting up this command module requires the Discord connection 
-    $self->{'discord'} = $params{'discord'};
+    $self->{'bot'} = $params{'bot'};
+    my $bot = $self->{'bot'}; 
+    
+    $self->{'discord'} = $bot->discord;
     $self->{'pattern'} = $pattern;
 
-    # Register our command(s) with the bot
-    $self->{'bot'} = $params{'bot'};
-    my $bot = $self->{'bot'};
-    
-    bless $self, $class;
-    
+    # Register our command with the bot
     $bot->add_command(
         'command'       => $command,
         'description'   => $description,

@@ -13,6 +13,7 @@ use DBI;
 use Components::Database;
 use Data::Dumper;
 
+###########################################################################################
 # Command Info
 my $command = "NowPlaying";
 my $description = "Fetches Now Playing info from Last.FM and displays it in the channel";
@@ -28,26 +29,27 @@ You can change your username with !np set <new username here> (eg, !np set xXxEd
 You can also pass a username, optionally as a Discord username mention.
 Eg, !np vsTerminus and !np \@vsTerminus will both work.
 EOF
+############################################################################################
 
 sub new
 {
     my ($class, %params) = @_;
     my $self = {};
+    bless $self, $class;
     
     # Setting up this command module requires the Discord connection 
     # and Database info to be passed in so it can utilize them.
     # It also needs the last.fm api key.
-    $self->{'discord'} = $params{'discord'};
-    $self->{'api_key'} = $params{'api_key'};
-    $self->{'lastfm'} = Net::Async::LastFM->new(api_key => $self->{'api_key'});
-    $self->{'db'} = $params{'db'};
-    $self->{'pattern'} = $pattern;
+    $self->{'bot'} = $params{'bot'};
+    my $bot = $self->{'bot'}; 
 
-    bless $self, $class;
+    $self->{'discord'}  = $bot->discord;
+    $self->{'db'}       = $bot->db;
+    $self->{'api_key'}  = $params{'api_key'};
+    $self->{'lastfm'}   = Net::Async::LastFM->new(api_key => $self->{'api_key'});
+    $self->{'pattern'}  = $pattern;
 
     # Now register this command with the bot.
-    $self->{'bot'} = $params{'bot'};
-    my $bot = $self->{'bot'};
 
     $bot->add_command(
         'command'       => $command,
