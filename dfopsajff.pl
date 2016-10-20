@@ -8,6 +8,7 @@ use Config::Tiny;
 use Bot::Goose;
 use Commands::NowPlaying;
 use Commands::Comic;
+use Commands::Template;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -39,6 +40,7 @@ if ( $config->{'comic'}{'use_comic'} )
         'bot'       => $bot,
     );
 }
+
 
 # Start the bot
 $bot->start();
