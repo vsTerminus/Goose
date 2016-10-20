@@ -5,23 +5,122 @@ use strict;
 use warnings;
 
 use Data::Dumper;
+use Net::Discord;
+use Components::Database;
+use Mojo::IOLoop;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(add_command command get_patterns);
 
-# This module mostly exists as a storage container for commands and any
-# discord-related info that we might want to store, such as the guilds and channels we are connected to.
+######################
+# This module exists to store things like the Discord connection object, Database component object,
+# and to act as a Command Register for the bot.
+######################
+
 sub new
 {
     my ($class, %params) = @_;
     my $self = {};
+    bless $self, $class;
 
     $self->{'commands'} = {};
     $self->{'patterns'} = {};
-    $self->{'waiting'} = {};
-    
-    bless $self, $class;
+
+    $self->{'discord'} = Net::Discord->new(
+        'token'     => $params{'discord'}->{'token'},
+        'name'      => $params{'discord'}->{'name'},
+        'url'       => $params{'discord'}->{'redirect_url'},
+        'version'   => '1.0',
+        'bot'       => $self,
+        'callbacks' => {
+            'on_ready'          => sub { $self->discord_on_ready(shift); },
+            'on_guild_create'   => sub { $self->discord_on_guild_create(shift) },
+            'on_message_create' => sub { $self->discord_on_message_create(shift) },
+        },
+        'reconnect' => $params{'discord'}->{'auto_reconnect'},
+        'verbose'   => $params{'discord'}->{'verbose'},
+    );
+
+    $self->{'trigger'} = $params{'discord'}->{'trigger'};
+    $self->{'playing'} = $params{'discord'}->{'playing'};
+
+    # Database
+    $self->{'db'} = Components::Database->new(%{$params{'db'}});
+
     return $self;
+}
+
+# Connect to discord and start running.
+sub start
+{
+    my $self = shift;
+
+    $self->{'discord'}->init();
+    
+    # Start the IOLoop unless it is already running. 
+    Mojo::IOLoop->start unless Mojo::IOLoop->is_running; 
+}
+
+
+sub discord_on_ready
+{
+    my ($self, $hash) = @_;
+
+    $self->add_me($hash->{'user'});
+    
+    $self->{'discord'}->status_update({'game' => $self->{'playing'}});
+
+    say localtime(time) . " Connected to Discord.";
+}
+
+sub discord_on_guild_create
+{
+    my ($self, $hash) = @_;
+
+    say "Adding guild: " . $hash->{'id'} . " -> " . $hash->{'name'};
+
+    $self->add_guild($hash);
+}
+
+sub discord_on_message_create
+{
+    my ($self, $hash) = @_;
+
+    my $author = $hash->{'author'};
+    my $msg = $hash->{'content'};
+    my $channel = $hash->{'channel_id'};
+    my @mentions = @{$hash->{'mentions'}};
+    my $trigger = $self->{'trigger'};
+    my $discord_name = my_name($self);
+    my $discord_id = my_id($self);
+
+    foreach my $mention (@mentions)
+    {
+        my $id = $mention->{'id'};
+        my $username = $mention->{'username'};
+
+        # Replace the mention IDs in the message body with the usernames.
+        $msg =~ s/\<\@$id\>/$username/;
+    }
+
+    if ( $msg =~ /^($discord_name|\Q$trigger\E)/i )
+    {
+        $msg =~ s/^(($discord_name.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
+
+        if ( defined $msg )
+        {
+            foreach my $pattern (get_patterns($self))
+            {
+                if ( $msg =~ /$pattern/i )
+                {
+                    my $command = $self->get_command($pattern);
+                    my $object = $command->{'object'};
+                    my $function = $command->{'function'};
+                    $object->$function($channel, $author, $msg);
+                }
+            }
+        }
+    }
 }
 
 sub add_me
@@ -29,7 +128,7 @@ sub add_me
     my ($self, $user) = @_;
     say "Adding my ID as " . $user->{'id'};
     $self->{'id'} = $user->{'id'};
-    add_user($self, $user);
+    $self->add_user($user);
 }
 
 sub my_id
@@ -131,14 +230,6 @@ sub add_command
     $self->{'patterns'}->{$pattern} = $command;
 
     say localtime(time) . " Registered new command: '$command' identified by '$pattern'";
-}
-
-# This function tells the bot that a particular command
-# is expecting a reply from a particular user in a particular channel.
-# The next message (regardless of content) from that user in that channel should
-# be sent to that command.
-sub expecting_reply
-{
 }
 
 # This sub calls any of the registered commands and passes along the args

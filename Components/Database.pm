@@ -36,7 +36,7 @@ sub db_connect
     my $user = $self->{'user'};
     my $pass = $self->{'pass'};
 
-    my $dbh = DBI->connect($dsn, $user, $pass) or die "Could not connect to database\n$@";
+    my $dbh = DBI->connect_cached($dsn, $user, $pass) or die "Could not connect to database\n$@";
  
     return $dbh;
 }
