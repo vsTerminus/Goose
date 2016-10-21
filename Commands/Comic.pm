@@ -20,10 +20,27 @@ my $description = "Displays a comic from the Cyanide & Happiness Random Comic Ge
 my $pattern = '^(rc|comic) ?(.*)$';
 my $function = \&cmd_comic;
 my $usage = <<EOF;
-Basic usage: !comic or !rc
-Keep panel 2 from previous comic: !comic 2
-Keep panels 1 and 3 from previous: !comic 13
-Re-order panels (often will not work): !comic order 312
+```!comic (or !rc)```
+    Display a randomly generated comic
+
+```!comic <panel number(s)>```
+    Display a random comic, keeping certain panel(s) from the previous comic:
+    
+    __Examples:__
+
+        `!comic 1`   (Keeps the first panel from the last comic)
+        `!comic 23`  (Keeps the second and third panels)
+
+```!comic order <panel numbers>```
+    Re-order the panels from the previous comic.
+
+    __Examples:__
+
+        `!comic order 312`   (Third panel first)
+        `!comic order 321`   (Reverse order)
+    
+    This likely will not work due to restrictions on the Comic Generator.
+
 EOF
 ###########################################################################################
 

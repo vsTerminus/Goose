@@ -100,12 +100,12 @@ sub discord_on_message_create
         my $username = $mention->{'username'};
 
         # Replace the mention IDs in the message body with the usernames.
-        $msg =~ s/\<\@$id\>/$username/;
+        $msg =~ s/\<\@$id\>/<\@$id,$username>/;
     }
 
-    if ( $msg =~ /^($discord_name|\Q$trigger\E)/i )
+    if ( $msg =~ /^(\<\@$discord_id,$discord_name\>|\Q$trigger\E)/i )
     {
-        $msg =~ s/^(($discord_name.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
+        $msg =~ s/^((\<\@$discord_id,$discord_name\>.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
 
         if ( defined $msg )
         {
@@ -113,7 +113,7 @@ sub discord_on_message_create
             {
                 if ( $msg =~ /$pattern/i )
                 {
-                    my $command = $self->get_command($pattern);
+                    my $command = $self->get_command_by_pattern($pattern);
                     my $object = $command->{'object'};
                     my $function = $command->{'function'};
                     $object->$function($channel, $author, $msg);
@@ -198,17 +198,45 @@ sub get_patterns
     return keys %{$self->{'patterns'}};
 }
 
-sub get_command
+# Return a list of all commands
+sub get_commands
+{
+    my $self = shift;
+
+    my $cmds = {};
+    
+    foreach my $key (keys %{$self->{'commands'}})
+    {
+        $cmds->{$key} = $self->{'commands'}->{$key}{'description'};
+    }
+
+    return $cmds;
+}
+
+sub get_command_by_name
+{
+    my ($self, $name) = @_;
+
+    return $self->{'commands'}{$name};
+}
+
+sub get_command_by_pattern
 {
     my ($self, $pattern) = @_;
 
-    my $command = $self->{'patterns'}{$pattern};
-    #say Dumper($self->{'commands'}{$command});
-    return $self->{'commands'}{$command};
+    return $self->get_command_by_name($self->{'patterns'}{$pattern});
+}
+
+# Return the bot's trigger prefix
+sub trigger
+{
+    my $self = shift;
+    return $self->{'trigger'};
 }
 
 # Command modules can use this function to register themselves with the bot.
 # - Command
+# - Description
 # - Usage
 # - Pattern
 # - Function
@@ -217,12 +245,14 @@ sub add_command
     my ($self, %params) = @_;
 
     my $command = lc $params{'command'};
+    my $description = $params{'description'};
     my $usage = $params{'usage'};
     my $pattern = $params{'pattern'};
     my $function = $params{'function'};
     my $object = $params{'object'};
 
     $self->{'commands'}->{$command}{'usage'} = $usage;
+    $self->{'commands'}->{$command}{'description'} = $description;
     $self->{'commands'}->{$command}{'pattern'} = $pattern;
     $self->{'commands'}->{$command}{'function'} = $function;
     $self->{'commands'}->{$command}{'object'} = $object;

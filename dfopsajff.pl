@@ -8,7 +8,7 @@ use Config::Tiny;
 use Bot::Goose;
 use Commands::NowPlaying;
 use Commands::Comic;
-use Commands::Template;
+use Commands::Help;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -36,11 +36,10 @@ if ( $config->{'lastfm'}{'use_np'} )
 
 if ( $config->{'comic'}{'use_comic'} )
 {
-    Commands::Comic->new(
-        'bot'       => $bot,
-    );
+    Commands::Comic->new('bot'       => $bot);
 }
 
+Commands::Help->new('bot' => $bot);
 
 # Start the bot
 $bot->start();
