@@ -91,8 +91,8 @@ sub discord_on_message_create
     my $channel = $hash->{'channel_id'};
     my @mentions = @{$hash->{'mentions'}};
     my $trigger = $self->{'trigger'};
-    my $discord_name = my_name($self);
-    my $discord_id = my_id($self);
+    my $discord_name = $self->my_name();
+    my $discord_id = $self->my_id();
 
     foreach my $mention (@mentions)
     {
@@ -109,7 +109,7 @@ sub discord_on_message_create
 
         if ( defined $msg )
         {
-            foreach my $pattern (get_patterns($self))
+            foreach my $pattern ($self->get_patterns())
             {
                 if ( $msg =~ /$pattern/i )
                 {
@@ -251,6 +251,7 @@ sub add_command
     my $function = $params{'function'};
     my $object = $params{'object'};
 
+    $self->{'commands'}->{$command}{'name'} = ucfirst $command;
     $self->{'commands'}->{$command}{'usage'} = $usage;
     $self->{'commands'}->{$command}{'description'} = $description;
     $self->{'commands'}->{$command}{'pattern'} = $pattern;

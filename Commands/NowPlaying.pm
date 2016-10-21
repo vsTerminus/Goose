@@ -27,17 +27,17 @@ my $usage = <<EOF;
 
     !nowplaying, !np, and !lastfm are interchangeable.
 
-```!lastfm set [Last.FM Username]```
+```!lastfm set <Last.FM Username>```
     This tells the bot your Last.FM username so it can associate it to your Discord ID. 
 
     `Example:` !lastfm set vsTerminus
 
-```!np [Last.FM Username]```
+```!np <Last.FM Username>```
     The bot will look up the specified username instead of your own.
 
     `Example:` !nowplaying vsTerminus
 
-```!np [\@DiscordUser]```
+```!np <\@DiscordUser>```
     If you specify a Discord username, the bot will look up that user's Last.FM account if it already has a Discord -> LastFM association stored for that user. If not, you will receive an error.
 
     `Example:` !nowplaying <\@231059560977137664>

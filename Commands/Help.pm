@@ -18,8 +18,11 @@ my $description = "This command lists all commands currently available to the bo
 my $pattern = '^(help) ?(.*)$';
 my $function = \&cmd_help;
 my $usage = <<EOF;
-Basic usage: !help
-Command-specific usage: !help <command>
+```!help```
+    Lists available commands
+
+```!help <command>```
+    Displays detailed help info for that command
 EOF
 ###########################################################################################
 
@@ -64,11 +67,19 @@ sub cmd_help
 
     if ( defined $args and length $args > 0 )
     {
-        my $command = $bot->get_command_by_name($args);
+        my $command = undef;
+        foreach my $pattern ($bot->get_patterns())
+        {
+            if ( $args =~ /$pattern/i ) 
+            {
+                $command = $bot->get_command_by_pattern($pattern);
+                last;
+            }
+        }
 
         if ( defined $command )
         {
-            my $help_str = "__**" . ucfirst $args . "**__: \n\n`" . $command->{'description'} . "`\n\n";
+            my $help_str = "__**" . $command->{'name'} . "**__: \n\n`" . $command->{'description'} . "`\n\n";
             $help_str .= "__**Usage:**__\n\n" . $command->{'usage'};
 
             $discord->send_message($channel, $help_str);
