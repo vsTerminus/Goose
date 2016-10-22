@@ -9,6 +9,7 @@ use Bot::Goose;
 use Commands::NowPlaying;
 use Commands::Comic;
 use Commands::Help;
+use Commands::Avatar;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -40,6 +41,7 @@ if ( $config->{'comic'}{'use_comic'} )
 }
 
 Commands::Help->new('bot' => $bot);
+Commands::Avatar->new('bot' => $bot);
 
 # Start the bot
 $bot->start();
