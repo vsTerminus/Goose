@@ -100,7 +100,7 @@ sub cmd_help
         $help_str .= "```\nUse `" . $trigger . "help <command>` to see more about a specific command.";
 
         my $client_id = $bot->client_id();
-        $help_str .="\n\nYou can add me to your own server(s) by [clicking here](https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=19456)";
+        $help_str .="\n\nYou can add me to your own server(s) by clicking this link: https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=19456";
     
         # Send a message back to the channel
         $discord->send_message($channel, $help_str);
