@@ -43,6 +43,7 @@ sub new
 
     $self->{'trigger'} = $params{'discord'}->{'trigger'};
     $self->{'playing'} = $params{'discord'}->{'playing'};
+    $self->{'client_id'} = $params{'discord'}->{'client_id'};
 
     # Database
     $self->{'db'} = Components::Database->new(%{$params{'db'}});
@@ -91,8 +92,8 @@ sub discord_on_message_create
     my $channel = $hash->{'channel_id'};
     my @mentions = @{$hash->{'mentions'}};
     my $trigger = $self->{'trigger'};
-    my $discord_name = $self->my_name();
-    my $discord_id = $self->my_id();
+    my $discord_name = $self->name();
+    my $discord_id = $self->id();
 
     foreach my $mention (@mentions)
     {
@@ -131,18 +132,24 @@ sub add_me
     $self->add_user($user);
 }
 
-sub my_id
+sub id
 {
     my $self = shift;
 
     return $self->{'id'};
 }
 
-sub my_name
+sub name
 {
     my $self = shift;
     my $id = $self->{'id'};
     return $self->{'users'}{$id}->{'username'}
+}
+
+sub client_id
+{
+    my $self = shift;
+    return $self->{'client_id'};
 }
 
 sub my_user
@@ -174,6 +181,19 @@ sub add_guild
 
     # Nice and simple. Just add what we're given.
     $self->{'guilds'}{$guild->{'id'}} = $guild;
+
+    # Also add entries for channels in this guild.
+    foreach my $channel (@{$guild->{'channels'}})
+    {
+        $self->{'channels'}{$channel->{'id'}} = $guild->{'id'};
+    }
+}
+
+sub get_guild_by_channel
+{
+    my ($self, $channel) = @_;
+
+    return $self->{'channels'}{$channel};
 }
 
 # Like adding, this removes the entry and then returns the list of connected guilds.

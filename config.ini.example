@@ -58,12 +58,14 @@ use_discord = 1
 
 # Next, you'll need to register for a Bot Account over at [discordapp.com/developers](https://discordapp.com/developers/docs/intro).
 # Set up an application, name it whatever you like. The Redirect/Callback URL isn't important since we're not doing OAuth, so just set it to whatever.
-# Once you have converted the app to a Bot Account, you should be able to see the Bot ID and Token on your Applications page.
-# Enter that Token here.
+# Once you have converted the app to a Bot Account, you should be able to see the Client ID and Token on your Applications page.
+# Enter them both here.
+client_id = xxxxx
 token = xxxxx
 
+
 # Set this to the name of your bot.
-name = DickButt9000
+name = DickBot9000
 
 # Set the "Playing" status of your bot
 playing = with myself

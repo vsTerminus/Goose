@@ -41,6 +41,24 @@ my $usage = <<EOF;
     
     This likely will not work due to restrictions on the Comic Generator.
 
+```!comic save [URL]```
+    Save a comic you found particularly funny.
+
+    If you provide a URL the bot will save the specified comic. If not, the bot will save the last comic that was generated in this channel.
+
+    __Examples:__
+
+        `!comic save http://files.explosm.net/rcg/whqcdlmfx.png` (Saves that comic)
+        `!comic save` (Saves the last comic)
+
+```!comic saved [ID]```
+    Displays a previously saved comic. If you pass it a numeric ID it will display that comic (if it exists), otherwise it will select at random.
+
+    __Examples:__
+
+        `!comic saved`  (Display a random saved comic)
+        `!comic saved 1` (Display the first saved comic)
+
 EOF
 ###########################################################################################
 
@@ -85,13 +103,51 @@ sub cmd_comic
     my $vars = "/?";
 
     # We can do some different things with this, like swapping.
-    if ( defined $self->{$channel}{'lastcomic'} and $args =~ /^order (\d{3})$/  )
+    if ( defined $self->{$channel}{'lastcomic'} and $args =~ /^order (\d{3})$/i  )
     {
         my @order = split('', $1);
         my @parts = $self->{$channel}{'lastcomic'} =~ /(...)(...)(...)/;
         unshift @parts, "spacer";
         
         $comic = 'http://files.explosm.net/rcg/' . $parts[$order[0]] . $parts[$order[1]] . $parts[$order[2]] . '.png';
+    }
+    elsif ( $args =~ /^save( (.+))?$/i )
+    {
+        my $comic = $2;
+        
+        if ( length $comic == 0 and defined $self->{$channel}{'lastcomic'} )
+        {
+            my $slug = $self->{$channel}{'lastcomic'};
+            my $id = $self->add_comic($channel, $author, $slug);
+
+            $discord->send_message($channel, "Comic saved! (`ID: $id`)");
+        }
+        elsif (defined $comic and $comic =~ /^(http\:\/\/files.explosm.net\/rcg\/)?([a-z]{9})(.png)?$/i )
+        {
+            my $slug = $2;
+            my $id = $self->add_comic($channel, $author, $slug);
+
+            $discord->send_message($channel, "Comic saved! (`ID: $id`)");
+        }
+        else
+        {
+            $discord->send_message($channel, "Could not save comic. Please see `!help comic` for syntax.");
+        }
+    }
+    elsif ( $args =~ /^saved( (\d+))?$/i )
+    {
+        if ( length $2 > 0 )
+        {
+            my ($id, $comic) = split(',', $self->get_saved_by_id($2));
+
+            $discord->send_message($channel, "$comic (`ID: $id`)");
+        }
+        else
+        {
+            my ($id, $comic) = split(',', $self->get_random_saved());
+
+            $discord->send_message($channel, "$comic (`ID: $id`)");
+        }
     }
     else
     {
@@ -123,15 +179,81 @@ sub cmd_comic
         }
     }
 
-    if ( defined $comic )
+    if ( $args !~ /^save/i )
     {
-        $discord->send_message($channel, $comic);
-        $self->{$channel}{'lastcomic'} = substr($comic,-13,9);  # Track the last URL delivered.
+        if ( defined $comic )
+        {
+            $discord->send_message($channel, $comic);
+            $self->{$channel}{'lastcomic'} = substr($comic,-13,9);  # Track the last URL delivered.
+        }
+        else
+        {
+            $discord->send_message($channel, "Unable to retrieve comic. Please try again.");
+        }
+    }
+}
+
+sub add_comic
+{
+    my ($self, $channel, $author, $slug) = @_;
+
+    my $bot = $self->{'bot'};
+    my $db = $bot->{'db'};
+
+    my $sql = "INSERT INTO comics (slug, guild_id, channel_id, user_id, user_name) values (?, ?, ?, ?, ?)";
+    my $guild = $bot->get_guild_by_channel($channel);
+    say "SQL: $sql";
+    say "Slug: $slug";
+    say "Guild: $guild";
+    say "Channel: $channel";
+    say "Author ID: " . $author->{'id'};
+    say "Author Name: " . $author->{'username'};
+    $db->query($sql, $slug, $guild, $channel, $author->{'id'}, $author->{'username'});
+
+    say "Querying ID for slug $slug";
+    $sql = "SELECT id FROM comics WHERE slug=?";
+    my $query = $db->query($sql, $slug);
+    my @row = $query->fetchrow_array;
+    my $id = $row[0];
+
+    return $id;
+}
+
+sub get_saved_by_id
+{
+    my ($self, $id) = @_;
+
+    my $bot = $self->{'bot'};
+    my $db = $bot->db;
+
+    my $sql = "SELECT slug FROM comics WHERE id=?";
+    my $query = $db->query($sql, $id);
+    my @row = $query->fetchrow_array;
+    my $slug = $row[0];
+   
+    if ( $slug =~ /^[a-zA-Z]{9}$/ )
+    {
+        return $id . ',http://files.explosm.net/rcg/' . $slug . '.png';
     }
     else
     {
-        $discord->send_message($channel, "Unable to retrieve comic. Please try again.");
+        return $self->get_random_saved();
     }
+}
+
+sub get_random_saved
+{
+    my $self = shift;
+    my $db = $self->{'bot'}->db;
+
+    my $sql = "SELECT count(id) FROM comics";
+    my $query = $db->query($sql);
+    my @row = $query->fetchrow_array;
+    my $count = $row[0];
+
+    my $num = int(rand($count))+1;
+
+    return $self->get_saved_by_id($num);
 }
 
 1;
