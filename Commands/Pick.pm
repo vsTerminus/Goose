@@ -14,7 +14,7 @@ use Bot::Goose;
 # Command Info
 my $command = "Pick";
 my $description = "Have the bot decide your fate for you, you wishy washy fuck.";
-my $pattern = '^(pick) (.+)(,(.+))?$';
+my $pattern = '^(pick) ?(.*)$';
 my $function = \&cmd_pick;
 my $usage = <<EOF;
 ```!pick thing one, thing two, thing three```
@@ -59,9 +59,10 @@ sub cmd_pick
     my $replyto = '<@' . $author->{'id'} . '>';
 
     my @picks = split (',', $args);
-    unshift @picks, "spacer";   # Start things at 1 instead of 0.
     my $count = scalar @picks;
     my $pick = int(rand($count))+1;
+    unshift @picks, "spacer";   # Start things at 1 instead of 0.
+    $pick =~ s/^\s*//;
 
     # Send a message back to the channel
     $discord->send_message($channel, "**$pick:** `$picks[$pick]`");
