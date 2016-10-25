@@ -58,7 +58,7 @@ sub cmd_pick
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
 
-    my @picks = split (',', $args);
+    my @picks = split (/,+/, $args);
     my $count = scalar @picks;
     my $pick = int(rand($count))+1;
     unshift @picks, "spacer";   # Start things at 1 instead of 0.
