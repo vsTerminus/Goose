@@ -58,7 +58,7 @@ sub cmd_avatar
 
     my $id = $author->{'id'};
 
-    if ( $args =~ /\<\@(\d+)(,.*)?\>/ )
+    if ( $args =~ /\<\@(\d+)\>/ )
     {
         $id = $1;
     }

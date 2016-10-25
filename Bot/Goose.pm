@@ -97,16 +97,12 @@ sub discord_on_message_create
 
     foreach my $mention (@mentions)
     {
-        my $id = $mention->{'id'};
-        my $username = $mention->{'username'};
-
-        # Replace the mention IDs in the message body with the usernames.
-        $msg =~ s/\<\@$id\>/<\@$id,$username>/;
+        $self->add_user($mention);
     }
 
-    if ( $msg =~ /^(\<\@$discord_id,$discord_name\>|\Q$trigger\E)/i )
+    if ( $msg =~ /^(\<\@$discord_id\>|\Q$trigger\E)/i )
     {
-        $msg =~ s/^((\<\@$discord_id,$discord_name\>.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
+        $msg =~ s/^((\<\@$discord_id\>.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
 
         if ( defined $msg )
         {
@@ -164,6 +160,12 @@ sub add_user
     my ($self, $user) = @_;
     my $id = $user->{'id'};
     $self->{'users'}{$id} = $user;
+}
+
+sub get_user
+{
+    my ($self, $id) = @_;
+    return $self->{'users'}{$id};
 }
 
 sub remove_user

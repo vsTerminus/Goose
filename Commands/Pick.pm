@@ -58,14 +58,16 @@ sub cmd_pick
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
 
+    say "Message: $msg";
     my @picks = split (/,+/, $args);
+    say "Picks: @picks";
     my $count = scalar @picks;
     my $pick = int(rand($count))+1;
     unshift @picks, "spacer";   # Start things at 1 instead of 0.
-    $pick =~ s/^\s*//;
+    $pick =~ s/^ *//;
 
     # Send a message back to the channel
-    $discord->send_message($channel, "**$pick:** `$picks[$pick]`");
+    $discord->send_message($channel, "**$pick:** $picks[$pick]");
 }
 
 1;
