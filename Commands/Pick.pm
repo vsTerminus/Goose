@@ -65,6 +65,12 @@ sub cmd_pick
     my $pick = int(rand($count))+1;
     unshift @picks, "spacer";   # Start things at 1 instead of 0.
     $pick =~ s/^ *//;
+    
+    if ( int(rand(1000)) == 420 )
+    {
+        $pick = $count+1;
+        push @picks, 'Quiznos';
+    }
 
     # Send a message back to the channel
     $discord->send_message($channel, "**$pick:** $picks[$pick]");
