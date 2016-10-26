@@ -136,7 +136,7 @@ sub cmd_comic
     }
     elsif ( $args =~ /^saved( (\d+))?$/i )
     {
-        if ( length $2 > 0 )
+        if ( defined $2 and length $2 > 0 )
         {
             my ($id, $comic) = split(',', $self->get_saved_by_id($2));
 

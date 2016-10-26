@@ -13,7 +13,7 @@ use Bot::Goose;
 ###########################################################################################
 # Command Info
 my $command = "Pick";
-my $description = "Have the bot decide your fate for you, you wishy washy fuck.";
+my $description = "Have the bot decide your fate, you wishy washy fuck.";
 my $pattern = '^(pick) ?(.*)$';
 my $function = \&cmd_pick;
 my $usage = <<EOF;
