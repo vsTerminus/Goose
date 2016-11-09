@@ -41,9 +41,9 @@ if ( $config->{'comic'}{'use_comic'} )
     Commands::Comic->new('bot'       => $bot);
 }
 
-Commands::Help->new('bot' => $bot);
-Commands::Avatar->new('bot' => $bot);
-Commands::Pick->new('bot' => $bot);
+Commands::Help->new     ('bot' => $bot);
+Commands::Avatar->new   ('bot' => $bot);
+Commands::Pick->new     ('bot' => $bot);
 
 # Start the bot
 $bot->start();

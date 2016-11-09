@@ -138,8 +138,13 @@ sub id
 sub name
 {
     my $self = shift;
-    my $id = $self->{'id'};
-    return $self->{'users'}{$id}->{'username'}
+    return $self->{'users'}{$self->id}->{'username'}
+}
+
+sub discriminator
+{
+    my $self = shift;
+    return $self->{'users'}{$self->id}->{'discriminator'};
 }
 
 sub client_id
@@ -198,12 +203,19 @@ sub get_guild_by_channel
     return $self->{'channels'}{$channel};
 }
 
-# Like adding, this removes the entry and then returns the list of connected guilds.
 sub remove_guild
 {
     my ($self, $id) = @_;
 
     delete $self->{'guilds'}{$id} if exists $self->{'guilds'}{$id};
+}
+
+# Return a single guild by ID
+sub get_guild
+{
+    my ($self, $id) = @_;
+
+    exists $self->{'guilds'}{$id} ? return $self->{'guilds'}{$id} : return undef;
 }
 
 # Return the list of guilds.
