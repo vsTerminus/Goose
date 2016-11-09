@@ -85,6 +85,11 @@ sub new
         'object'        => $self,
     );
     
+    my $ua = Mojo::UserAgent->new;
+    $ua->inactivity_timeout(5);
+    $ua->max_connections(0);
+    $self->{'ua'} = $ua;
+    
     return $self;
 }
 
@@ -92,13 +97,14 @@ sub cmd_comic
 {
     my ($self, $channel, $author, $msg) = @_;
 
+    my $ua = $self->{'ua'};
+
     my $args = $msg;
     my $pattern = $self->{'pattern'};
     $args =~ s/$pattern/$2/i;
 
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
-    my $ua = Mojo::UserAgent->new;
     my $comic;
     my $vars = "/?";
 
@@ -110,6 +116,8 @@ sub cmd_comic
         unshift @parts, "spacer";
         
         $comic = 'http://files.explosm.net/rcg/' . $parts[$order[0]] . $parts[$order[1]] . $parts[$order[2]] . '.png';
+
+        $self->send_comic($channel, $comic);
     }
     elsif ( $args =~ /^save( (.+))?$/i )
     {
@@ -166,31 +174,30 @@ sub cmd_comic
         my $url = 'http://explosm.net/rcg';
         $url .= $vars if length $vars > 2;
 
-        my $html = $ua->get($url)->res->body;
+        $ua->get($url => sub {
+            my ($ua, $tx) = @_;
+            my $html = $tx->res->body;
 
-        for(my $i=0; $i < 3; $i++)
-        {
             if ( $html =~ /src=\"\/\/(files.explosm.net\/rcg\/(.*).png)\"/ )
             {
                 $comic = "http://" . $1;
-                last;
             }
-            sleep(1);
-        }
+            
+            $self->send_comic($channel, $comic);
+        });
     }
 
-    if ( $args !~ /^save/i )
-    {
-        if ( defined $comic )
-        {
-            $discord->send_message($channel, $comic);
-            $self->{$channel}{'lastcomic'} = substr($comic,-13,9);  # Track the last URL delivered.
-        }
-        else
-        {
-            $discord->send_message($channel, "Unable to retrieve comic. Please try again.");
-        }
-    }
+}
+
+sub send_comic
+{
+    my ($self, $channel, $comic) = @_;
+    my $discord = $self->{'discord'};
+
+    $comic = "Unable to retrieve comic. Please try again." unless defined $comic;
+
+    $discord->send_message($channel, $comic);
+    $self->{$channel}{'lastcomic'} = substr($comic,-13,9);  # Track the last URL delivered.
 }
 
 sub add_comic
