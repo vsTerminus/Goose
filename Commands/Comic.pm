@@ -194,10 +194,18 @@ sub send_comic
     my ($self, $channel, $comic) = @_;
     my $discord = $self->{'discord'};
 
-    $comic = "Unable to retrieve comic. Please try again." unless defined $comic;
+    if ( defined $comic ) 
+    {
+        my $slug = substr($comic,-13,9);
+        say "Lastcomic Slug: $slug";
+        $self->{$channel}{'lastcomic'} = $slug;
+    }
+    else
+    {
+        $comic = "Unable to retrieve comic. Please try again."; # Else, error message
+    }
 
     $discord->send_message($channel, $comic);
-    $self->{$channel}{'lastcomic'} = substr($comic,-13,9);  # Track the last URL delivered.
 }
 
 sub add_comic
