@@ -6,7 +6,7 @@ use warnings;
 
 use Data::Dumper;
 use Net::Discord;
-use Components::Database;
+use Component::Database;
 use Mojo::IOLoop;
 
 use Exporter qw(import);
@@ -46,7 +46,7 @@ sub new
     $self->{'client_id'} = $params{'discord'}->{'client_id'};
 
     # Database
-    $self->{'db'} = Components::Database->new(%{$params{'db'}});
+    $self->{'db'} = Component::Database->new(%{$params{'db'}});
 
     return $self;
 }

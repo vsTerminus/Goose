@@ -1,24 +1,25 @@
-package Commands::Avatar;
+package Command::Template;
 
 use v5.10;
 use strict;
 use warnings;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(cmd_avatar);
+our @EXPORT_OK = qw(cmd_template);
 
 use Net::Discord;
 use Bot::Goose;
 
 ###########################################################################################
 # Command Info
-my $command = "Avatar";
-my $description = "Display a user's avatar";
-my $pattern = '^(avatar) ?(.*)$';
-my $function = \&cmd_avatar;
+my $command = "Template";
+my $description = "This is a template command for building new actual commands";
+my $pattern = '^(template) ?(.*)$';
+my $function = \&cmd_template;
 my $usage = <<EOF;
-- `!avatar` - Display your own avatar
-- `!avatar \@user` - Display someone else's avatar
+Basic usage: !template
+Advanced usage: !template
+Other usage: !template
 EOF
 ###########################################################################################
 
@@ -46,7 +47,7 @@ sub new
     return $self;
 }
 
-sub cmd_avatar
+sub cmd_template
 {
     my ($self, $channel, $author, $msg) = @_;
 
@@ -55,25 +56,10 @@ sub cmd_avatar
     $args =~ s/$pattern/$2/i;
 
     my $discord = $self->{'discord'};
-
-    my $id = $author->{'id'};
-
-    if ( $args =~ /\<\@(\d+)\>/ )
-    {
-        $id = $1;
-    }
-
-    say "Fetching avatar for ID: $id";
-
-    my $json = $discord->get_user($id);
-
-    my $avatar = $json->{'avatar'};
-    my $name = $json->{'username'};
-
-    my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg';
+    my $replyto = '<@' . $author->{'id'} . '>';
 
     # Send a message back to the channel
-    $discord->send_message($channel, "Avatar for **$name**: $url");
+    $discord->send_message($channel, "Your message was:\n```$args```");
 }
 
 1;

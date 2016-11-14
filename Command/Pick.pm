@@ -1,25 +1,25 @@
-package Commands::Template;
+package Command::Pick;
 
 use v5.10;
 use strict;
 use warnings;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(cmd_template);
+our @EXPORT_OK = qw(cmd_pick);
 
 use Net::Discord;
 use Bot::Goose;
 
 ###########################################################################################
 # Command Info
-my $command = "Template";
-my $description = "This is a template command for building new actual commands";
-my $pattern = '^(template) ?(.*)$';
-my $function = \&cmd_template;
+my $command = "Pick";
+my $description = "Have the bot decide your fate, you wishy washy fuck.";
+my $pattern = '^(pick) ?(.*)$';
+my $function = \&cmd_pick;
 my $usage = <<EOF;
-Basic usage: !template
-Advanced usage: !template
-Other usage: !template
+```!pick thing one, thing two, thing three```
+    Give the bot a list of things to pick from, and separate each with a comma.
+    You can have the bot pick from as many things as you want.
 EOF
 ###########################################################################################
 
@@ -47,7 +47,7 @@ sub new
     return $self;
 }
 
-sub cmd_template
+sub cmd_pick
 {
     my ($self, $channel, $author, $msg) = @_;
 
@@ -58,8 +58,22 @@ sub cmd_template
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
 
+    say "Message: $msg";
+    my @picks = split (/,+/, $args);
+    say "Picks: @picks";
+    my $count = scalar @picks;
+    my $pick = int(rand($count))+1;
+    unshift @picks, "spacer";   # Start things at 1 instead of 0.
+    $pick =~ s/^ *//;
+    
+    if ( int(rand(1000)) == 420 )
+    {
+        $pick = $count+1;
+        push @picks, 'Quiznos';
+    }
+
     # Send a message back to the channel
-    $discord->send_message($channel, "Your message was:\n```$args```");
+    $discord->send_message($channel, "**$pick:** $picks[$pick]");
 }
 
 1;

@@ -1,25 +1,24 @@
-package Commands::Pick;
+package Command::Avatar;
 
 use v5.10;
 use strict;
 use warnings;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(cmd_pick);
+our @EXPORT_OK = qw(cmd_avatar);
 
 use Net::Discord;
 use Bot::Goose;
 
 ###########################################################################################
 # Command Info
-my $command = "Pick";
-my $description = "Have the bot decide your fate, you wishy washy fuck.";
-my $pattern = '^(pick) ?(.*)$';
-my $function = \&cmd_pick;
+my $command = "Avatar";
+my $description = "Display a user's avatar";
+my $pattern = '^(avatar) ?(.*)$';
+my $function = \&cmd_avatar;
 my $usage = <<EOF;
-```!pick thing one, thing two, thing three```
-    Give the bot a list of things to pick from, and separate each with a comma.
-    You can have the bot pick from as many things as you want.
+- `!avatar` - Display your own avatar
+- `!avatar \@user` - Display someone else's avatar
 EOF
 ###########################################################################################
 
@@ -47,7 +46,7 @@ sub new
     return $self;
 }
 
-sub cmd_pick
+sub cmd_avatar
 {
     my ($self, $channel, $author, $msg) = @_;
 
@@ -56,24 +55,25 @@ sub cmd_pick
     $args =~ s/$pattern/$2/i;
 
     my $discord = $self->{'discord'};
-    my $replyto = '<@' . $author->{'id'} . '>';
 
-    say "Message: $msg";
-    my @picks = split (/,+/, $args);
-    say "Picks: @picks";
-    my $count = scalar @picks;
-    my $pick = int(rand($count))+1;
-    unshift @picks, "spacer";   # Start things at 1 instead of 0.
-    $pick =~ s/^ *//;
-    
-    if ( int(rand(1000)) == 420 )
+    my $id = $author->{'id'};
+
+    if ( $args =~ /\<\@(\d+)\>/ )
     {
-        $pick = $count+1;
-        push @picks, 'Quiznos';
+        $id = $1;
     }
 
+    say "Fetching avatar for ID: $id";
+
+    my $json = $discord->get_user($id);
+
+    my $avatar = $json->{'avatar'};
+    my $name = $json->{'username'};
+
+    my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg';
+
     # Send a message back to the channel
-    $discord->send_message($channel, "**$pick:** $picks[$pick]");
+    $discord->send_message($channel, "Avatar for **$name**: $url");
 }
 
 1;

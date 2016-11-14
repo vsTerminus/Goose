@@ -1,4 +1,4 @@
-package Commands::Comic;
+package Command::Comic;
 
 use v5.10;
 use strict;

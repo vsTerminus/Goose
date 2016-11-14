@@ -6,11 +6,11 @@ use warnings;
 
 use Config::Tiny;
 use Bot::Goose;
-use Commands::NowPlaying;
-use Commands::Comic;
-use Commands::Help;
-use Commands::Avatar;
-use Commands::Pick;
+use Command::NowPlaying;
+use Command::Comic;
+use Command::Help;
+use Command::Avatar;
+use Command::Pick;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -30,7 +30,7 @@ my $bot = Bot::Goose->new(
 # The new() function in each command will register with the bot.
 if ( $config->{'lastfm'}{'use_np'} )
 {
-    Commands::NowPlaying->new(
+    Command::NowPlaying->new(
         'bot'       => $bot,
         'api_key'   => $config->{'lastfm'}->{'api_key'}
     );
@@ -38,12 +38,12 @@ if ( $config->{'lastfm'}{'use_np'} )
 
 if ( $config->{'comic'}{'use_comic'} )
 {
-    Commands::Comic->new('bot'       => $bot);
+    Command::Comic->new('bot'       => $bot);
 }
 
-Commands::Help->new     ('bot' => $bot);
-Commands::Avatar->new   ('bot' => $bot);
-Commands::Pick->new     ('bot' => $bot);
+Command::Help->new     ('bot' => $bot);
+Command::Avatar->new   ('bot' => $bot);
+Command::Pick->new     ('bot' => $bot);
 
 # Start the bot
 $bot->start();

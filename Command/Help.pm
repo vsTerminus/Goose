@@ -1,4 +1,4 @@
-package Commands::Help;
+package Command::Help;
 
 use v5.10;
 use strict;

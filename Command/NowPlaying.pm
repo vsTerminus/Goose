@@ -1,4 +1,4 @@
-package Commands::NowPlaying;
+package Command::NowPlaying;
 
 use v5.10;
 use strict;
@@ -10,7 +10,7 @@ our @EXPORT_OK = qw(cmd_nowplaying);
 use Net::Discord;
 use Net::Async::LastFM;
 use DBI;
-use Components::Database;
+use Component::Database;
 use Data::Dumper;
 
 ###########################################################################################
@@ -80,7 +80,7 @@ sub add_user
 {
     my ($self, $discord_id, $discord_name, $lastfm_name) = @_;
 
-    say localtime(time) . " Commands::NowPlaying is adding a new mapping: $discord_id ($discord_name) -> $lastfm_name";
+    say localtime(time) . " Command::NowPlaying is adding a new mapping: $discord_id ($discord_name) -> $lastfm_name";
 
     my $db = $self->{'db'};
     

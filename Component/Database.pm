@@ -1,4 +1,4 @@
-package Components::Database;
+package Component::Database;
 
 use v5.10;
 use strict;
