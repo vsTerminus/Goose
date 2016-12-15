@@ -7,6 +7,8 @@ use warnings;
 use Data::Dumper;
 use Net::Discord;
 use Component::Database;
+use Component::YouTube;
+use Component::OpenWeather;
 use Mojo::IOLoop;
 
 use Exporter qw(import);
@@ -47,6 +49,12 @@ sub new
 
     # Database
     $self->{'db'} = Component::Database->new(%{$params{'db'}});
+
+    # YouTube
+    $self->{'youtube'} = Component::YouTube->new( $params{'youtube'}->{'api_key'} ) if ( $params{'youtube'}->{'use_youtube'} );
+
+    # OpenWeather
+    $self->{'openweather'} = Component::OpenWeather->new(%{$params{'weather'}})  if ( $params{'weather'}->{'use_weather'} );
 
     return $self;
 }
@@ -313,7 +321,7 @@ sub command
     return 0;
 }
 
-# These last two probably shouldn't exist, and
+# These last few probably shouldn't exist, and
 # I should create wrapper functions here in this module.
 # On the other hand, whatever. I'm good with the bot just acting as a container for this stuff.
 
@@ -329,6 +337,18 @@ sub db
 {
     my $self = shift;
     return $self->{'db'};
+}
+
+sub youtube
+{
+    my $self = shift;
+    return $self->{'youtube'};
+}
+
+sub openweather
+{
+    my $self = shift;
+    return $self->{'openweather'};
 }
 
 1;

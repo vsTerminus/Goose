@@ -11,6 +11,7 @@ use Command::Comic;
 use Command::Help;
 use Command::Avatar;
 use Command::Pick;
+use Command::Weather;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -24,6 +25,8 @@ my $self = {};  # For miscellaneous information about this bot such as discord i
 my $bot = Bot::Goose->new(
     'discord'   => $config->{'discord'},
     'db'        => $config->{'db'},
+#    'youtube'   => $config->{'youtube'},
+    'weather'   => $config->{'weather'},
 );
 
 # Register the commands
@@ -38,7 +41,15 @@ if ( $config->{'lastfm'}{'use_np'} )
 
 if ( $config->{'comic'}{'use_comic'} )
 {
-    Command::Comic->new('bot'       => $bot);
+    Command::Comic->new('bot' => $bot);
+}
+
+if ( $config->{'weather'}{'use_weather'} )
+{
+    Command::Weather->new(
+        'bot'       => $bot,
+        'api_key'   => $config->{'weather'}{'api_key'}
+    );
 }
 
 Command::Help->new     ('bot' => $bot);

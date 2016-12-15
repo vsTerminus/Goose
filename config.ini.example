@@ -153,3 +153,17 @@ verbose = 0
 # This script only requires the api key.
 api_key = xxx
 
+# This section is for YouTube API info, allowing you to use commands that leverage YouTube connectivity.
+[youtube]
+# If you want to use the YouTube component you will need a Google API key for the YouTube Data API.
+# If not, set use_youtube to 0.
+use_youtube = 1 
+api_key = xxx
+
+# This section is for Weather info provided by OpenWeatherMap.
+[weather]
+# If you want to use the weather component you will need an API Key from OpenWeatherMap.org
+# It is free.
+# If not, set use_weather to 0
+use_weather = 0
+api_key = xxx
