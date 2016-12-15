@@ -4,6 +4,8 @@ use v5.10;
 use strict;
 use warnings;
 
+binmode STDOUT, ":utf8";
+
 use Config::Tiny;
 use Bot::Goose;
 use Command::NowPlaying;
