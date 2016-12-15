@@ -88,10 +88,10 @@ sub cmd_weather
         my $ccode = $json->{'sys'}{'country'};
         my $temp = $json->{'main'}{'temp'};
         my $temp_f = ctof($temp);
-        my $temp_min = $json->{'main'}{'temp_min'};
-        my $temp_min_f = ctof($temp_min);
-        my $temp_max = $json->{'main'}{'temp_max'};
-        my $temp_max_f = ctof($temp_max);
+        #my $temp_min = $json->{'main'}{'temp_min'};
+        #my $temp_min_f = ctof($temp_min);
+        #my $temp_max = $json->{'main'}{'temp_max'};
+        #my $temp_max_f = ctof($temp_max);
         my $weather = weather_types($json->{'weather'});
         my $wind_speed = $json->{'wind'}{'speed'};
         my $wind_speed_mph = mph($wind_speed);

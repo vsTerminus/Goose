@@ -84,6 +84,8 @@ sub new
         'function'      => $function,
         'object'        => $self,
     );
+
+    my $promo = 1;
     
     my $ua = Mojo::UserAgent->new;
     $ua->inactivity_timeout(5);
@@ -107,6 +109,8 @@ sub cmd_comic
     my $replyto = '<@' . $author->{'id'} . '>';
     my $comic;
     my $vars = "/?";
+
+    $vars .= "promo=false&"; # Disable the ad in the first panel.
 
     # We can do some different things with this, like swapping.
     if ( defined $self->{$channel}{'lastcomic'} and $args =~ /^order (\d{3})$/i  )
