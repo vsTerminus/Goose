@@ -98,7 +98,7 @@ sub cmd_weather
         my $wind_deg = $json->{'wind'}{'deg'};
         my $wind_dir = wind_direction($wind_deg);
 
-        my $wstr = $author->{'username'} . ": Weather for $city, $ccode: ${temp}C/${temp_f}F, $weather. Winds ${wind_speed}kph/${wind_speed_mph}mph $wind_dir";
+        my $wstr = $author->{'username'} . ": `Weather for $city, $ccode: ${temp}C/${temp_f}F, $weather. Winds ${wind_speed}kph/${wind_speed_mph}mph $wind_dir`";
 
 
         $discord->send_message($channel, $wstr);
