@@ -17,7 +17,7 @@ use Data::Dumper;
 # Command Info
 my $command = "Weather";
 my $description = "Look up the weather by City Name, US Zip Code, or Canadian Postal Code.";
-my $pattern = '^(we?(ather)?) ?([^\s].*)$';
+my $pattern = '^(we?(ather)?) ?(\w+)?$';
 my $function = \&cmd_weather;
 my $usage = <<EOF;
 
@@ -28,7 +28,7 @@ Basic Usage: `!weather <City Name, US Zip Code, or Canadian Postal Code>`
 
 Shorthand: `!w` and `!we`
 
-**(NOT YET SUPPORTED)** Store your location: !weather set <zip, postal code, or city name>
+Store your location: `!weather set <zip, postal code, or city name>`
     - The bot will remember your location and in the future if you don't supply one.
     eg. `!weather` will use whatever value you told the bot to remember.
 EOF
