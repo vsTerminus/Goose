@@ -113,7 +113,7 @@ sub cmd_nowplaying
     elsif ( length $user )
     {
         # Are they querying a Discord Username or a Last.FM Username?
-        if ( $user =~ /\<\@(\d+)>/ )
+        if ( $user =~ /\<\@\!?(\d+)>/ )
         {
             # Discord user. $1 is the ID, $2 is the username.
             $self->nowplaying_by_id($channel, $author, $1);

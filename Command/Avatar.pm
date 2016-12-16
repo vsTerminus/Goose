@@ -9,6 +9,7 @@ our @EXPORT_OK = qw(cmd_avatar);
 
 use Net::Discord;
 use Bot::Goose;
+use Data::Dumper;
 
 ###########################################################################################
 # Command Info
@@ -58,7 +59,9 @@ sub cmd_avatar
 
     my $id = $author->{'id'};
 
-    if ( $args =~ /\<\@(\d+)\>/ )
+    say Dumper($msg);
+    
+    if ( $args =~ /\<\@\!?(\d+)\>/ )
     {
         $id = $1;
     }
