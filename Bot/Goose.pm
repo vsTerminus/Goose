@@ -80,6 +80,8 @@ sub discord_on_ready
     $self->{'discord'}->status_update({'game' => $self->{'playing'}});
 
     say localtime(time) . " Connected to Discord.";
+
+    #say Dumper($hash);
 }
 
 sub discord_on_guild_create
@@ -89,6 +91,8 @@ sub discord_on_guild_create
     say "Adding guild: " . $hash->{'id'} . " -> " . $hash->{'name'};
 
     $self->add_guild($hash);
+
+    #say Dumper($hash);
 }
 
 sub discord_on_message_create
@@ -108,9 +112,9 @@ sub discord_on_message_create
         $self->add_user($mention);
     }
 
-    if ( $msg =~ /^(\<\@$discord_id\>|\Q$trigger\E)/i )
+    if ( $msg =~ /^(\<\@\!?$discord_id\>|\Q$trigger\E)/i )
     {
-        $msg =~ s/^((\<\@$discord_id\>.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
+        $msg =~ s/^((\<\@\!?$discord_id\>.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
 
         if ( defined $msg )
         {

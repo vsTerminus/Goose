@@ -16,14 +16,16 @@ use Data::Dumper;
 # Command Info
 my $command = "Weather";
 my $description = "Look up the weather by City Name, US Zip Code, or Canadian Postal Code.";
-my $pattern = '^(w(eather)?) ?(.*)$';
+my $pattern = '^(we?(ather)?) ?([^\s].*)$';
 my $function = \&cmd_weather;
 my $usage = <<EOF;
 
-Basic Usage: !weather <City Name, US Zip Code, or Canadian Postal Code>. 
+Basic Usage: `!weather <City Name, US Zip Code, or Canadian Postal Code>`
     eg. `!weather Dildo, NL`
     eg. `!weather 80085`
     eg. `!weather V4G 1N4`
+
+Shorthand: `!w` and `!we`
 
 **(NOT YET SUPPORTED)** Store your location: !weather set <zip, postal code, or city name>
     - The bot will remember your location and in the future if you don't supply one.
@@ -83,6 +85,16 @@ sub cmd_weather
     $self->{'bot'}->openweather->weather($args, 
     sub {
         my $json = shift;
+
+        say Dumper($json);
+
+        say "Searching for: $args";
+
+        if ( $json->{'cod'} == 502 )
+        {
+            $discord->send_message($channel, $author->{'username'} . ": Sorry, I can't find `$args`");
+            return;
+        }
 
         my $city = $json->{'name'};
         my $ccode = $json->{'sys'}{'country'};
