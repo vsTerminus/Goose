@@ -17,7 +17,7 @@ use Data::Dumper;
 # Command Info
 my $command = "Weather";
 my $description = "Look up the weather by City Name, US Zip Code, or Canadian Postal Code.";
-my $pattern = '^(we?(ather)?) ?(\w+)?$';
+my $pattern = '^(we?(ather)?) ?([^\s].*)?$';
 my $function = \&cmd_weather;
 my $usage = <<EOF;
 
