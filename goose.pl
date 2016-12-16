@@ -14,6 +14,7 @@ use Command::Help;
 use Command::Avatar;
 use Command::Pick;
 use Command::Weather;
+#use Command::Leave;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -57,6 +58,7 @@ if ( $config->{'weather'}{'use_weather'} )
 Command::Help->new     ('bot' => $bot);
 Command::Avatar->new   ('bot' => $bot);
 Command::Pick->new     ('bot' => $bot);
+#Command::Leave->new    ('bot' => $bot);
 
 # Start the bot
 $bot->start();

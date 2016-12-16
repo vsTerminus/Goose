@@ -10,6 +10,7 @@ our @EXPORT_OK = qw(cmd_weather);
 use Net::Discord;
 use Bot::Goose;
 use Component::OpenWeather;
+use Component::Database;
 use Data::Dumper;
 
 ###########################################################################################
@@ -40,8 +41,10 @@ sub new
     bless $self, $class;
      
     # Setting up this command module requires the Discord connection
+    # and the Database component
     $self->{'bot'} = $params{'bot'};
     $self->{'discord'} = $self->{'bot'}->discord;
+    $self->{'db'} = $self->{'bot'}->db;
     $self->{'pattern'} = $pattern;
 
     # Register our command with the bot
@@ -74,11 +77,33 @@ sub cmd_weather
     # Handle empty args
     if (length $args < 2 )
     {
-        # Check for db entry
+        # Now, do we have a database entry for this user?
+        my $db = $self->{'db'};
+       
+        my $sql = "SELECT location FROM weather WHERE discord_id = ?";
+        my $query = $db->query($sql, $author->{'id'});
+   
+        # Yes, we have them.
+        if ( my $row = $query->fetchrow_hashref )
+        {
+            $args = $row->{'location'};
+            say localtime(time) . ": Found stored location for " . $author->{'username'} . ": " . $args;
+        }
+        else
+        {
+            # Else, error.
+            $discord->send_message($channel, $author->{'username'} . ": You must specify a location (City Name / US Zip Code / Canadian Postal Code)");
+            return;
+        }
+    }
+    elsif ( $args =~ /^set (\w+)/i )
+    {
+        my $location = $1;
+        $location =~ s/^\<(.*)\>$/$1/; # In case of stupidity, remove < > from the username.
+        $self->add_user($author->{'id'}, $author->{'username'}, $location);
+        $discord->send_message( $channel, $author->{'username'} . ": I have updated your Weather Location to `$location`" );
         
-        # Else, error.
-        $discord->send_message($channel, $author->{'username'} . ": You must specify a location (City Name / US Zip Code / Canadian Postal Code)");
-        return;
+        $args = $location;
     }
 
 
@@ -159,5 +184,20 @@ sub weather_types
 
     return $str;
 }
+
+
+sub add_user
+{
+    my ($self, $discord_id, $discord_name, $location) = @_;
+
+    say localtime(time) . " Command::Weather is adding a new mapping: $discord_id ($discord_name) -> $location";
+
+    my $db = $self->{'db'};
+    
+    my $sql = "INSERT INTO weather VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE discord_name = ?, location = ?";
+    $db->query($sql, $discord_id, $discord_name, $location, $discord_name, $location);
+}
+
+
 
 1;

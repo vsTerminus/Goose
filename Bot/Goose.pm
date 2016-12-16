@@ -7,7 +7,7 @@ use warnings;
 use Data::Dumper;
 use Net::Discord;
 use Component::Database;
-use Component::YouTube;
+#use Component::YouTube;
 use Component::OpenWeather;
 use Mojo::IOLoop;
 
