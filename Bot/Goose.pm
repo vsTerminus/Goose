@@ -129,7 +129,7 @@ sub discord_on_message_create
                     my $access = $command->{'access'};
                     my $owner = $self->owner;
 
-                    say "User ID: $discord_id";
+                    say "User ID: " . $author->{'id'};
                     say "Owner ID: $owner";
                     say "Command Access: $access";
 
