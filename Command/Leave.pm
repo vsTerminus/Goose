@@ -1,26 +1,24 @@
-package Command::Avatar;
+package Command::Leave;
 
 use v5.10;
 use strict;
 use warnings;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(cmd_avatar);
+our @EXPORT_OK = qw(cmd_guilds);
 
 use Net::Discord;
 use Bot::Goose;
-use Data::Dumper;
 
 ###########################################################################################
 # Command Info
-my $command = "Avatar";
-my $access = 0; # Public
-my $description = "Display a user's avatar";
-my $pattern = '^(avatar) ?(.*)$';
-my $function = \&cmd_avatar;
+my $command = "Leave";
+my $description = "Leave a specified guild";
+my $pattern = '^(leave) ?(.*)$';
+my $function = \&cmd_leave;
+my $access = 1;   # Restricted - Bot Owner only. Should overhaul access a bit in the future, but for now this is fine.
 my $usage = <<EOF;
-- `!avatar` - Display your own avatar
-- `!avatar \@user` - Display someone else's avatar
+Basic usage: !leave <Guild ID>
 EOF
 ###########################################################################################
 
@@ -34,6 +32,7 @@ sub new
     $self->{'bot'} = $params{'bot'};
     $self->{'discord'} = $self->{'bot'}->discord;
     $self->{'pattern'} = $pattern;
+    $self->{'access'} = $access;
 
     # Register our command with the bot
     $self->{'bot'}->add_command(
@@ -49,7 +48,7 @@ sub new
     return $self;
 }
 
-sub cmd_avatar
+sub cmd_leave
 {
     my ($self, $channel, $author, $msg) = @_;
 
@@ -58,27 +57,29 @@ sub cmd_avatar
     $args =~ s/$pattern/$2/i;
 
     my $discord = $self->{'discord'};
+    my $replyto = '<@' . $author->{'id'} . '>';
 
-    my $id = $author->{'id'};
+    my $bot = $self->{'bot'};
 
-    say Dumper($msg);
+    my $id = $msg;
+    $id =~ s/^leave (\d+)$/$1/i;
+
+    say "Checking for Guild ID: $id";
     
-    if ( $args =~ /\<\@\!?(\d+)\>/ )
+    my $user = '@me';
+    say $discord->get_guilds($user);
+
+    if ( my $guild = $bot->get_guild($id) )
     {
-        $id = $1;
+        my $guild_name = $guild->{'name'};
+
+        $discord->send_message($channel, "Leaving Server: `$id ($guild_name)`");
+        $discord->leave_guild($user, $id);
     }
-
-    say "Fetching avatar for ID: $id";
-
-    my $json = $discord->get_user($id);
-
-    my $avatar = $json->{'avatar'};
-    my $name = $json->{'username'};
-
-    my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg';
-
-    # Send a message back to the channel
-    $discord->send_message($channel, "Avatar for **$name**: $url");
+    else
+    {
+        $discord->send_message($channel, "Sorry " . $author->{'username'} . ", I don't appear to be connected to that server.");
+    }
 }
 
 1;

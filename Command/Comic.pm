@@ -16,6 +16,7 @@ use Data::Dumper;
 ###########################################################################################
 # Command Info
 my $command = "Comic";
+my $access = 0; # Public
 my $description = "Displays a comic from the Cyanide & Happiness Random Comic Generator";
 my $pattern = '^(rc|comic) ?(.*)$';
 my $function = \&cmd_comic;
@@ -78,6 +79,7 @@ sub new
     # Register our command with the bot
     $bot->add_command(
         'command'       => $command,
+        'access'        => $access,
         'description'   => $description,
         'usage'         => $usage,
         'pattern'       => $pattern,

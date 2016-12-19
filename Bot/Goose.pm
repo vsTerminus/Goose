@@ -42,7 +42,8 @@ sub new
         'reconnect' => $params{'discord'}->{'auto_reconnect'},
         'verbose'   => $params{'discord'}->{'verbose'},
     );
-
+    
+    $self->{'owner_id'} = $params{'discord'}->{'owner_id'};
     $self->{'trigger'} = $params{'discord'}->{'trigger'};
     $self->{'playing'} = $params{'discord'}->{'playing'};
     $self->{'client_id'} = $params{'discord'}->{'client_id'};
@@ -118,14 +119,31 @@ sub discord_on_message_create
 
         if ( defined $msg )
         {
+            # Get all command patterns and iterate through them.
+            # If you find a match, call the command fuction.
             foreach my $pattern ($self->get_patterns())
             {
                 if ( $msg =~ /$pattern/i )
                 {
                     my $command = $self->get_command_by_pattern($pattern);
-                    my $object = $command->{'object'};
-                    my $function = $command->{'function'};
-                    $object->$function($channel, $author, $msg);
+                    my $access = $command->{'access'};
+                    my $owner = $self->owner;
+
+                    say "User ID: $discord_id";
+                    say "Owner ID: $owner";
+                    say "Command Access: $access";
+
+                    if ( defined $access and $access > 0 and defined $owner and $owner != $author->{'id'} )
+                    {
+                        # Sorry, no access to this command.
+                        say localtime(time) . ": '" . $author->{'username'} . "' (" . $author->{'id'} . ") tried to use a restricted command and is not the bot owner.";
+                    }
+                    elsif ( ( defined $access and $access == 0 ) or ( defined $owner and $owner == $author->{'id'} ) )
+                    {
+                        my $object = $command->{'object'};
+                        my $function = $command->{'function'};
+                        $object->$function($channel, $author, $msg);
+                    }
                 }
             }
         }
@@ -282,6 +300,7 @@ sub trigger
 
 # Command modules can use this function to register themselves with the bot.
 # - Command
+# - Access Level Required (Default 0 - public, 1 - Bot Owner)
 # - Description
 # - Usage
 # - Pattern
@@ -291,6 +310,7 @@ sub add_command
     my ($self, %params) = @_;
 
     my $command = lc $params{'command'};
+    my $access = $params{'access'};
     my $description = $params{'description'};
     my $usage = $params{'usage'};
     my $pattern = $params{'pattern'};
@@ -298,6 +318,7 @@ sub add_command
     my $object = $params{'object'};
 
     $self->{'commands'}->{$command}{'name'} = ucfirst $command;
+    $self->{'commands'}->{$command}{'access'} = $access;
     $self->{'commands'}->{$command}{'usage'} = $usage;
     $self->{'commands'}->{$command}{'description'} = $description;
     $self->{'commands'}->{$command}{'pattern'} = $pattern;
@@ -325,9 +346,12 @@ sub command
     return 0;
 }
 
-# These last few probably shouldn't exist, and
-# I should create wrapper functions here in this module.
-# On the other hand, whatever. I'm good with the bot just acting as a container for this stuff.
+# Returns the owner ID for the bot
+sub owner
+{
+    my $self = shift;
+    return $self->{'owner_id'};
+}
 
 # Returns the discord object associated to this bot.
 sub discord

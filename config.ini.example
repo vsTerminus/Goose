@@ -52,6 +52,11 @@ read_on_start = 0
 # The next section covers options for the Discord bot.
 [discord]
 
+# This will tell the bot to recognize you as its owner, granting you access to restricted commands.
+# To get your Discord ID, open Discord and go to Settings -> Appearance and enable Developer Mode.
+# Then right click on your name in the sidebar somewhere and choose Copy ID. Paste it into the field below.
+owner_id = 13374209991234567890
+
 # First of all, do you want the bot to connect to Discord?
 # 1 = yes, 0 = no
 use_discord = 1
@@ -83,7 +88,7 @@ auto_reconnect = 1
 # 1 = yes, 0 = no
 verbose = 1
 
-# Do you want Xyzzy to learn from the chat messages in Discord?
+# Do you want the AI to learn from the chat messages in Discord?
 # Set this to false if you talk about private or sensitive things that you don't want the bot to repeat.
 # 1 = yes, 0 = no
 learn = 0

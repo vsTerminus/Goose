@@ -16,6 +16,7 @@ use Data::Dumper;
 ###########################################################################################
 # Command Info
 my $command = "NowPlaying";
+my $access = 0; # Public
 my $description = "Fetches Now Playing info from Last.FM and displays it in the channel";
 my $pattern = '^(np|nowplaying|lastfm) ?(.*)$';
 my $function = \&cmd_nowplaying;
@@ -66,6 +67,7 @@ sub new
 
     $bot->add_command(
         'command'       => $command,
+        'access'        => $access,
         'description'   => $description,
         'usage'         => $usage,
         'pattern'       => $pattern,

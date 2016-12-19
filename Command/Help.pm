@@ -14,6 +14,7 @@ use Data::Dumper;
 ###########################################################################################
 # Command Info
 my $command = "Help";
+my $access = 0; # Pubic
 my $description = "This command lists all commands currently available to the bot, and can display detailed information for each.";
 my $pattern = '^(help) ?(.*)$';
 my $function = \&cmd_help;
@@ -41,6 +42,7 @@ sub new
     # Register our command with the bot
     $self->{'bot'}->add_command(
         'command'       => $command,
+        'access'        => $access,
         'description'   => $description,
         'usage'         => $usage,
         'pattern'       => $pattern,
@@ -92,8 +94,25 @@ sub cmd_help
     }
     else    # Display all
     {
-        my $help_str = "This bot has the following commands available: \n\n```";
-        foreach my $key (keys %{$commands})
+        my $help_str = "This bot has the following commands available: \n\n";
+
+        my @public;
+        my @restricted;
+        foreach my $key (sort keys %{$commands})
+        {
+            my $command = $bot->get_command_by_name($key);
+            my $access = $command->{'access'};
+            ( defined $access and $access > 0 ) ? push @restricted, $key : push @public, $key;
+        }
+
+        $help_str .= "**Public**:```\n";
+        foreach my $key (@public)
+        {
+            $help_str .= "- $key\n";
+        }
+
+        $help_str .= "```\n\n**Restricted to Owner:**```\n";
+        foreach my $key (@restricted)
         {
             $help_str .= "- $key\n";
         }

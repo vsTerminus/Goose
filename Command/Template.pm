@@ -13,6 +13,7 @@ use Bot::Goose;
 ###########################################################################################
 # Command Info
 my $command = "Template";
+my $access = 0; # Public
 my $description = "This is a template command for building new actual commands";
 my $pattern = '^(template) ?(.*)$';
 my $function = \&cmd_template;
@@ -37,6 +38,7 @@ sub new
     # Register our command with the bot
     $self->{'bot'}->add_command(
         'command'       => $command,
+        'access'        => $access,
         'description'   => $description,
         'usage'         => $usage,
         'pattern'       => $pattern,

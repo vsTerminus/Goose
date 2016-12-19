@@ -16,6 +16,7 @@ use Data::Dumper;
 ###########################################################################################
 # Command Info
 my $command = "Weather";
+my $access = 0; # Public
 my $description = "Look up the weather by City Name, US Zip Code, or Canadian Postal Code.";
 my $pattern = '^(we?(ather)?) ?([^\s].*)?$';
 my $function = \&cmd_weather;
@@ -50,6 +51,7 @@ sub new
     # Register our command with the bot
     $self->{'bot'}->add_command(
         'command'       => $command,
+        'access'        => $access,
         'description'   => $description,
         'usage'         => $usage,
         'pattern'       => $pattern,
