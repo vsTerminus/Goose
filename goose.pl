@@ -31,6 +31,7 @@ my $bot = Bot::Goose->new(
     'db'        => $config->{'db'},
 #    'youtube'   => $config->{'youtube'},
     'weather'   => $config->{'weather'},
+    'maps'      => $config->{'maps'},
 );
 
 # Register the commands

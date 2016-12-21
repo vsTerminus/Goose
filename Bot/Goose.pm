@@ -8,7 +8,8 @@ use Data::Dumper;
 use Net::Discord;
 use Component::Database;
 #use Component::YouTube;
-use Component::OpenWeather;
+use Component::DarkSky;
+use Component::Maps;
 use Mojo::IOLoop;
 
 use Exporter qw(import);
@@ -51,11 +52,14 @@ sub new
     # Database
     $self->{'db'} = Component::Database->new(%{$params{'db'}});
 
-    # YouTube
+    # YouTube API 
     $self->{'youtube'} = Component::YouTube->new( $params{'youtube'}->{'api_key'} ) if ( $params{'youtube'}->{'use_youtube'} );
 
-    # OpenWeather
-    $self->{'openweather'} = Component::OpenWeather->new(%{$params{'weather'}})  if ( $params{'weather'}->{'use_weather'} );
+    # DarkSky Weather API
+    $self->{'darksky'} = Component::DarkSky->new(%{$params{'weather'}})  if ( $params{'weather'}->{'use_weather'} );
+
+    # Google Maps API
+    $self->{'maps'} = Component::Maps->new(%{$params{'maps'}}) if ( $params{'maps'}->{'use_maps'} );
 
     return $self;
 }
@@ -373,10 +377,16 @@ sub youtube
     return $self->{'youtube'};
 }
 
-sub openweather
+sub darksky
 {
     my $self = shift;
-    return $self->{'openweather'};
+    return $self->{'darksky'};
+}
+
+sub maps
+{
+    my $self = shift;
+    return $self->{'maps'};
 }
 
 1;

@@ -18,7 +18,7 @@ my $description = "Set the bot's 'Playing' status";
 my $pattern = '^(play) ?(.*)$';
 my $function = \&cmd_play;
 my $usage = <<EOF;
-Set a status: `!play with yourself`
+Set a status: `!play with myself`
 Clear the current status: `!play`
 EOF
 ###########################################################################################

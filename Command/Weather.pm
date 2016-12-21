@@ -10,6 +10,7 @@ our @EXPORT_OK = qw(cmd_weather);
 use Net::Discord;
 use Bot::Goose;
 use Component::OpenWeather;
+use Component::Maps;
 use Component::Database;
 use Data::Dumper;
 
@@ -17,12 +18,14 @@ use Data::Dumper;
 # Command Info
 my $command = "Weather";
 my $access = 0; # Public
-my $description = "Look up the weather by City Name, US Zip Code, or Canadian Postal Code.";
+my $description = "Current Weather Conditions. Powered by Google Maps and Dark Sky API.";
 my $pattern = '^(we?(ather)?) ?([^\s].*)?$';
 my $function = \&cmd_weather;
 my $usage = <<EOF;
 
-Basic Usage: `!weather <City Name, US Zip Code, or Canadian Postal Code>`
+Basic Usage: `!weather <Address>`
+    The command accepts City Names, ZIP Codes, Postal Codes, and even Street Addresses.
+
     eg. `!weather Dildo, NL`
     eg. `!weather 80085`
     eg. `!weather V4G 1N4`
@@ -46,7 +49,25 @@ sub new
     $self->{'bot'} = $params{'bot'};
     $self->{'discord'} = $self->{'bot'}->discord;
     $self->{'db'} = $self->{'bot'}->db;
+    $self->{'maps'} = $self->{'bot'}->maps;
     $self->{'pattern'} = $pattern;
+
+    # DarkSky Icon to Discord Emoji mappings
+    $self->{'icons'} = {
+        'clear-day'             => ':sun_with_face:',
+        'clear-night'           => ':full_moon_with_face:',
+        'rain'                  => ':cloud_rain:',
+        'snow'                  => ':cloud_snow:',
+        'sleet'                 => ':cloud_snow:',
+        'wind'                  => ':dash:',
+        'fog'                   => ':cloud:',
+        'cloudy'                => ':cloud:',
+        'partly-cloudy-day'     => ':partly_sunny:',
+        'partly-cloudy-night'   => ':white_sun_cloud:',
+        'tornado'               => ':cloud_tornado:',
+        'thunderstorm'          => ':thunder_cloud_rain:',
+        'hail'                  => ':cloud_snow:',
+    };
 
     # Register our command with the bot
     $self->{'bot'}->add_command(
@@ -62,39 +83,39 @@ sub new
     return $self;
 }
 
+# There are two parts to this command:
+#
+# 1. Geocode the address the user requests with Google Maps
+# 2. Pass the coordinates from GMaps to Dark Sky for the weather
+#
+# Also, the location can be cached for the duration of runtime,
+# while the weather should be cached for 1 hour.
+# This cuts down on unnecessary API calls, as I have a limit on both.
 sub cmd_weather
 {
     my ($self, $channel, $author, $msg) = @_;
 
     my $args = $msg;
     my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$3/i;
+    defined $3 ? $args =~ s/$pattern/$3/i : undef $args;
 
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
 
-    my $ow = $self->{'openweather'};
+    # Start "Typing"
+    $discord->start_typing($channel);
+
+#    my $ds = $self->{'darksky'};
 
 
-    # Handle empty args
-    if (length $args < 2 )
+    # Handle empty args - Check to see if they have a saved location.
+    if (!defined $args or length $args == 0 )
     {
-        # Now, do we have a database entry for this user?
-        my $db = $self->{'db'};
-       
-        my $sql = "SELECT location FROM weather WHERE discord_id = ?";
-        my $query = $db->query($sql, $author->{'id'});
-   
-        # Yes, we have them.
-        if ( my $row = $query->fetchrow_hashref )
+        $args = $self->get_stored_location($author);
+
+        if ( !defined $args )
         {
-            $args = $row->{'location'};
-            say localtime(time) . ": Found stored location for " . $author->{'username'} . ": " . $args;
-        }
-        else
-        {
-            # Else, error.
-            $discord->send_message($channel, $author->{'username'} . ": You must specify a location (City Name / US Zip Code / Canadian Postal Code)");
+            $discord->send_message($channel, $author->{'username'} . ": You must specify a location (eg, City, ZIP, Street Address, etc)");
             return;
         }
     }
@@ -108,46 +129,154 @@ sub cmd_weather
         $args = $location;
     }
 
+    # Now we have their desired location and can look it up.
+    my $coords = $self->get_stored_coords($args);
 
-    $self->{'bot'}->openweather->weather($args, 
-    sub {
+    # If we have the coordinates cached already, just use those.
+    if ( defined $coords and exists $coords->{'lat'} and exists $coords->{'lon'} )
+    {
+        $self->weather_by_coords($channel, $author, $coords->{'lat'}, $coords->{'lon'}, $coords->{'address'});
+    }
+    # If not, we'll have to geocode the query location.
+    else
+    {
+        say localtime(time) . " Could not find cached coords for '$args'. Geocoding...";
+        $self->{'bot'}->maps->geocode($args, sub
+        {
+            my $json = shift;
+        
+            my $lat = $json->{'geometry'}{'location'}{'lat'};
+            my $lon = $json->{'geometry'}{'location'}{'lng'};
+            my $formatted_address = $json->{'formatted_address'};
+       
+            die("Could not retrieve coords from Component::Maps->geocode") unless defined $lat and defined $lon;
+    
+            say localtime(time) . " Geocoding Results: $formatted_address ($lat,$lon)";
+    
+            # Store these coords.
+            $self->add_coords($args, $lat, $lon, $formatted_address);
+    
+            # Now look up the weather.
+            $self->weather_by_coords($channel, $author, $lat, $lon, $formatted_address);
+        });
+    }
+}
+
+sub weather_by_coords
+{
+    my ($self, $channel, $author, $lat, $lon, $address) = @_;
+
+    # Take the coords and lookup the weather.
+    $self->{'bot'}->darksky->weather($lat, $lon, sub
+    {
         my $json = shift;
 
-        say Dumper($json);
+        my $formatted_weather = format_weather($json);
 
-        say "Searching for: $args";
+        my $icons= $self->{'icons'};
+        my $icon = '';
+        $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
 
-        if ( $json->{'cod'} == 502 )
-        {
-            $discord->send_message($channel, $author->{'username'} . ": Sorry, I can't find `$args`");
-            return;
-        }
-
-        my $city = $json->{'name'};
-        my $ccode = $json->{'sys'}{'country'};
-        my $temp = $json->{'main'}{'temp'};
-        my $temp_f = ctof($temp);
-        #my $temp_min = $json->{'main'}{'temp_min'};
-        #my $temp_min_f = ctof($temp_min);
-        #my $temp_max = $json->{'main'}{'temp_max'};
-        #my $temp_max_f = ctof($temp_max);
-        my $weather = weather_types($json->{'weather'});
-        my $wind_speed = $json->{'wind'}{'speed'};
-        my $wind_speed_mph = mph($wind_speed);
-        my $wind_deg = $json->{'wind'}{'deg'};
-        my $wind_dir = wind_direction($wind_deg);
-
-        my $wstr = $author->{'username'} . ": `Weather for $city, $ccode: ${temp}C/${temp_f}F, $weather. Winds ${wind_speed}kph/${wind_speed_mph}mph $wind_dir`";
-
-
-        $discord->send_message($channel, $wstr);
+        $self->{'discord'}->send_message($channel, $author->{'username'} . ": `Weather for $address: $formatted_weather` $icon");
     });
 }
+
+sub format_weather
+{
+    my $json = shift;
+
+    my $temp_f = $json->{'temperature'};
+    my $temp_c = ftoc($temp_f);
+    my $feel_f = $json->{'apparentTemperature'};
+    my $feel_c = ftoc($feel_f);
+    my $cond = $json->{'summary'};
+    my $wind_mi = $json->{'windSpeed'};
+    my $wind_km = kph($wind_mi);
+    my $wind_dir = wind_direction($json->{'windBearing'});
+    my $humidity = int($json->{'humidity'} * 100);
+           
+    my $msg = "${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C (Feels Like: ${feel_f}\N{DEGREE SIGN}F/${feel_c}\N{DEGREE SIGN}C), $cond, ${humidity}% Humidity, Winds $wind_dir ${wind_mi}mph/${wind_km}kph.";
+
+    return $msg;
+}
+
+sub get_stored_location
+{
+    my ($self, $author) = @_;
+
+    # 1 - Check Cache    
+    if ( exists $self->{'cache'}{'userlocation'}{$author->{'id'}} )
+    {
+        say localtime(time) . " Found cached location for " . $author->{'username'} . ": " . $self->{'cache'}{'userlocation'}{$author->{'id'}};
+        return $self->{'cache'}{'userlocation'}{$author->{'id'}};
+    }
+    # 2 - Check Database
+    else
+    {
+        my $db = $self->{'db'};
+   
+        my $sql = "SELECT location FROM weather WHERE discord_id = ?";
+        my $query = $db->query($sql, $author->{'id'});
+
+        # Yes, we have them.
+        if ( my $row = $query->fetchrow_hashref )
+        {
+            $self->{'cache'}{'userlocation'}{$author->{'id'}} = $row->{'location'};  # Cache this so we don't need to hit the DB all the time.
+            say localtime(time) . " Found stored DB location for " . $author->{'username'} . ": " . $row->{'location'};
+            return $row->{'location'};
+        }
+    }
+    # 3 - We don't have a stored location for this user.
+    return undef;
+}
+
+sub get_stored_coords
+{
+    my ($self, $location) = @_;
+
+    die ("get_stored_coords was not given a location to look up") unless defined $location;
+
+    # 1 - Check Cache
+    if ( exists $self->{'cache'}{'coords'}{lc $location} )
+    {
+        say localtime(time) . " Found cached coordinates for location '$location': " . $self->{'cache'}{'coords'}{lc $location}{'address'};
+        return $self->{'cache'}{'coords'}{lc $location};
+    }
+    # 2 - Check DB
+    else
+    {
+        my $db = $self->{'db'};
+
+        my $sql = "SELECT lat,lon,address FROM coords WHERE location = ?";
+        my $query = $db->query($sql, lc $location);
+
+        # Yes - We have coords
+        if ( my $row = $query->fetchrow_hashref )
+        {
+            $self->{'cache'}{'coords'}{lc $location}{'lat'} = $row->{'lat'};
+            $self->{'cache'}{'coords'}{lc $location}{'lon'} = $row->{'lon'};
+            $self->{'cache'}{'coords'}{lc $location}{'address'} = $row->{'address'};
+
+            say localtime(time) . " Found stored DB coordinates for location '$location': " . $row->{'lat'} . ',' . $row->{'lon'} . " - " . $row->{'address'};
+            return $row;
+        }
+    }
+
+    # 3 - We don't have a stored set of coords for this location yet.
+    return undef
+}
+
 
 sub ctof
 {
     my $c = shift;
     return sprintf("%0.1f", ($c * (9/5) + 32));
+}
+
+sub ftoc
+{
+    my $f = shift;
+    return sprintf("%0.1f", ($f - 32) / (1.8));
 }
 
 sub mph
@@ -156,11 +285,17 @@ sub mph
     return sprintf("%0.1f", ($kph / 1.609344));
 }
 
+sub kph
+{
+    my $mph = shift;
+    return sprintf("%0.1f", ($mph * 1.609344));
+}
+
 sub wind_direction
 {
     my $deg = shift;
 
-    my @dirs = qw[N NNE NE ENE E ESE SE SSE S SSW SW WSW W WNW NW NNW];
+    my @dirs = qw[North North-Northeast Northeast East-Northeast East East-Southeast Southeast South-Southeast South South-Southwest Southwest West-Southwest West West-Northwest Northwest North-Northwest];
 
     my $val = int(($deg/22.5)+.5);
     return $dirs[$val%16];
@@ -198,8 +333,26 @@ sub add_user
     
     my $sql = "INSERT INTO weather VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE discord_name = ?, location = ?";
     $db->query($sql, $discord_id, $discord_name, $location, $discord_name, $location);
+
+    # Also cache this in memory for faster lookups
+    $self->{'cache'}{'userlocation'}{$discord_id} = $location;
 }
 
+sub add_coords
+{
+    my ($self, $location, $lat, $lon, $address) = @_;
 
+    say localtime(time) . " Command::Weather is adding new coordinates: $location -> $lat,$lon ($address)";
+
+    my $db = $self->{'db'};
+
+    my $sql = "INSERT INTO coords VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE lat = ?, lon = ?, address = ?";
+    $db->query($sql, lc $location, $lat, $lon, $address, $lat, $lon, $address);
+
+    # Also cache for in-memory lookups.
+    $self->{'cache'}{'coords'}{lc $location}{'lat'} = $lat;
+    $self->{'cache'}{'coords'}{lc $location}{'lon'} = $lon;
+    $self->{'cache'}{'coords'}{lc $location}{'address'} = $address;
+}
 
 1;

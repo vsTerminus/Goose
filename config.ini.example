@@ -165,10 +165,16 @@ api_key = xxx
 use_youtube = 1 
 api_key = xxx
 
-# This section is for Weather info provided by OpenWeatherMap.
+# This section is for Weather info provided by DarkSky API
 [weather]
-# If you want to use the weather component you will need an API Key from OpenWeatherMap.org
+# If you want to use the weather component you will need an API Key from DarkSky.net
 # It is free.
 # If not, set use_weather to 0
-use_weather = 0
+use_weather = 1
+api_key = xxx
+
+# This section is for the Google Maps component.
+# If you want to use Weather (Dark Sky) you need a Google Maps API Key from https://console.developers.google.com/apis
+[maps]
+use_maps = 1
 api_key = xxx
