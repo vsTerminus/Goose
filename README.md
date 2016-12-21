@@ -37,6 +37,28 @@ In addition, you'll need a database set up for some of the functions (Weather, c
 I use MySQL and have not tested it with anything else, although in theory it should work with anything supported by Perl DBI.
 Also, I have not included any sort of DB table schemas for this. If you are actually going to try to set this up, maybe open an issue or something and request the table layouts, otherwise you'll have to go through the code and figure out what you need to build.
 
+# Layout
+
+- **goose.pl**
+    - This is the main script that you run to start the bot.
+    - Any commands the bot needs should be initialized here, as well as the Bot object itself.
+    - All this file does is initialize commands and then start the bot.
+- **Bot/Goose.pm**
+    - This is the main bot object.
+    - All of the discord events are handled here.
+    - All of the commands register themselves with this object, and it handles passing arguments to the various Command modules.
+    - On its own, this module does very little. It mostly just waits for things to happen and then delegates work out to the Commands.
+- **Command/\*.pm**
+    - Each module here defines a single command usable in Discord.
+    - The commands have direct access to things like the Discord connection object so they can send messages directly.
+    - Basically, once the Bot module hands something off to a Command module, it forgets all about it and goes on with life. It's up to the Command module to send a response back to the user.
+- **Component/\*.pm**
+    - These are API wrapper modules for the Commands to use.
+    - I could turn these into separate projects on their own like I did for Net::Async::LastFM, but I won't do that unless I have some other project that wants to use them. 
+    - Basically, if you want to connect to a new API you'd create a new Component module that handles the API calls, and then write a Command that uses the Component module to get what it needs.
+
+That's about it. Maybe not the best, but it works.
+
 # Troubleshooting
 
 While you'll see in most of the sections that various components are optional, I have not done much testing with anything disabled and there is very little error handling (as this is a side project in my very limited free time), so if you decide you don't want to use certain commands/modules, be prepared for things to probably not totally work.
