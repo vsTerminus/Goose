@@ -149,7 +149,14 @@ sub cmd_weather
             my $lon = $json->{'geometry'}{'location'}{'lng'};
             my $formatted_address = $json->{'formatted_address'};
        
-            die("Could not retrieve coords from Component::Maps->geocode") unless defined $lat and defined $lon;
+            #die("Could not retrieve coords from Component::Maps->geocode") unless defined $lat and defined $lon;
+
+            unless ( defined $lat and defined $lon and defined $formatted_address )
+            {
+                $discord->send_message($channel, $author->{'username'} . ": Sorry, I can't find `" . $args . "`");
+                say localtime(time) . " Could not geocode '$args'";
+                return undef;
+            }
     
             say localtime(time) . " Geocoding Results: $formatted_address ($lat,$lon)";
     
