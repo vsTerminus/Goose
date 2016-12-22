@@ -184,7 +184,7 @@ sub weather_by_coords
         my $icon = '';
         $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
 
-        $self->{'discord'}->send_message($channel, $author->{'username'} . ": `Weather for $address: $formatted_weather` $icon");
+        $self->{'discord'}->send_message($channel, "**Weather for $address** $icon\n$formatted_weather");
     });
 }
 
@@ -202,7 +202,11 @@ sub format_weather
     my $wind_dir = wind_direction($json->{'windBearing'});
     my $humidity = int($json->{'humidity'} * 100);
            
-    my $msg = "${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C (Feels Like: ${feel_f}\N{DEGREE SIGN}F/${feel_c}\N{DEGREE SIGN}C), $cond, ${humidity}% Humidity, Winds $wind_dir ${wind_mi}mph/${wind_km}kph.";
+    my $msg = "```perl\n" .
+        "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
+        "Feels Like  | ${feel_f}\N{DEGREE SIGN}F/${feel_c}\N{DEGREE SIGN}C\n" .
+        "Conditions  | $cond, ${humidity}% Humidity\n" .
+        "Winds       | $wind_dir ${wind_mi}mph/${wind_km}kph```";
 
     return $msg;
 }
