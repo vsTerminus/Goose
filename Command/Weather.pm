@@ -349,19 +349,42 @@ sub weather_by_coords
 {
     my ($self, $channel, $author, $lat, $lon, $address) = @_;
 
-    # Take the coords and lookup the weather.
-    $self->{'bot'}->darksky->weather($lat, $lon, sub
+    my $json;
+
+    # First check to see if we have cached weather.
+    if ( exists $self->{'cache'}{'weather'}{"$lat,$lon"} and time < $self->{'cache'}{'weather'}{"$lat,$lon"}{'expires'} )
     {
-        my $json = shift;
+        $json = $self->{'cache'}{'weather'}{"$lat,$lon"}{'json'};
 
         my $formatted_weather = $self->format_weather($json);
-
+    
         my $icons= $self->{'icons'};
         my $icon = '';
         $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
-        
+           
         $self->{'discord'}->send_message($channel, "**Weather for $address** $icon\n$formatted_weather\n");
-    });
+    }
+    # If we don't have cached weather (or it is expired), ask DarkSky for it.
+    else
+    {
+        # Take the coords and lookup the weather.
+        $self->{'bot'}->darksky->weather($lat, $lon, sub
+        {
+            $json = shift;
+
+            # Cache the results;
+            $self->{'cache'}{'weather'}{"$lat,$lon"}{'json'} = $json;
+            $self->{'cache'}{'weather'}{"$lat,$lon"}{'expires'} = time + 3600; # Good for one hour.
+    
+            my $formatted_weather = $self->format_weather($json);
+    
+            my $icons= $self->{'icons'};
+            my $icon = '';
+            $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
+            
+            $self->{'discord'}->send_message($channel, "**Weather for $address** $icon\n$formatted_weather\n");
+        });
+    }
 }
 
 sub format_weather

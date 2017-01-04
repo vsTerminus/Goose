@@ -133,10 +133,6 @@ sub discord_on_message_create
                     my $access = $command->{'access'};
                     my $owner = $self->owner;
 
-                    say "User ID: " . $author->{'id'};
-                    say "Owner ID: $owner";
-                    say "Command Access: $access";
-
                     if ( defined $access and $access > 0 and defined $owner and $owner != $author->{'id'} )
                     {
                         # Sorry, no access to this command.
