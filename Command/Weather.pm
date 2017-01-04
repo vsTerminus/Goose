@@ -69,6 +69,182 @@ sub new
         'hail'                  => ':cloud_snow:',
     };
 
+    $self->{'comment'} = {
+        'frozen' => [
+            'WHAT THE FUCK?!?!?!',
+            'ARE YOU OK?',
+            'HOW ARE YOU EVEN ALIVE?',
+            'DO PEOPLE LIVE HERE??',
+            'LET IT GO, LET IT GO, THE COLD NEVER BOTHERED ME ANYWAY',
+            'JESUS TITTYFUCKING CHRIST',
+            'DO YOU REQUIRE ASSISTANCE?',
+            'STAY IN YOUR IGLOO!',
+            'YUP. FLUFFY\'S FROZEN.',
+            'MOM, THE CAT IS FROZEN!',
+            'THE POOL IS FROZEN.',
+            'MAXIMUM SHRINKAGE!',
+            'FUCK THIS I\'M OUT.',
+            'JUST MOVE ALREADY!',
+            "I HAVEN'T SEEN THE SUN FOR MONTHS."
+        ],
+        'minus40' => [
+            "IN \N{DEGREE SIGN}C OR \N{DEGREE SIGN}F??? YES.",
+            "IT'S TOO COLD FOR JOKES ABOUT -40 BEING THE SAME IN \N{DEGREE SIGN}C AND \N{DEGREE SIGN}F!",
+            "HAHAHA. IT'S THE SAME TEMPERATURE IN \N{DEGREE SIGN}C AND \N{DEGREE SIGN}F! ISN'T THAT FUNNY?"
+        ],
+        'freezing' => [
+            "I HOPE YOU PLUGGED YOUR CAR IN.",
+            "ARE YOU AN ESKIMO?",
+            "MAJOR SHRINKAGE!",
+            "WHY DO YOU LIVE HERE?",
+            "THIS IS A JOKE, RIGHT?",
+            "MY LIPS ARE NUMB.",
+            "I CAN'T FEEL MY TOES.",
+            "I CAN'T FEEL MY FINGERS.",
+            "MY EYELIDS ARE FROZEN SHUT.",
+            "I CAN'T FEEL MY FACE.",
+            "SO THIS IS WHAT FROSTBITE FEELS LIKE.",
+            "WHY DOES ANYONE LIVE HERE?",
+            "THIS FUCKING SUCKS."
+        ],
+        'cold' => [
+            "SHRINKAGE!",
+            "GO FOR A SWIM. I DARE YOU.",
+            "SNOWMOBILE WEATHER!",
+            "SKI TRIP!",
+            "DO YOU LIVE HERE ON PURPOSE?",
+            "THIS SUCKS.",
+            "PERFECT WEATHER TO STAY INSIDE.",
+            "DO YOU EVEN KNOW WHAT A TOQUE IS?",
+            "ARE YOU WEARING YOUR TOQUE?"
+        ],
+        'cool' => [
+            "T-SHIRT OR JACKET WEATHER? I CAN'T TELL.",
+            "IT'S DECEPTIVELY WARM OUT. OR DECEPTIVELY COLD. I CAN'T TELL.",
+            "IS IT WARM OR COLD OUT?",
+            "HOT OR COLD. MAKE UP YOUR GODDAMN MIND!",
+            "I HAVE NO IDEA HOW TO DRESS TODAY.",
+            "THIS KINDA SUCKS.",
+        ],
+        'alright' => [
+            "I CAN DEAL WITH THIS, I SUPPOSE.",
+            "I MEAN, IT COULD BE WORSE.",
+            "IT COULD BE BETTER, I GUESS.",
+        ],
+        'nice' => [
+            "GO OUTSIDE!",
+            "WHY ARE YOU STILL INSIDE?",
+            "GET OFF THE COMPUTER AND GO OUTSIDE!",
+            "GET OFF YOUR ASS AND GO OUTSIDE.",
+            "WHY CAN'T IT BE LIKE THIS ALL YEAR?",
+        ],
+        'warm' => [
+            "THAT'S MORE LIKE IT!",
+            "SUN'S OUT GUNS OUT!",
+            "BEACH DAY, BRO!",
+            "BIKINI TANS!",
+            "POOOOOOL!",
+            "TIME TO WORK ON MY TAN.",
+            "PASS THE SUNSCREEN.",
+            "I NEED ONE HUNDRED BEERS. EXACTLY ONE HUNDRED. THANKS.",
+        ],
+        'hot' => [
+            "THIS SUCKS.",
+            "PERFECT WEATHER TO STAY INSIDE.",
+            "HOPE YOU'VE GOT AIR CONDITIONING!",
+            "PERFECT WEATHER TO DO NOTHING.",
+            "STOP, I CAN ONLY TAKE SO MUCH OFF!",
+            "I MISS WINTER.",
+            "WHY DO YOU LIVE HERE?",
+            "DO YOU LIVE HERE ON PURPOSE?",
+            "POOOOL!",
+            "FUCK SUNBURNS!",
+            "MAKE IT STOP!",
+        ],
+        'boiling' => [
+            "WHAT THE FUCK?!?!?!",
+            "HOW DO PEOPLE LIVE HERE?",
+            "I'M MELTING!",
+            "MOM, FLUFFY MELTED.",
+            "YUP, THE CAT MELTED.",
+            "STAY INSIDE UNLESS YOU WANT TO DIE.",
+            "YOU DON'T DRIVE A BLACK CAR, DO YOU?",
+            "THE CAR IS MELTED TO THE DRIVEWAY!",
+            "I'M CONSIDERING SLEEPING IN THE FRIDGE.",
+            "ARE YOU OKAY???",
+            "HOW ARE YOU STILL ALIVE?",
+            "DO YOU REQUIRE ASSISTANCE?",
+            "SHOULD I CALL 911?",
+            "FUCK THIS.",
+            "THIS FUCKING SUCKS."
+        ],
+        'sixtynine'  => [
+            "OH LA LA",
+            "PUT THE YOU KNOW WHAT, IN THE YOU KNOW WHERE",
+            "VULCANIZE THE WHOOPEE STICK, IN THE HAM WALLET",
+            "CATTLE PROD THE OYSTER DITCH, WITH THE LAP ROCKET",
+            "BATTER DIP THE CRANNY AXE, IN THE GUT LOCKER",
+            "RETROFIT THE PUDDING HATCH, WITH THE BOINK SWATTER",
+            "MARINATE THE NETHER ROD, IN THE SQUISH MITTEN",
+            "POWER DRILL THE YIPPEE BOG, WITH THE DUDE PISTON",
+            "PRESSURE WASH THE QUIVER BONE, IN THE BITCH WRINKLE",
+            "CANNONBALL THE FIDDLE COVE, WITH THE PORK STEEPLE",
+        ]
+    };
+
+    $self->{'itsfucking'} = {
+        'frozen' => [
+            "FROZEN!", 
+            "RETARDED COLD!",
+            "WHAT THE FUCK?!",
+            "FRIGID!",
+            "COLDER THAN MARS!",
+            "INSANELY COLD!"
+        ],
+        'minus40' => [
+            "MINUS 40!",
+        ],
+        'freezing' => [
+            "FREEZING!",
+        ],
+        'cold' => [
+            "COLD!"
+        ],
+        'cool' => [
+            "COOL!",
+        ],
+        'alright' => [
+            'ALRIGHT.',
+            'OKAY, I GUESS.',
+            'NOT BAD.',
+            'OKAY.'
+        ],
+        'nice' => [
+            'NICE'
+        ],
+        'warm' => [
+            'WARM!'
+        ],
+        'hot' => [
+            'HOT!'
+        ],
+        'boiling' => [
+            'BOILING!',
+            'TOO HOT!',
+            'WAY TOO HOT!',
+            'CRAZY HOT!',
+            'SCORCHING!',
+            'HOTTER THAN VENUS!',
+            'HOTTER THAN MERCURY!',
+            'DEADLY HOT!',
+            'WHAT THE FUCK?!'
+        ],
+        'sixtynine' => [
+            'SEXYTIME!'
+        ],
+    };
+
+
     # Register our command with the bot
     $self->{'bot'}->add_command(
         'command'       => $command,
@@ -178,19 +354,19 @@ sub weather_by_coords
     {
         my $json = shift;
 
-        my $formatted_weather = format_weather($json);
+        my $formatted_weather = $self->format_weather($json);
 
         my $icons= $self->{'icons'};
         my $icon = '';
         $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
-
-        $self->{'discord'}->send_message($channel, "**Weather for $address** $icon\n$formatted_weather");
+        
+        $self->{'discord'}->send_message($channel, "**Weather for $address** $icon\n$formatted_weather\n");
     });
 }
 
 sub format_weather
 {
-    my $json = shift;
+    my ($self, $json) = @_;
 
     my $temp_f = $json->{'temperature'};
     my $temp_c = ftoc($temp_f);
@@ -201,12 +377,15 @@ sub format_weather
     my $wind_km = kph($wind_mi);
     my $wind_dir = wind_direction($json->{'windBearing'});
     my $humidity = int($json->{'humidity'} * 100);
-           
+        
+    my $fuckingweather = $self->itsfucking($feel_c, $cond);
+
     my $msg = "```perl\n" .
         "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
         "Feels Like  | ${feel_f}\N{DEGREE SIGN}F/${feel_c}\N{DEGREE SIGN}C\n" .
         "Conditions  | $cond, ${humidity}% Humidity\n" .
-        "Winds       | $wind_dir ${wind_mi}mph/${wind_km}kph```";
+        "Winds       | $wind_dir ${wind_mi}mph/${wind_km}kph```\n" .
+        "$fuckingweather";
 
     return $msg;
 }
@@ -364,6 +543,81 @@ sub add_coords
     $self->{'cache'}{'coords'}{lc $location}{'lat'} = $lat;
     $self->{'cache'}{'coords'}{lc $location}{'lon'} = $lon;
     $self->{'cache'}{'coords'}{lc $location}{'address'} = $address;
+}
+
+# Returns a comment based on the temperature and conditions
+# Takes temp in C
+sub itsfucking
+{
+    my ($self, $temp, $cond) = @_;
+
+    my $ret = "IT'S FUCKING ";
+
+    my @arr;
+    my @com;
+
+    if ( $temp < -40 ) # below -40
+    {
+        @arr = @{$self->{'itsfucking'}{'frozen'}};
+        @com = @{$self->{'comment'}{'frozen'}};
+    }
+    elsif ( $temp == -40 ) # -40
+    {
+        @arr = @{$self->{'itsfucking'}{'minus40'}};
+        @com = @{$self->{'comment'}{'minus40'}};
+    }
+    elsif ( $temp < -25 ) # -39 to -24
+    {
+        @arr = @{$self->{'itsfucking'}{'freezing'}};
+        @com = @{$self->{'comment'}{'freezing'}};
+    }
+    elsif ( $temp < -5 ) # -25 to -5
+    {
+        @arr = @{$self->{'itsfucking'}{'cold'}};
+        @com = @{$self->{'comment'}{'cold'}};
+    }
+    elsif ( $temp < 10 ) # -5 to +9
+    {
+        @arr = @{$self->{'itsfucking'}{'alright'}};
+        @com = @{$self->{'comment'}{'alright'}};
+    }
+    elsif ( $temp < 23 ) # 10 to 22
+    {
+        @arr = @{$self->{'itsfucking'}{'nice'}};
+        @com = @{$self->{'comment'}{'nice'}};
+    }
+    elsif ( $temp < 30 ) # 23 - 29
+    {
+        @arr = @{$self->{'itsfucking'}{'warm'}};
+        @com = @{$self->{'comment'}{'warm'}};
+    }
+    elsif ( $temp < 35 ) # 30-34
+    {
+        @arr = @{$self->{'itsfucking'}{'hot'}};
+        @com = @{$self->{'comment'}{'hot'}};
+    }
+    elsif ( $temp >= 35 ) # 35+
+    {
+        @arr = @{$self->{'itsfucking'}{'boiling'}};
+        @com = @{$self->{'comment'}{'boiling'}};
+    }
+
+    if ( int(ctof($temp)+.5) == 69 )
+    {
+        @arr = @{$self->{'itsfucking'}{'sixtynine'}};
+        @com = @{$self->{'comment'}{'sixtynine'}};
+    }
+
+    my $size = scalar @arr;
+
+    my $num = int(rand($size));
+    $ret .= "**" . $arr[$num] . "**";
+
+    $size = scalar @com;
+    $num = int(rand($size));
+    $ret .= " (*" . $com[$num] . "*)";
+
+    return $ret;
 }
 
 1;
