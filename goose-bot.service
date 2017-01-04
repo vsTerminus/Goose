@@ -1,0 +1,15 @@
+[Unit]
+Description=GooseBot
+After=network.target
+[Service]
+WorkingDirectory=/path/to/Goose
+User=yourname
+Group=users
+Type=simple
+ExecStart=/usr/local/bin/perl /path/to/Goose/goose.pl /path/to/Goose/config.ini
+RestartSec=15
+Restart=always
+Environment="PERL5LIB=/home/yourname/perl5/lib/perl5"
+Environment="PERL_LOCAL_LIB_ROOT=/home/yourname/perl5"
+[Install]
+WantedBy=multi-user.target
