@@ -584,7 +584,7 @@ sub itsfucking
         @arr = @{$self->{'itsfucking'}{'frozen'}};
         @com = @{$self->{'comment'}{'frozen'}};
     }
-    elsif ( int($temp) == -40 ) # -40
+    elsif ( int($temp) == -40 || int(ctof($temp)) == -40 ) # -40
     {
         @arr = @{$self->{'itsfucking'}{'minus40'}};
         @com = @{$self->{'comment'}{'minus40'}};
