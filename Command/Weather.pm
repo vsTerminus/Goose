@@ -579,7 +579,7 @@ sub itsfucking
     my @arr;
     my @com;
 
-    if ( $temp < -40 ) # below -40
+    if ( $temp <= -41 ) # below -40
     {
         @arr = @{$self->{'itsfucking'}{'frozen'}};
         @com = @{$self->{'comment'}{'frozen'}};
