@@ -7,7 +7,7 @@ use warnings;
 use Data::Dumper;
 use Net::Discord;
 use Component::Database;
-#use Component::YouTube;
+use Component::YouTube;
 use Component::DarkSky;
 use Component::Maps;
 use Mojo::IOLoop;
@@ -53,7 +53,7 @@ sub new
     $self->{'db'} = Component::Database->new(%{$params{'db'}});
 
     # YouTube API 
-    $self->{'youtube'} = Component::YouTube->new( $params{'youtube'}->{'api_key'} ) if ( $params{'youtube'}->{'use_youtube'} );
+    $self->{'youtube'} = Component::YouTube->new(%{$params{'youtube'}}) if ( $params{'youtube'}->{'use_youtube'} );
 
     # DarkSky Weather API
     $self->{'darksky'} = Component::DarkSky->new(%{$params{'weather'}})  if ( $params{'weather'}->{'use_weather'} );

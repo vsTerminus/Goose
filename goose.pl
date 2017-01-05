@@ -17,6 +17,7 @@ use Command::Weather;
 use Command::Leave;
 use Command::Play;
 use Command::Info;
+use Command::YouTube;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -30,7 +31,7 @@ my $self = {};  # For miscellaneous information about this bot such as discord i
 my $bot = Bot::Goose->new(
     'discord'   => $config->{'discord'},
     'db'        => $config->{'db'},
-#    'youtube'   => $config->{'youtube'},
+    'youtube'   => $config->{'youtube'},
     'weather'   => $config->{'weather'},
     'maps'      => $config->{'maps'},
 );
@@ -43,11 +44,6 @@ if ( $config->{'lastfm'}{'use_np'} )
         'bot'       => $bot,
         'api_key'   => $config->{'lastfm'}->{'api_key'}
     );
-}
-
-if ( $config->{'comic'}{'use_comic'} )
-{
-    Command::Comic->new('bot' => $bot);
 }
 
 if ( $config->{'weather'}{'use_weather'} )
@@ -64,6 +60,8 @@ Command::Pick->new      ('bot' => $bot);
 Command::Leave->new     ('bot' => $bot);
 Command::Play->new      ('bot' => $bot);
 Command::Info->new      ('bot' => $bot);
+Command::YouTube->new   ('bot' => $bot) if ( $config->{'youtube'}{'use_youtube'} );
+Command::Comic->new     ('bot' => $bot) if ( $config->{'comic'}{'use_comic'} );
 
 # Start the bot
 $bot->start();
