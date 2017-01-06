@@ -403,7 +403,7 @@ sub format_weather
         
     my $fuckingweather = $self->itsfucking($feel_c, $cond);
 
-    my $msg = "```perl\n" .
+    my $msg = "```c\n" .
         "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
         "Feels Like  | ${feel_f}\N{DEGREE SIGN}F/${feel_c}\N{DEGREE SIGN}C\n" .
         "Conditions  | $cond, ${humidity}% Humidity\n" .

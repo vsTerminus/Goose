@@ -171,9 +171,14 @@ sub nowplaying_by_username
     my ($self, $channel, $author, $username) = @_;
     my $discord = $self->{'discord'};
     my $lastfm = $self->{'lastfm'};
-    $lastfm->nowplaying($username, "`artist - title (From album)`", sub {  
-        $discord->send_message( $channel, $author->{'username'} . ": " . shift );
-    });
+    $lastfm->nowplaying($username,  
+        "```less\n".
+        "%artist% - %title% (From %album%)".
+        "```",
+        sub {  
+            $discord->send_message( $channel, "**Now Playing for " . $author->{'username'} . "** (https://last.fm/user/" . $username . ")\n" . shift );
+        }
+    );
 }
 
 1;
