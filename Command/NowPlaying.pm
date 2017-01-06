@@ -176,7 +176,7 @@ sub nowplaying_by_username
         "%artist% - %title% (From %album%)".
         "```",
         sub {  
-            $discord->send_message( $channel, "**Now Playing for " . $author->{'username'} . "** (https://last.fm/user/" . $username . ")\n" . shift );
+            $discord->send_message( $channel, "**Now Playing for " . $author->{'username'} . "** (http://last.fm/user/" . $username . ")\n" . shift );
         }
     );
 }
