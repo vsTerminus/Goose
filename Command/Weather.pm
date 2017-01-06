@@ -295,7 +295,7 @@ sub cmd_weather
             return;
         }
     }
-    elsif ( $args =~ /^set ([^s].*)$/i )
+    elsif ( $args =~ /^set ([^\s].*)$/i )
     {
         my $location = $1;
         $location =~ s/^\<(.*)\>$/$1/; # In case of stupidity, remove < > from the username.
