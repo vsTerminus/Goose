@@ -401,7 +401,7 @@ sub format_weather
     my $wind_dir = wind_direction($json->{'windBearing'});
     my $humidity = int($json->{'humidity'} * 100);
         
-    my $fuckingweather = $self->itsfucking($feel_c, $cond);
+    my $fuckingweather = $self->itsfucking($feel_f, $feel_c, $cond);
 
     my $msg = "```c\n" .
         "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
@@ -572,7 +572,7 @@ sub add_coords
 # Takes temp in C
 sub itsfucking
 {
-    my ($self, $temp, $cond) = @_;
+    my ($self, $temp_f, $temp, $cond) = @_;
 
     my $ret = "IT'S FUCKING ";
 
@@ -584,7 +584,7 @@ sub itsfucking
         @arr = @{$self->{'itsfucking'}{'frozen'}};
         @com = @{$self->{'comment'}{'frozen'}};
     }
-    elsif ( int($temp) == -40 || int(ctof($temp)) == -40 ) # -40
+    elsif ( int($temp) == -40 || int($temp_f) == -40 ) # -40
     {
         @arr = @{$self->{'itsfucking'}{'minus40'}};
         @com = @{$self->{'comment'}{'minus40'}};
@@ -593,7 +593,7 @@ sub itsfucking
     {
         @arr = @{$self->{'itsfucking'}{'freezing'}};
         @com = @{$self->{'comment'}{'freezing'}};
-    }
+    } 
     elsif ( $temp < -5 ) # -25 to -5
     {
         @arr = @{$self->{'itsfucking'}{'cold'}};
@@ -625,7 +625,7 @@ sub itsfucking
         @com = @{$self->{'comment'}{'boiling'}};
     }
 
-    if ( int(ctof($temp)) == 69 )
+    if ( int($temp_f) == 69 )
     {
         @arr = @{$self->{'itsfucking'}{'sixtynine'}};
         @com = @{$self->{'comment'}{'sixtynine'}};
