@@ -61,6 +61,9 @@ sub new
     # Google Maps API
     $self->{'maps'} = Component::Maps->new(%{$params{'maps'}}) if ( $params{'maps'}->{'use_maps'} );
 
+    # LastFM
+    $self->{'lastfm'} = Net::Async::LastFM->new('api_key' => $params{'lastfm'}{'api_key'}) if ( $params{'lastfm'}{'use_lastfm'} );
+
     return $self;
 }
 
@@ -383,6 +386,12 @@ sub maps
 {
     my $self = shift;
     return $self->{'maps'};
+}
+
+sub lastfm
+{
+    my $self = shift;
+    return $self->{'lastfm'};
 }
 
 1;

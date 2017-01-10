@@ -52,6 +52,11 @@ learn = 0
 # This script only requires the api key.
 api_key = xxx
 
+# Use Last.FM functionality?
+# This is required to use the NowPlaying command.
+# 1 = yes, 0 = no
+use_lastfm = 1
+
 # This section is for YouTube API info, allowing you to use commands that leverage YouTube connectivity.
 [youtube]
 # If you want to use the YouTube component you will need a Google API key for the YouTube Data API.

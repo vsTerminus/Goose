@@ -59,8 +59,7 @@ sub new
 
     $self->{'discord'}  = $bot->discord;
     $self->{'db'}       = $bot->db;
-    $self->{'api_key'}  = $params{'api_key'};
-    $self->{'lastfm'}   = Net::Async::LastFM->new(api_key => $self->{'api_key'});
+    $self->{'lastfm'}   = $bot->lastfm;
     $self->{'pattern'}  = $pattern;
 
     # Now register this command with the bot.
