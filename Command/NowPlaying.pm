@@ -149,7 +149,10 @@ sub nowplaying_by_id
     if ( my $row = $query->fetchrow_hashref )
     {
         my $lastfm_name = $row->{'lastfm_name'};
-        $self->nowplaying_by_username($channel, $author, $row->{'lastfm_name'});
+
+        my $user = $discord->get_user($id); # We need to pass this user object on as well so we put the right username in the discord message.
+
+        $self->nowplaying_by_username($channel, $author, $row->{'lastfm_name'}, $user);
     }
     # We don't have them and they didn't specify a username. Ask for it.
     else
@@ -168,16 +171,23 @@ sub nowplaying_by_id
 # This sub does NowPlaying by username.
 sub nowplaying_by_username
 {
-    my ($self, $channel, $author, $username) = @_;
+    my ($self, $channel, $author, $username, $user) = @_;
     my $discord = $self->{'discord'};
     my $lastfm = $self->{'lastfm'};
+
+    my $discord_name = $author->{'username'};
+
+    # If this was a lookup on someone else's discord ID, we will be provided with an extra user object.
+    # Make sure to use the correct username in the output if that is the case.
+    $discord_name = $user->{'username'} if defined $user and exists $user->{'username'};
+
     $lastfm->nowplaying($username,  
         "```apache\n".
         "Track | %artist% - %title%\n".
         "Album | %album%".
         "```",
         sub {  
-            $discord->send_message( $channel, "**Now Playing for " . $author->{'username'} . "** (http://last.fm/user/" . $username . ")\n" . shift );
+            $discord->send_message( $channel, "**Now Playing for " . $discord_name . "** (http://last.fm/user/" . $username . ")\n" . shift );
         }
     );
 }
