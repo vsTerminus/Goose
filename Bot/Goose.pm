@@ -197,7 +197,7 @@ sub cache_guild_webhooks
         my $json = shift;
         #say  Dumper($json);
 
-        if ( $json->{'code'} = 50013 )
+        if ( ref $json eq ref {} and $json->{'code'} == 50013 )
         {
             # No Access.
             return;

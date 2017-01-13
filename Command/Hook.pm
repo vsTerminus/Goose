@@ -65,7 +65,7 @@ sub cmd_webhook
     {
         my $json = shift;
 
-        if ( $json->{'code'} == 50013 )
+        if ( ref $json eq ref {} and $json->{'code'} == 50013 )
         {
             $discord->send_message($channel, "I was unable to create a new webhook. Please ensure that I have the 'Manage Webhooks' permission and then try again.");
             return undef;
