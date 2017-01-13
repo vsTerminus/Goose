@@ -199,29 +199,21 @@ sub nowplaying_by_username
                 my $token = $hook->{'token'};
 
                 # Now we can do some more interesting formatting for this.
-                # First, get some info on the user
-                my $user = $lastfm->getinfo($username, sub
+                # Instead of the user's avatar, we're going to try using the Audioscrobbler icon for everyone.
+                my $avatar_url = 'http://i.imgur.com/F9FDlQ8.png';
+                my $profile_url = "http://last.fm/user/" . $username;
+
+                if (defined $avatar_url and defined $profile_url)
                 {
-                    my $json = shift;
+                    my $hookparam = {
+                        'username' => "$discord_name",
+                        'content' => "$formatted\n[View Profile on Last.FM]($profile_url)",
+                        'avatar_url' => $avatar_url
+                    };
 
-                    my $profile_url = $json->{'user'}{'url'};
-                    my $avatar_url = $json->{'user'}{'image'}[2]{'#text'};
-
-                    if (defined $avatar_url and defined $profile_url)
-                    {
-                        my $hookparam = {
-                            'username' => "Now Playing for $discord_name",
-                            'content' => "$formatted\n[View Profile on Last.FM]($profile_url)",
-                            'avatar_url' => $avatar_url
-                        };
-
-                        $discord->send_webhook($channel, $id, $token, $hookparam, sub
-                        {
-                            # Starting to think I should be using futures, because these nested callbacks are starting to suck.
-                        });
-                    }
-                });
-
+                    # Starting to think I should be using futures, because these nested callbacks are starting to suck.
+                    $discord->send_webhook($channel, $id, $token, $hookparam, sub{});
+                }
             }
             else
             {
