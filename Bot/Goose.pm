@@ -15,11 +15,6 @@ use Mojo::IOLoop;
 use Exporter qw(import);
 our @EXPORT_OK = qw(add_command command get_patterns);
 
-######################
-# This module exists to store things like the Discord connection object, Database component object,
-# and to act as a Command Register for the bot.
-######################
-
 sub new
 {
     my ($class, %params) = @_;
@@ -36,9 +31,10 @@ sub new
         'version'   => '1.0',
         'bot'       => $self,
         'callbacks' => {
-            'on_ready'          => sub { $self->discord_on_ready(shift); },
-            'on_guild_create'   => sub { $self->discord_on_guild_create(shift) },
-            'on_message_create' => sub { $self->discord_on_message_create(shift) },
+            'on_ready'              => sub { $self->discord_on_ready(shift) },
+            'on_guild_create'       => sub { $self->discord_on_guild_create(shift) },
+            'on_message_create'     => sub { $self->discord_on_message_create(shift) },
+            'on_webhooks_update'    => sub { $self->discord_on_webhooks_update(shift) },
         },
         'reconnect' => $params{'discord'}->{'auto_reconnect'},
         'verbose'   => $params{'discord'}->{'verbose'},
@@ -48,6 +44,8 @@ sub new
     $self->{'trigger'} = $params{'discord'}->{'trigger'};
     $self->{'playing'} = $params{'discord'}->{'playing'};
     $self->{'client_id'} = $params{'discord'}->{'client_id'};
+    $self->{'webhook_name'} = $params{'discord'}->{'webhook_name'};
+    $self->{'webhook_avatar'} = $params{'discord'}->{'webhook_avatar'};
 
     # Database
     $self->{'db'} = Component::Database->new(%{$params{'db'}});
@@ -103,6 +101,18 @@ sub discord_on_guild_create
     #say Dumper($hash);
 }
 
+# Whenever we get this we should request the webhooks for the channel.
+# The only one we care about is the one we created.
+sub discord_on_webhooks_update
+{
+    my ($self, $hash) = @_;
+
+    my $channel = $hash->{'channel_id'};
+    delete $self->{'webhooks'}{$channel};
+
+    $self->reload_webhooks($channel);
+}
+
 sub discord_on_message_create
 {
     my ($self, $hash) = @_;
@@ -153,6 +163,50 @@ sub discord_on_message_create
             }
         }
     }
+}
+
+sub cache_channel_webhooks
+{
+    my ($self, $channel, $callback) = @_;
+   
+    $self->{'discord'}->get_channel_webhooks($channel, sub
+    {
+        my $json = shift;
+
+        my $hookname = $self->webhook_name;
+
+        foreach my $hook (@{$json})
+        {
+            if ( $hook->{'name'} eq $self->webhook_name )
+            {
+                $self->{'webhooks'}{$channel} = $hook;
+            }
+        }
+    });
+}
+
+sub cache_guild_webhooks
+{
+    my ($self, $guild, $callback) = @_;
+
+    my $id = $guild->{'id'};
+
+    $self->{'discord'}->get_guild_webhooks($id, sub
+    {
+        my $json = shift;
+        #say  Dumper($json);
+
+        my $hookname = $self->webhook_name;
+
+        foreach my $hook (@{$json})
+        {
+            my $channel = $hook->{'channel_id'};
+            if ( $hook->{'name'} eq $self->webhook_name )
+            {
+                $self->{'webhooks'}{$channel} = $hook;
+            }
+        }
+    });
 }
 
 sub add_me
@@ -223,6 +277,9 @@ sub add_guild
 
     # Nice and simple. Just add what we're given.
     $self->{'guilds'}{$guild->{'id'}} = $guild;
+
+    # Also, let's request the webhooks for this guild.
+    $self->cache_guild_webhooks($guild);
 
     # Also add entries for channels in this guild.
     foreach my $channel (@{$guild->{'channels'}})
@@ -356,6 +413,43 @@ sub owner
 {
     my $self = shift;
     return $self->{'owner_id'};
+}
+
+# Return the webhook name the bot will use
+sub webhook_name
+{
+    my $self = shift;
+    return $self->{'webhook_name'};
+}
+
+sub webhook_avatar
+{
+    my $self = shift;
+    return $self->{'webhook_avatar'};
+}
+
+sub add_webhook
+{
+    my ($self, $channel, $json) = @_;
+
+    $self->{'webhooks'}{$channel} = $json;
+    return $self->{'webhooks'}{$channel};
+}
+
+# This retrieves a cached webhook object for the specified channel.
+# If there isn't one, return undef and let the caller go make one or request an existing one from Discord.
+sub cached_webhook
+{
+    my ($self, $channel) = @_;
+
+    if ( exists $self->{'webhooks'}{$channel} )
+    {
+        return $self->{'webhooks'}{$channel};
+    }
+    else
+    {
+        return undef;
+    }
 }
 
 # Returns the discord object associated to this bot.

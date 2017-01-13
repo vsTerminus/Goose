@@ -60,7 +60,7 @@ sub cmd_info
                 "I am written in Perl, and am built on the Net::Discord library \n(https://github.com/vsTerminus/Net-Discord)\n\n" .
                 "My source code is available on GitHub \n(https://github.com/vsTerminus/Goose)\n\n" .
                 "```\nAdd Me```\n" .
-                "You can add me to your own server(s) by clicking the link below, or share it with the server admin if you don't have enough permissions.\n\nhttps://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=19456";
+                "You can add me to your own server(s) by clicking the link below, or share it with the server admin if you don't have enough permissions.\n\nhttps://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368";
 
     $discord->send_message($channel, $info);
 }
