@@ -108,9 +108,10 @@ sub discord_on_webhooks_update
     my ($self, $hash) = @_;
 
     my $channel = $hash->{'channel_id'};
+    say "Webhooks updated in $channel.";
     delete $self->{'webhooks'}{$channel};
 
-    $self->reload_webhooks($channel);
+    $self->cache_channel_webhooks($channel);
 }
 
 sub discord_on_message_create
