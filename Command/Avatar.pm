@@ -70,15 +70,17 @@ sub cmd_avatar
 
     say "Fetching avatar for ID: $id";
 
-    my $json = $discord->get_user($id);
+    $discord->get_user($id, sub
+    {
+        my $json = shift;
+        my $avatar = $json->{'avatar'};
+        my $name = $json->{'username'};
 
-    my $avatar = $json->{'avatar'};
-    my $name = $json->{'username'};
+        my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg';
 
-    my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg';
-
-    # Send a message back to the channel
-    $discord->send_message($channel, "Avatar for **$name**: $url");
+        # Send a message back to the channel
+        $discord->send_message($channel, "Avatar for **$name**: $url");
+    });
 }
 
 1;

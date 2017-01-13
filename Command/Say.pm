@@ -9,6 +9,8 @@ our @EXPORT_OK = qw(cmd_say);
 
 use Net::Discord;
 use Bot::Goose;
+use Mojo::JSON qw(decode_json);
+use Data::Dumper;
 
 ###########################################################################################
 # Command Info
@@ -58,10 +60,16 @@ sub cmd_say
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
 
-    my $json = {'content' => $args};
-
-    # Send a message back to the channel
-    $discord->send_message($channel, $json);
+    eval 
+    { 
+        my $json = decode_json($args);
+        $discord->send_message($channel, $json);
+    };
+    if ($@)
+    {
+        # Send as plaintext instead.
+        $discord->send_message($channel, $args);
+    }
 }
 
 1;

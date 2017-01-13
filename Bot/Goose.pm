@@ -115,6 +115,8 @@ sub discord_on_message_create
     my $discord_name = $self->name();
     my $discord_id = $self->id();
 
+    #say Dumper($hash);
+
     foreach my $mention (@mentions)
     {
         $self->add_user($mention);
