@@ -65,6 +65,12 @@ sub cmd_webhook
     {
         my $json = shift;
 
+        if ( $json->{'code'} == 50013 )
+        {
+            $discord->send_message($channel, "I was unable to create a new webhook. Please ensure that I have the 'Manage Webhooks' permission and then try again.");
+            return undef;
+        }
+
         # Iterate through the webhooks looking for one matching the one in the config file.
 
         my $params = {  'name' => $bot->webhook_name,

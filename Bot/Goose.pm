@@ -197,6 +197,12 @@ sub cache_guild_webhooks
         my $json = shift;
         #say  Dumper($json);
 
+        if ( $json->{'code'} = 50013 )
+        {
+            # No Access.
+            return;
+        }
+
         my $hookname = $self->webhook_name;
 
         foreach my $hook (@{$json})
