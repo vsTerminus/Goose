@@ -212,7 +212,7 @@ sub nowplaying_by_username
                     };
 
                     # Starting to think I should be using futures, because these nested callbacks are starting to suck.
-                    $discord->send_webhook($channel, $id, $token, $hookparam, sub{});
+                    $discord->send_webhook($channel, $id, $token, $hookparam);
                 }
             }
             else

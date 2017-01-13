@@ -69,6 +69,22 @@ sub new
         'hail'                  => ':cloud_snow:',
     };
 
+    # If we have a webhook in the channel we can use images for avatars instead of emoji!
+    $self->{'webhook_icons'} = {
+        'clear-day'             => 'http://i.imgur.com/HIQkdIt.png',
+        'clear-night'           => 'http://i.imgur.com/sbsDekE.png',
+        'rain'                  => 'http://i.imgur.com/oB7xaGs.png',
+        'snow'                  => 'http://i.imgur.com/gEBNP3r.png',
+        'sleet'                 => 'http://i.imgur.com/veklDbN.png',
+        'wind'                  => 'http://i.imgur.com/Saq1Hvo.png',
+        'fog'                   => 'http://i.imgur.com/Fh2kqYX.png',
+        'cloudy'                => 'http://i.imgur.com/Zk3iwN6.png',
+        'partly-cloudy-day'     => 'http://i.imgur.com/Hu9yAZm.png',
+        'partly-cloudy-night'   => 'http://i.imgur.com/J0fcEhu.png',
+        'tornado'               => 'http://i.imgur.com/3cqR9To.png',
+        'hail'                  => 'http://i.imgur.com/OdRYPri.png',
+    };
+
     $self->{'comment'} = {
         'frozen' => [
             'WHAT THE FUCK?!?!?!',
@@ -279,7 +295,8 @@ sub cmd_weather
     my $replyto = '<@' . $author->{'id'} . '>';
 
     # Start "Typing"
-    $discord->start_typing($channel);
+    # Only do this if we aren't using a webhook, because the webhook won't stop the typing message.
+    $discord->start_typing($channel) unless $self->{'bot'}->cached_webhook($channel);
 
 #    my $ds = $self->{'darksky'};
 
@@ -358,11 +375,7 @@ sub weather_by_coords
 
         my $formatted_weather = $self->format_weather($json);
     
-        my $icons= $self->{'icons'};
-        my $icon = '';
-        $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
-           
-        $self->{'discord'}->send_message($channel, "**Weather for $address** $icon\n$formatted_weather\n");
+        $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather);
     }
     # If we don't have cached weather (or it is expired), ask DarkSky for it.
     else
@@ -378,12 +391,37 @@ sub weather_by_coords
     
             my $formatted_weather = $self->format_weather($json);
     
-            my $icons= $self->{'icons'};
-            my $icon = '';
-            $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
-            
-            $self->{'discord'}->send_message($channel, "**Weather for $address** $icon\n$formatted_weather\n");
+            $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather); # This sub handles whether it's a message or webhook.
         });
+    }
+}
+
+sub send_weather
+{
+    my ($self, $channel, $lat, $lon, $address, $json, $formatted_weather) = @_;
+
+    # Do we have a webhook here?
+    if ( my $hook = $self->{'bot'}->cached_webhook($channel) )
+    {
+        my $avatars = $self->{'webhook_icons'};
+        my $avatar = 'http://i.imgur.com/BVCiYSn.png'; # default
+        $avatar = $avatars->{$json->{'icon'}} if exists $avatars->{$json->{'icon'}};    # per-weather icons
+
+        my $hookparam = {
+            'username' => $address,
+            'avatar_url' => $avatar,
+            'content' => $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
+        };
+
+        $self->{'discord'}->send_webhook($channel, $hook->{'id'}, $hook->{'token'}, $hookparam);
+    }
+    else # Regular message.
+    {
+        my $icons= $self->{'icons'};
+        my $icon = '';
+        $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
+            
+        $self->{'discord'}->send_message($channel, "**Weather for $address** $icon\n$formatted_weather\n");
     }
 }
 
