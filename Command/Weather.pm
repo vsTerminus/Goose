@@ -308,7 +308,7 @@ sub cmd_weather
 
         if ( !defined $args )
         {
-            $discord->send_message($channel, $author->{'username'} . ": You must specify a location (eg, City, ZIP, Street Address, etc)");
+            $discord->send_message($channel, $author->{'username'} . ": Sorry, I don't have your location on record.\n\nTo save your location use `!weather set <location>` and the bot will remember it in the future. \n\nTo just lok up the weather without saving the location use `!weather <location>`\n\nYou can specify a zip code, postal code, city name, or even a street address. For example:\n```\n- !weather set 10001\n- !weather Singapore```");
             return;
         }
     }
