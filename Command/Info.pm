@@ -56,8 +56,6 @@ sub cmd_info
     my $bot = $self->{'bot'};
 
     my $info;
-
-    say Dumper($bot->has_webhook($channel));
     
     # We can use some special formatting with the webhook.
     if ( my $hook = $bot->has_webhook($channel) )
@@ -70,7 +68,9 @@ sub cmd_info
                 "I am open source! I am written in Perl and built on the [Net::Discord](<https://github.com/vsTerminus/Net-Discord>) library.\n" .
                 "My source code is available [on GitHub](<https://github.com/vsTerminus/Goose>).\n\n" .
                 "**Add Me**\n" .
-                "[Click here](<https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368>) to add me to your own server, or share this link with your server admin if you don't have sufficient access.\n";
+                "[Click here](<https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368>) to add me to your own server, or share this link with your server admin if you don't have sufficient access.\n\n" .
+                "**Join My Server**\n" .
+                "I have a public Discord server you can join where you can monitor my github feed and mess with the bot without irritating all your friends. [Check it out!](<https://discord.gg/FuKTcHF>)";
 
         $discord->send_webhook($channel, $hook, $info);
                 
@@ -86,10 +86,14 @@ sub cmd_info
                 "My source code is available on GitHub `[2]`\n\n" .
                 "**Add Me**\n" .
                 "You can add me to your own server(s) by clicking the link below `[3]` or by sharing it with your server admin.\n\n".
+                "**Join My Server**\n" .
+                "I have a public Discord server you can join where you can monitor my github feed and mess with the bot without irritating all your friends. Check it out below! `[4]`\n\n" .
                 "**Links**\n".
                 "`[1]` <https://github.com/vsTerminus/Net-Discord>\n".
                 "`[2]` <https://github.com/vsTerminus/Goose>\n".
-                "`[3]` <https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368>";
+                "`[3]` <https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368>\n" .
+                "`[4]` <https://discord.gg/FuKTcHF>\n";
+
 
         $discord->send_message($channel, $info);
     }
