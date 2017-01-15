@@ -445,7 +445,7 @@ sub add_webhook
 
 # This retrieves a cached webhook object for the specified channel.
 # If there isn't one, return undef and let the caller go make one or request an existing one from Discord.
-sub cached_webhook
+sub has_webhook
 {
     my ($self, $channel) = @_;
 

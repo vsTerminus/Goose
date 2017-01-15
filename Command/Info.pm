@@ -9,6 +9,7 @@ our @EXPORT_OK = qw(cmd_info);
 
 use Net::Discord;
 use Bot::Goose;
+use Data::Dumper;
 
 ###########################################################################################
 # Command Info
@@ -52,17 +53,46 @@ sub cmd_info
     my ($self, $channel, $author) = @_;
 
     my $discord = $self->{'discord'};
+    my $bot = $self->{'bot'};
 
-    my $info =  "```\nInfo```\n" .
+    my $info;
+
+    say Dumper($bot->has_webhook($channel));
+    
+    # We can use some special formatting with the webhook.
+    if ( my $hook = $bot->has_webhook($channel) )
+    {
+        $info = "**Info**\n" .
+                "I am a Goose Bot by <\@143909249074855936>\n" .
+                "I am a semi-useful chat-bot that provides services such as `!weather`, `!nowplaying`, and `!youtube`\n" .
+                "Try the `!help` command for a complete listing. \n\n" .
+                "**Source Code**\n" .
+                "I am open source! I am written in Perl and built on the [Net::Discord](<https://github.com/vsTerminus/Net-Discord>) library.\n" .
+                "My source code is available [on GitHub](<https://github.com/vsTerminus/Goose>).\n\n" .
+                "**Add Me**\n" .
+                "[Click here](<https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368>) to add me to your own server, or share this link with your server admin if you don't have sufficient access.\n";
+
+        $discord->send_webhook($channel, $hook, $info);
+                
+    }
+    else
+    {
+        $info = "**Info**\n" .
                 'I am a Goose Bot by <@143909249074855936>' . "\n" .
-                "I perform some semi-useful chat related functions, mostly involving interactions with APIs from other services.\n\n" .
-                "```\nCode```\n" .
-                "I am written in Perl, and am built on the Net::Discord library \n(https://github.com/vsTerminus/Net-Discord)\n\n" .
-                "My source code is available on GitHub \n(https://github.com/vsTerminus/Goose)\n\n" .
-                "```\nAdd Me```\n" .
-                "You can add me to your own server(s) by clicking the link below, or share it with the server admin if you don't have enough permissions.\n\nhttps://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368";
+                "I am a semi-useful chat-bot that provides services such as `!weather`, `!nowplaying`, and `!youtube`\n".
+                "Try the `!help` command for a complete listing.\n\n" .
+                "**Source Code**\n" .
+                "I am open source! I am written in Perl, and am built on the Net::Discord library `[1]`\n" .
+                "My source code is available on GitHub `[2]`\n\n" .
+                "**Add Me**\n" .
+                "You can add me to your own server(s) by clicking the link below `[3]` or by sharing it with your server admin.\n\n".
+                "**Links**\n".
+                "`[1]` <https://github.com/vsTerminus/Net-Discord>\n".
+                "`[2]` <https://github.com/vsTerminus/Goose>\n".
+                "`[3]` <https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368>";
 
-    $discord->send_message($channel, $info);
+        $discord->send_message($channel, $info);
+    }
 }
 
 1;

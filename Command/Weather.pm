@@ -296,7 +296,7 @@ sub cmd_weather
 
     # Start "Typing"
     # Only do this if we aren't using a webhook, because the webhook won't stop the typing message.
-    $discord->start_typing($channel) unless $self->{'bot'}->cached_webhook($channel);
+    $discord->start_typing($channel) unless $self->{'bot'}->has_webhook($channel);
 
 #    my $ds = $self->{'darksky'};
 
@@ -401,7 +401,7 @@ sub send_weather
     my ($self, $channel, $lat, $lon, $address, $json, $formatted_weather) = @_;
 
     # Do we have a webhook here?
-    if ( my $hook = $self->{'bot'}->cached_webhook($channel) )
+    if ( my $hook = $self->{'bot'}->has_webhook($channel) )
     {
         my $avatars = $self->{'webhook_icons'};
         my $avatar = 'http://i.imgur.com/BVCiYSn.png'; # default
@@ -413,7 +413,7 @@ sub send_weather
             'content' => $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
         };
 
-        $self->{'discord'}->send_webhook($channel, $hook->{'id'}, $hook->{'token'}, $hookparam);
+        $self->{'discord'}->send_webhook($channel, $hook, $hookparam);
     }
     else # Regular message.
     {

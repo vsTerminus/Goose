@@ -193,11 +193,8 @@ sub nowplaying_by_username
             my $formatted = shift;
 
             # Do we have a webhook for this channel?
-            if ( my $hook = $self->{'bot'}->cached_webhook($channel) )
+            if ( my $hook = $self->{'bot'}->has_webhook($channel) )
             {
-                my $id = $hook->{'id'};
-                my $token = $hook->{'token'};
-
                 # Now we can do some more interesting formatting for this.
                 # Instead of the user's avatar, we're going to try using the Audioscrobbler icon for everyone.
                 my $avatar_url = 'http://i.imgur.com/F9FDlQ8.png';
@@ -212,7 +209,7 @@ sub nowplaying_by_username
                     };
 
                     # Starting to think I should be using futures, because these nested callbacks are starting to suck.
-                    $discord->send_webhook($channel, $id, $token, $hookparam);
+                    $discord->send_webhook($channel, $hook, $hookparam);
                 }
             }
             else
