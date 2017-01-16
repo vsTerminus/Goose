@@ -6,7 +6,7 @@ If you aren't planning to host your own bot you can [invite my bot to your serve
 
 - https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368
 
-I have also created a [public discord server](https://discord.gg/FuKTcHF) you can use to monitor development progress, ask questions, request features, and so on. Feel free to join if you are interested. Feel free to share this invite link wherever you like.
+I have also created a [public discord server](https://discord.gg/FuKTcHF) you can use to monitor development progress, ask questions, request features, and so on. Feel free to join and share this invite link wherever you like.
 
 - https://discord.gg/FuKTcHF
 
