@@ -76,7 +76,7 @@ sub cmd_avatar
         my $avatar = $json->{'avatar'};
         my $name = $json->{'username'};
 
-        my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg';
+        my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg?size=1024';
 
         # Send a message back to the channel
         $discord->send_message($channel, "Avatar for **$name**: $url");
