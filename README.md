@@ -1,23 +1,46 @@
 # Goose Bot
 
-This is another Discord Bot build on my [Net::Discord](https://github.com/vsTerminus/Net-Discord) module, except this one is semi-useful.
-This bot can take commands and potentially do things that people will enjoy.
+This is a Discord bot built on the [Net::Discord](https://github.com/vsTerminus/Net-Discord) framework. It can do some potentially useful things for your channel, mostly involving displaying information from other websites (eg YouTube and Last.FM).
 
-I've built a number of commands so far, and the list is always growing (slowly).
+If you would like to add this bot to your server, simply [click here](https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368) and select the server you'd like to add it to. If you don't have Manage Server permissions you can share this link with your Server Admin instead and ask them to do it: 
+
+- https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368
+
+I have also created a [public discord server](https://discord.gg/FuKTcHF) you can use to monitor development progress, ask questions, request features, and so on. Feel free to join if you are interested.
 
 # Commands
 
 So far the bot can do:
 
 - **Avatar** | Fetch and display a slightly higher resolution version of someone's avatar
+
+![Avatar Command Example](https://i.imgur.com/GCvgK0s.png)
+
 - **Comic** | Generate a random Cyanid & Happiness comic, and save your favorites for later
+
+![Comic Command Example](https://i.imgur.com/ISBg66k.png)
+
 - **NowPlaying** | Fetch Last.FM information for yourself or anyone else who scrobbles their music
+
+![Weather Command  Example](https://i.imgur.com/cneQT46.png)
+
 - **Pick** | Give the bot a list of things to pick from and have it decide your fate
+
+![Pick Command Example](https://i.imgur.com/nLo89qm.png)
+
 - **Weather** | Look up the weather for just about anywhere in the world
+
+![Weather Command Example](https://i.imgur.com/625CU8J.png)
+
+- **YouTube** | Search for videos on YouTube
+
+![YouTube Command Example](https://i.imgur.com/g1Unk8Z.png)
 
 There are also some commands which are restricted to the bot owner.
 These are useful more for utility type commands which help the bot function.
 
+- **Hook** | Manage webhooks that the bot can leverage for advanced formatting
+- **Say** | Give the bot raw JSON strings to send - used to experiment with embeds and things mostly.
 - **Leave** | Leave a guild (Server) that you no longer want the bot to be a member of
 - **Play** | Change the bot's "Playing" status
 
