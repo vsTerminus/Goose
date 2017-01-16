@@ -1,12 +1,14 @@
-# Goose Bot
+# About The Bot
 
-This is a Discord bot built on the [Net::Discord](https://github.com/vsTerminus/Net-Discord) framework. It can do some potentially useful things for your channel, mostly involving displaying information from other websites (eg YouTube and Last.FM).
+This is a Discord bot built on the [Net::Discord](https://github.com/vsTerminus/Net-Discord) framework. It can do some potentially useful things on your server, mostly involving displaying information from other websites (eg YouTube and Last.FM).
 
-If you would like to add this bot to your server, simply [click here](https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368) and select the server you'd like to add it to. If you don't have Manage Server permissions you can share this link with your Server Admin instead and ask them to do it: 
+If you aren't planning to host your own bot you can [invite my bot to your server](https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368) instead. Just select the server you want to add it to and click the 'Authorize' button. If you don't have Manage Server permissions you can share this link with your Server Admin instead and ask them to do it: 
 
 - https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368
 
-I have also created a [public discord server](https://discord.gg/FuKTcHF) you can use to monitor development progress, ask questions, request features, and so on. Feel free to join if you are interested.
+I have also created a [public discord server](https://discord.gg/FuKTcHF) you can use to monitor development progress, ask questions, request features, and so on. Feel free to join if you are interested. Feel free to share this invite link wherever you like.
+
+- https://discord.gg/FuKTcHF
 
 # Commands
 
