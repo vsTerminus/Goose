@@ -60,19 +60,32 @@ sub cmd_pick
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
 
-    say "Message: $msg";
+    my $quiznos = 0;
+
     my @picks = split (/,+/, $args);
-    say "Picks: @picks";
+
     my $count = scalar @picks;
-    my $pick = int(rand($count))+1;
+    my $pick = int(rand($count)+.5)+1;  #  Add .5 so the int() rounds instead of doing floor. Otherwise the final option has a very low chance of being picked.
+
     unshift @picks, "spacer";   # Start things at 1 instead of 0.
     $pick =~ s/^ *//;
     
-    if ( int(rand(1000)) == 420 )
+    for (my $i = 1; $i <= $count; $i++)
+    {
+        if ( $picks[$i] =~ /^\s*quiznos\s*$/i )
+        {
+            # Always pick Quiznos
+            $pick = $i; 
+            $quiznos = 1;
+        }
+    }
+
+    if ( !$quiznos and int(rand(500)) == 420 )
     {
         $pick = $count+1;
         push @picks, 'Quiznos';
     }
+    
 
     # Send a message back to the channel
     $discord->send_message($channel, "**$pick:** $picks[$pick]");
