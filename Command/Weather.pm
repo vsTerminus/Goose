@@ -23,18 +23,28 @@ my $pattern = '^(we?(ather)?) ?([^\s].*)?$';
 my $function = \&cmd_weather;
 my $usage = <<EOF;
 
-Basic Usage: `!weather <Address>`
+**Basic Usage:** `!weather <Address>`
     The command accepts City Names, ZIP Codes, Postal Codes, and even Street Addresses.
 
     eg. `!weather Dildo, NL`
     eg. `!weather 80085`
     eg. `!weather V4G 1N4`
 
-Shorthand: `!w` and `!we`
+**Shorthand:** `!w` and `!we`
 
-Store your location: `!weather set <zip, postal code, or city name>`
-    - The bot will remember your location and in the future if you don't supply one.
-    eg. `!weather` will use whatever value you told the bot to remember.
+**Save Your Location:** `!weather set <location> ["name"]`
+    - You can save a default location and any number of other named locations for the bot to remember.
+    - Storing your location allows the bot to give you the weather without needing to be told where you are.
+    - Passing a name is entirely optional. If you do pass one it must be in quotes.
+    - If you do not pass a name it will be used as your default location.
+
+**Saved Location Examples:**
+
+    - `!w set Denver, Colorado` will set your default location to "Denver, Colorado"
+    - `!w` will now display the weather in Denver.
+    - `!w set Austin, Texas "work"` will set your "work" location to "Austin, Texas"
+    - `!w` will still display the weather in Denver, but now `!w work` will display the weather in Austin.
+
 EOF
 ###########################################################################################
 
@@ -106,7 +116,9 @@ sub new
         'minus40' => [
             "IN \N{DEGREE SIGN}C OR \N{DEGREE SIGN}F??? YES.",
             "IT'S TOO COLD FOR JOKES ABOUT -40 BEING THE SAME IN \N{DEGREE SIGN}C AND \N{DEGREE SIGN}F!",
-            "HAHAHA. IT'S THE SAME TEMPERATURE IN \N{DEGREE SIGN}C AND \N{DEGREE SIGN}F! ISN'T THAT FUNNY?"
+            "HAHAHA. IT'S THE SAME TEMPERATURE IN \N{DEGREE SIGN}C AND \N{DEGREE SIGN}F! ISN'T THAT FUNNY?",
+            "EQUAL RIGHTS FOR ALL TWO TEMPERATURE SCALES.",
+            "\N{DEGREE SIGN}F AND \N{DEGREE SIGN}C AGREE, -40 FUCKING SUCKS.",
         ],
         'freezing' => [
             "I HOPE YOU PLUGGED YOUR CAR IN.",
@@ -132,20 +144,32 @@ sub new
             "THIS SUCKS.",
             "PERFECT WEATHER TO STAY INSIDE.",
             "DO YOU EVEN KNOW WHAT A TOQUE IS?",
-            "ARE YOU WEARING YOUR TOQUE?"
+            "ARE YOU WEARING YOUR TOQUE?",
+            "UNLESS YOU'RE A MOOSE.",
+            "UNLESS YOU'RE A POLAR BEAR.",
+            "UNLESS YOU'RE A PENGUIN.",
         ],
         'cool' => [
-            "T-SHIRT OR JACKET WEATHER? I CAN'T TELL.",
-            "IT'S DECEPTIVELY WARM OUT. OR DECEPTIVELY COLD. I CAN'T TELL.",
-            "IS IT WARM OR COLD OUT?",
+            "SWEATER OR JACKET?",
+            "JACKET OFF. JACK ET OFF. JACK IT OFF.",
+            "IT FEELS LIKE I'M STANDING IN A REFRIGERATOR",
             "HOT OR COLD. MAKE UP YOUR GODDAMN MIND!",
             "I HAVE NO IDEA HOW TO DRESS TODAY.",
-            "THIS KINDA SUCKS.",
+            "I MISS SUMMER ALREADY.",
+            "CAN I GO BACK INSIDE?",
+            "DOES ANYONE KNOW HOW TO START A FIRE WITH A TWIG AND SOME STRING?",
+            "BEING ON FIRE SOUNDS NICE RIGHT ABOUT NOW.",
         ],
         'alright' => [
             "I CAN DEAL WITH THIS, I SUPPOSE.",
             "I MEAN, IT COULD BE WORSE.",
+            "I MEAN, IT COULD BE BETTER.",
             "IT COULD BE BETTER, I GUESS.",
+            "IT COULD BE WORSE, I GUESS.",
+            "MEH.",
+            "FINE. I GUESS.",
+            "ALL SIGNS POINT TO 'MEH'",
+            "TODAY'S WEATHER WILL BE 'MEH' WITH A CHANCE OF DOOM!",
         ],
         'nice' => [
             "GO OUTSIDE!",
@@ -153,16 +177,23 @@ sub new
             "GET OFF THE COMPUTER AND GO OUTSIDE!",
             "GET OFF YOUR ASS AND GO OUTSIDE.",
             "WHY CAN'T IT BE LIKE THIS ALL YEAR?",
+            "IF YOU'RE CANADIAN.",
+            "UNLESS YOU'RE AN AMERICAN.",
+            "UNLESS YOU'RE A WIMP.",
+            "WEAR A SWEATER IF YOU DON'T LIKE IT.",
         ],
         'warm' => [
             "THAT'S MORE LIKE IT!",
             "SUN'S OUT GUNS OUT!",
-            "BEACH DAY, BRO!",
+            "BEACH DAY BRO!",
             "BIKINI TANS!",
             "POOOOOOL!",
             "TIME TO WORK ON MY TAN.",
             "PASS THE SUNSCREEN.",
             "I NEED ONE HUNDRED BEERS. EXACTLY ONE HUNDRED. THANKS.",
+            "THIS CALLS FOR A ~~BUD~~ CAN OF FLOWERY GRAIN WATER!",
+            "THIS CALLS FOR A BEER!",
+            "TRACK DAY BRO!",
         ],
         'hot' => [
             "THIS SUCKS.",
@@ -308,18 +339,55 @@ sub cmd_weather
 
         if ( !defined $args )
         {
-            $discord->send_message($channel, $author->{'username'} . ": Sorry, I don't have your location on record.\n\nTo set your location use `!weather set <location>` and the bot will remember it in the future. \n\nTo look up the weather without saving the location use `!weather <location>`\n\nYou can specify a zip code, postal code, city name, or even a street address. For example:\n```\n- !weather set 10001\n- !weather Singapore```");
+            my $msg = $author->{'username'} . ": Sorry, I don't have a default location for you on record.\n\n" .
+                "**Set your default location**\n" .
+                "- Use `!w set <location>`\n" .
+                "- Example, `!w set 10001` or `!w set Singapore`\n\n" .
+                "Your location can be a zip code, city name, postal code, or even street address.";
+            $discord->send_message($channel, $msg);
             return;
         }
     }
     elsif ( $args =~ /^set ([^\s].*)$/i )
     {
         my $location = $1;
-        $location =~ s/^\<(.*)\>$/$1/; # In case of stupidity, remove < > from the username.
-        $self->add_user($author->{'id'}, $author->{'username'}, $location);
-        $discord->send_message( $channel, $author->{'username'} . ": I have updated your Weather Location to `$location`" );
+        $location =~ s/^\<(.*)\>$/$1/; # In case of stupidity, remove < > from the location.
+
+        if ( my @arr = ($args =~ m/^set (.*) \"(.+)\"$/ ) )
+        {
+            my $new_location = $arr[0];
+            my $location_name = $arr[1];
+            $location_name = lc $location_name;
+
+            $self->add_user($author->{'id'}, $author->{'username'}, $new_location, $location_name);
+            $discord->send_message( $channel, $author->{'username'} . ": I have saved '$new_location' as Location '$location_name'.");
+
+            $args = $1;
+        }
+        else    # Default location
+        {
+            $self->add_user($author->{'id'}, $author->{'username'}, $location);
+
+            my $msg = $author->{'username'} . ": I have updated your default Weather location to `$location`\n\n" .
+                "**Add More Locations**\n" .
+                "To save another location use the same command, but give the location a name in quotes.\n" .
+                "- `!w set <location> \"<name>\"`\n" .
+                "- Example: `!w set 10002 \"home\"` or `!w set 10003 \"school\"`\n\n" .
+                "You can then use the Weather command with these names as shortcuts.\n" .
+                "- Example: `!w home` would now bring up the weather for the location you saved as \"home\"\n";
+
+            $discord->send_message( $channel, $msg );
         
-        $args = $location;
+            $args = $location;
+        }
+    }
+    else # Check to see if this is a stored location.
+    {
+        $args =~ s/^\s*//; $args =~ s/\s*$//;
+        if ( my $location = $self->get_stored_location($author, $args) )
+        {
+            $args = $location;
+        }
     }
 
     # Now we have their desired location and can look it up.
@@ -453,26 +521,30 @@ sub format_weather
 
 sub get_stored_location
 {
-    my ($self, $author) = @_;
+    my ($self, $author, $name) = @_;
+
+    $name = defined $name ? lc $name : 'default';
 
     # 1 - Check Cache    
-    if ( exists $self->{'cache'}{'userlocation'}{$author->{'id'}} )
+    my $cached = $self->{'cache'}{'userlocation'}{$author->{'id'}}{$name};
+
+    if ( defined $cached and length $cached > 0 )
     {
-        say localtime(time) . " Found cached location for " . $author->{'username'} . ": " . $self->{'cache'}{'userlocation'}{$author->{'id'}};
-        return $self->{'cache'}{'userlocation'}{$author->{'id'}};
+        return $cached;
     }
     # 2 - Check Database
     else
     {
         my $db = $self->{'db'};
    
-        my $sql = "SELECT location FROM weather WHERE discord_id = ?";
-        my $query = $db->query($sql, $author->{'id'});
+        my $sql = "SELECT location FROM weather WHERE discord_id = ? AND name = ?";
+        $name = 'default' unless defined $name;
+        my $query = $db->query($sql, $author->{'id'}, $name);
 
         # Yes, we have them.
         if ( my $row = $query->fetchrow_hashref )
         {
-            $self->{'cache'}{'userlocation'}{$author->{'id'}} = $row->{'location'};  # Cache this so we don't need to hit the DB all the time.
+            $self->{'cache'}{'userlocation'}{$author->{'id'}}{$name} = $row->{'location'};  # Cache this so we don't need to hit the DB all the time.
             say localtime(time) . " Found stored DB location for " . $author->{'username'} . ": " . $row->{'location'};
             return $row->{'location'};
         }
@@ -576,17 +648,20 @@ sub weather_types
 
 sub add_user
 {
-    my ($self, $discord_id, $discord_name, $location) = @_;
+    my ($self, $discord_id, $discord_name, $location, $location_name) = @_;
 
     say localtime(time) . " Command::Weather is adding a new mapping: $discord_id ($discord_name) -> $location";
 
     my $db = $self->{'db'};
     
-    my $sql = "INSERT INTO weather VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE discord_name = ?, location = ?";
-    $db->query($sql, $discord_id, $discord_name, $location, $discord_name, $location);
 
+    $location_name = 'default' unless defined $location_name;
+
+    my $sql = "INSERT INTO weather VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE discord_name = ?, location = ?";
+    $db->query($sql, $discord_id, $discord_name, $location, $location_name, $discord_name, $location);
+        
     # Also cache this in memory for faster lookups
-    $self->{'cache'}{'userlocation'}{$discord_id} = $location;
+    $self->{'cache'}{'userlocation'}{$discord_id}{$location_name} = $location;
 }
 
 sub add_coords
@@ -617,37 +692,42 @@ sub itsfucking
     my @arr;
     my @com;
 
-    if ( $temp <= -41 ) # below -40
-    {
-        @arr = @{$self->{'itsfucking'}{'frozen'}};
-        @com = @{$self->{'comment'}{'frozen'}};
-    }
-    elsif ( int($temp) == -40 || int($temp_f) == -40 ) # -40
+    if ( int($temp) == -40 || int($temp_f) == -40 ) # -40
     {
         @arr = @{$self->{'itsfucking'}{'minus40'}};
         @com = @{$self->{'comment'}{'minus40'}};
     }
-    elsif ( $temp < -25 ) # -39 to -24
+    elsif ( $temp <= -34 ) # -35 and below
+    {
+        @arr = @{$self->{'itsfucking'}{'frozen'}};
+        @com = @{$self->{'comment'}{'frozen'}};
+    }
+    elsif ( $temp < -20 ) # -34 to -21
     {
         @arr = @{$self->{'itsfucking'}{'freezing'}};
         @com = @{$self->{'comment'}{'freezing'}};
     } 
-    elsif ( $temp < -5 ) # -25 to -5
+    elsif ( $temp < 0 ) # -20 to -1
     {
         @arr = @{$self->{'itsfucking'}{'cold'}};
         @com = @{$self->{'comment'}{'cold'}};
     }
-    elsif ( $temp < 10 ) # -5 to +9
+    elsif ( $temp < 9 ) # 0 to 8 
+    {
+        @arr = @{$self->{'itsfucking'}{'cool'}};
+        @com = @{$self->{'comment'}{'cool'}};
+    }
+    elsif ( $temp < 18 ) # 9 to 17
     {
         @arr = @{$self->{'itsfucking'}{'alright'}};
         @com = @{$self->{'comment'}{'alright'}};
     }
-    elsif ( $temp < 23 ) # 10 to 22
+    elsif ( $temp < 25 ) # 18 to 24
     {
         @arr = @{$self->{'itsfucking'}{'nice'}};
         @com = @{$self->{'comment'}{'nice'}};
     }
-    elsif ( $temp < 30 ) # 23 - 29
+    elsif ( $temp < 31 ) # 25 - 30
     {
         @arr = @{$self->{'itsfucking'}{'warm'}};
         @com = @{$self->{'comment'}{'warm'}};
