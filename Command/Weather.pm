@@ -448,16 +448,19 @@ sub weather_by_coords
     # If we don't have cached weather (or it is expired), ask DarkSky for it.
     else
     {
+        say localtime(time) . " Requesting weather for $lat,$lon";
         # Take the coords and lookup the weather.
         $self->{'bot'}->darksky->weather($lat, $lon, sub
         {
             $json = shift;
+            #say Dumper($json);
 
             # Cache the results;
             $self->{'cache'}{'weather'}{"$lat,$lon"}{'json'} = $json;
             $self->{'cache'}{'weather'}{"$lat,$lon"}{'expires'} = time + 3600; # Good for one hour.
     
             my $formatted_weather = $self->format_weather($json);
+            #say "Formatted Weather: $formatted_weather";
     
             $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather); # This sub handles whether it's a message or webhook.
         });
@@ -475,13 +478,17 @@ sub send_weather
         my $avatar = 'http://i.imgur.com/BVCiYSn.png'; # default
         $avatar = $avatars->{$json->{'icon'}} if exists $avatars->{$json->{'icon'}};    # per-weather icons
 
+        # Webhooks restrict usernames to 3-32 chars in length.
+        $address = "Weather for $address" if ( length $address < 3 );
+        $address = substr($address,0,29) . "..." if ( length $address > 32 );
+
         my $hookparam = {
             'username' => $address,
             'avatar_url' => $avatar,
             'content' => $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
         };
 
-        $self->{'discord'}->send_webhook($channel, $hook, $hookparam);
+        $self->{'discord'}->send_webhook($channel, $hook, $hookparam, sub { my $json = shift; say Dumper($json) if defined $json; });
     }
     else # Regular message.
     {
