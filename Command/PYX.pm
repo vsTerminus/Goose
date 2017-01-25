@@ -65,7 +65,8 @@ sub cmd_pyx
 {
     my ($self, $channel, $author, $msg) = @_;
 
-    $msg =~ s/`//g;
+    $msg =~ s/[\`\*]//g;
+    $msg =~ s/_+/____/g;
 
     my $args = $msg;
     my $pattern = $self->{'pattern'};
@@ -108,7 +109,7 @@ sub by_white_cards
     my $cah = $self->{'cah'};
     my $discord = $self->{'discord'};
 
-    my @cards = split 'w ', $args; shift @cards; # Remove the first element, which will be empty.
+    my @cards = split / ?w /, $args; shift @cards; # Remove the first element, which will be empty.
     my $count = scalar @cards;
 
     say "User gave me $count white cards.";
@@ -119,18 +120,27 @@ sub by_white_cards
         say Dumper($json);
 
         my $text = $json->{'card'}{'text'};
+        
+        my $blanks = () = $text =~ /____/g;
+        say "by_white_cards found $blanks blanks, expected $count";
 
-        if ( $count == 1 and $text !~ /_/ )
+        # Handle cases like "make a haiku" where they don't have the appropriate number of blanks and it will confuse things.
+        while ( $blanks < $count )
         {
-            # Append, this is a question card.
-            $text .= " `$cards[0]`";
+            $text .= ' ____ ';
+            $blanks++;
         }
-        else
+
+
+        foreach my $card (@cards)
         {
-            foreach my $card (@cards)
+            if ( $card =~ /^\?+$/ )
             {
-                $text =~ s/_+/`$card`/;
+                # "w ?" should be replaced by a random card.
+                my $new = $cah->random_white(1); # Blocking request - no callback.
+                $card = $new->{'cards'}[0]{'text'};
             }
+            $text =~ s/____/\\_*$card*\\_/;
         }
 
         $discord->send_message($channel, "$text");
@@ -162,7 +172,8 @@ sub by_pick
         }
         
         my $text = $json->{'card'}{'text'};
-        my $count = () = $text =~ /_+/g;
+        $pick = $json->{'card'}{'pick'};
+        my $count = () = $text =~ /____/g;
 #        say "by_pick found $count blanks, expected $pick";
 
         # Handle cases like "make a haiku" where they don't have the appropriate number of blanks and it will confuse the by_black_card function.
@@ -188,7 +199,7 @@ sub by_black_card
     my $cah = $self->{'cah'};
     my $discord = $self->{'discord'};
 
-    my $count = () = $args =~ /_+/g;
+    my $count = () = $args =~ /____/g;
     say "Found $count blanks";
     
     if ( $count > 0 )
@@ -201,7 +212,7 @@ sub by_black_card
             foreach my $card (@{$json->{'cards'}})
             {
                 my $text = $card->{'text'};
-                $args =~ s/_+/`$text`/;
+                $args =~ s/____/\\_*$text*\\_/;
             }
 
             $discord->send_message($channel, $args);
@@ -215,7 +226,7 @@ sub by_black_card
             say Dumper($json);
 
             my $text = $json->{'cards'}[0]{'text'};
-            $args .= " `$text`";
+            $args .= " \\_*$text*\\_";
 
             $discord->send_message($channel, $args);
         });

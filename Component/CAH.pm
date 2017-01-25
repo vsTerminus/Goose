@@ -40,13 +40,19 @@ sub random_black
     my $url     = $api_url . '/cards/black/rand';
     $url .= '?pick=' . $pick if defined $pick;
 
-    $ua->get($url => sub {
-        my ($ua, $tx) = @_;
+    if ( defined $callback )
+    {
+        $ua->get($url => sub {
+            my ($ua, $tx) = @_;
+    
+            my $json = $tx->res->json;
+            
+            $callback->($json);
+        });
+    }
 
-        my $json = $tx->res->json;
-        
-        $callback->($json);
-    });
+    # Else
+    return $ua->get($url)->res->json;
 }
 
 # Returns 1 or more random white cards
@@ -60,13 +66,20 @@ sub random_white
     $count = 1 if $count < 1;
     $url .= "?count=$count" if defined $count and $count > 1;
 
-    $ua->get($url => sub {
-        my ($ua, $tx) = @_;
-
-        my $json = $tx->res->json;
-
-        $callback->($json);
-    });
+    if ( defined $callback )
+    {
+    
+        $ua->get($url => sub {
+            my ($ua, $tx) = @_;
+    
+            my $json = $tx->res->json;
+    
+            $callback->($json);
+        });
+    }
+    
+    # Else
+    return $ua->get($url)->res->json;
 }
 
 1;
