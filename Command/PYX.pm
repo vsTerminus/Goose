@@ -139,7 +139,7 @@ sub by_white_cards
                 # "w ?" should be replaced by a random card.
                 my $new = $cah->random_white(1); # Blocking request - no callback.
                 $card = $new->{'cards'}[0]{'text'};
-                $card =~ s/\.$//; # Remove the . at the end of the card.
+                $card =~ s/\. *$//; # Remove the . at the end of the card.
             }
             $text =~ s/____/**$card**/;
         }
