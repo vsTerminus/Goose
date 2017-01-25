@@ -14,15 +14,15 @@ I have also created a [public discord server](https://discord.gg/FuKTcHF) you ca
 
 So far the bot can do:
 
-- **Avatar** | Fetch and display a slightly higher resolution version of someone's avatar
+- **Avatar Lookups** | Fetch and display a slightly higher resolution version of someone's avatar
 
 ![Avatar Command Example](https://i.imgur.com/GCvgK0s.png)
 
-- **Comic** | Generate a random Cyanid & Happiness comic, and save your favorites for later
+- **Randomly Generated Comics** | Use the Cyanid & Happiness Random Comic Generator and save your favorites for later
 
 ![Comic Command Example](https://i.imgur.com/ISBg66k.png)
 
-- **NowPlaying** | Fetch Last.FM information for yourself or anyone else who scrobbles their music
+- **Last.FM Now Playing Info** | Fetch Last.FM information for yourself or anyone else who scrobbles their music
 
 ![Weather Command  Example](https://i.imgur.com/cneQT46.png)
 
@@ -30,13 +30,17 @@ So far the bot can do:
 
 ![Pick Command Example](https://i.imgur.com/nLo89qm.png)
 
-- **Weather** | Look up the weather for just about anywhere in the world
+- **Current Weather Conditions** | Look up the weather for just about anywhere in the world
 
 ![Weather Command Example](https://i.imgur.com/625CU8J.png)
 
-- **YouTube** | Search for videos on YouTube
+- **YouTube Videos** | Search for videos on YouTube
 
 ![YouTube Command Example](https://i.imgur.com/g1Unk8Z.png)
+
+- **Pretend You're Xyzzy** | Play individual, customized hands of (A Cards Against Humanity clone)
+
+![Pretend You're Xyzzy Example](https://i.imgur.com/nQeHlZF.png)
 
 There are also some commands which are restricted to the bot owner.
 These are useful more for utility type commands which help the bot function.
@@ -57,6 +61,8 @@ In short, you will need to sign up for a number of developer API keys from vario
 - Google Maps (API Key)
 - YouTube (API Key)
 - DarkSky.net (API Key)
+
+While you won't need an API Key for the Pretend You're Xyzzy functionality, you will need to set up [cah-cards](https://github.com/Grinnz/cah-cards) by [Grinnz](https://github.com/Grinnz) and put your web service URL in this bot's config file.
 
 In addition, you'll need a database set up for some of the functions (Weather, comic, and nowplaying). 
 I use MySQL and have not tested it with anything else, although in theory it should work with anything supported by Perl DBI.
