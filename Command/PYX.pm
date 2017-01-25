@@ -139,8 +139,9 @@ sub by_white_cards
                 # "w ?" should be replaced by a random card.
                 my $new = $cah->random_white(1); # Blocking request - no callback.
                 $card = $new->{'cards'}[0]{'text'};
+                $card =~ s/\.$//; # Remove the . at the end of the card.
             }
-            $text =~ s/____/\\_*$card*\\_/;
+            $text =~ s/____/**$card**/;
         }
 
         $discord->send_message($channel, "$text");
@@ -212,7 +213,8 @@ sub by_black_card
             foreach my $card (@{$json->{'cards'}})
             {
                 my $text = $card->{'text'};
-                $args =~ s/____/\\_*$text*\\_/;
+                $text =~ s/\.$//; # Remove the . at the end of the card.
+                $args =~ s/____/**$text**/;
             }
 
             $discord->send_message($channel, $args);
@@ -226,7 +228,8 @@ sub by_black_card
             say Dumper($json);
 
             my $text = $json->{'cards'}[0]{'text'};
-            $args .= " \\_*$text*\\_";
+            $text =~ s/\.$//; # Remove the . at the end of the card.
+            $args .= " **$text**";
 
             $discord->send_message($channel, $args);
         });
