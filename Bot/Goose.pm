@@ -10,6 +10,7 @@ use Component::Database;
 use Component::YouTube;
 use Component::DarkSky;
 use Component::Maps;
+use Component::CAH;
 use Mojo::IOLoop;
 
 use Exporter qw(import);
@@ -61,6 +62,9 @@ sub new
 
     # LastFM
     $self->{'lastfm'} = Net::Async::LastFM->new('api_key' => $params{'lastfm'}{'api_key'}) if ( $params{'lastfm'}{'use_lastfm'} );
+
+    # CAH Cards
+    $self->{'cah'} = Component::CAH->new('api_url' => $params{'cah'}{'api_url'}) if ( $params{'cah'}{'use_cah'} );
 
     return $self;
 }
@@ -495,6 +499,12 @@ sub lastfm
 {
     my $self = shift;
     return $self->{'lastfm'};
+}
+
+sub cah
+{
+    my $self = shift;
+    return $self->{'cah'};
 }
 
 1;

@@ -77,3 +77,11 @@ api_key = xxx
 [maps]
 use_maps = 1
 api_key = xxx
+
+# This section is for Cards Against Humanity.
+# It uses cah-cards by Grinnz (https://github.com/Grinnz/cah-cards)
+# You must clone that repo and host it somewhere the bot can access it.
+# Put the URL below in the api_url field once you have done this.
+[cah]
+use_cah = 1
+api_url = http://0:8080
