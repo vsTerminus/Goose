@@ -65,6 +65,8 @@ sub cmd_pyx
 {
     my ($self, $channel, $author, $msg) = @_;
 
+    $msg =~ s/`//g;
+
     my $args = $msg;
     my $pattern = $self->{'pattern'};
     $args =~ s/$pattern/$2/i;
@@ -182,7 +184,7 @@ sub by_pick
 sub by_black_card
 {
     my ($self, $channel, $author, $args) = @_;
-    
+
     my $cah = $self->{'cah'};
     my $discord = $self->{'discord'};
 
