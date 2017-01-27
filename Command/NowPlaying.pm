@@ -11,6 +11,7 @@ use Net::Discord;
 use Net::Async::LastFM;
 use DBI;
 use Component::Database;
+use Component::YouTube;
 use Mojo::JSON qw(encode_json decode_json);
 use Data::Dumper;
 
@@ -51,7 +52,7 @@ sub new
     my ($class, %params) = @_;
     my $self = {};
     bless $self, $class;
-    
+   
     # Setting up this command module requires the Discord connection 
     # and Database info to be passed in so it can utilize them.
     # It also needs the last.fm api key.
@@ -61,6 +62,7 @@ sub new
     $self->{'discord'}  = $bot->discord;
     $self->{'db'}       = $bot->db;
     $self->{'lastfm'}   = $bot->lastfm;
+    $self->{'youtube'}  = $bot->youtube;
     $self->{'pattern'}  = $pattern;
 
     # Now register this command with the bot.
@@ -184,40 +186,73 @@ sub nowplaying_by_username
     # Make sure to use the correct username in the output if that is the case.
     $discord_name = $user->{'username'} if defined $user and exists $user->{'username'};
 
-    $lastfm->nowplaying($username,  
-        "```apache\n".
-        "Track | %artist% - %title%\n".
-        "Album | %album%".
-        "```", sub 
-        { 
-            my $formatted = shift;
+    $lastfm->nowplaying({ user => $username, callback => sub
+    { 
+        my $res = shift;
+        my $artist = $res->{'artist'};
+        my $album  = $res->{'album'};
+        my $title  = $res->{'title'};
+        
+        my $formatted = 
+            "```apache\n".
+            "Track | %artist% - %title%\n".
+            "Album | %album%".
+            "```";
 
-            # Do we have a webhook for this channel?
-            if ( my $hook = $self->{'bot'}->has_webhook($channel) )
+        $formatted =~ s/%artist%/$artist/g;
+        $formatted =~ s/%album%/$album/g;
+        $formatted =~ s/%title%/$title/g;
+
+        # If we have access to the YouTube component we can also add a link to the song on YouTube.
+        if ( defined $self->{'youtube'} ) 
+        {
+            $self->{'youtube'}->search("$artist - $title", sub
             {
-                # Now we can do some more interesting formatting for this.
-                # Instead of the user's avatar, we're going to try using the Audioscrobbler icon for everyone.
-                my $avatar_url = 'http://i.imgur.com/F9FDlQ8.png';
-                my $profile_url = "http://last.fm/user/" . $username;
+                my $json = shift;
+                my $youtube_link = 'https://youtube.com/watch?v=' . $json->{'items'}[0]{'id'}{'videoId'};
 
-                if (defined $avatar_url and defined $profile_url)
-                {
-                    my $hookparam = {
-                        'username' => "$discord_name",
-                        'content' => "$formatted\n[View Profile on Last.FM]($profile_url)",
-                        'avatar_url' => $avatar_url
-                    };
-
-                    # Starting to think I should be using futures, because these nested callbacks are starting to suck.
-                    $discord->send_webhook($channel, $hook, $hookparam);
-                }
-            }
-            else
-            {
-                $discord->send_message( $channel, "**Now Playing for " . $discord_name . "** (http://last.fm/user/" . $username . ")\n" . $formatted );
-            }
+                $self->send_np($channel, $discord_name, $username, $formatted, $youtube_link);
+            });
         }
-    );
+        else
+        {
+            $self->send_np($channel, $discord_name, $username, $formatted);
+        }
+    }});
+}
+
+# This sub will be the one to actually send the NowPlaying message to the Discord channel.
+sub send_np
+{
+    my ($self, $channel, $discord_name, $username, $formatted, $youtube_link) = @_;
+
+    my $discord = $self->{'discord'};
+
+    # Do we have a webhook for this channel?
+    if ( my $hook = $self->{'bot'}->has_webhook($channel) )
+    {
+        # Now we can do some more interesting formatting for this.
+        # Instead of the user's avatar, we're going to try using the Audioscrobbler icon for everyone.
+        my $avatar_url = 'http://i.imgur.com/F9FDlQ8.png';
+        my $profile_url = "http://last.fm/user/" . $username;
+
+        if (defined $avatar_url and defined $profile_url)
+        {
+            my $hookparam = {
+                'username' => "$discord_name",
+                'content' => "$formatted\n[View Profile on Last.FM](<$profile_url>)",
+                'avatar_url' => $avatar_url
+            };
+
+            $hookparam->{'content'} .= " | [Listen on YouTube](<$youtube_link>)" if defined $youtube_link;
+
+            $discord->send_webhook($channel, $hook, $hookparam);
+        }
+    }
+    else
+    {
+        $discord->send_message( $channel, "**Now Playing for " . $discord_name . "** (http://last.fm/user/" . $username . ")\n" . $formatted ); 
+    }
 }
 
 1;
