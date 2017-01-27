@@ -368,13 +368,7 @@ sub cmd_weather
         {
             $self->add_user($author->{'id'}, $author->{'username'}, $location);
 
-            my $msg = $author->{'username'} . ": I have updated your default Weather location to `$location`\n\n" .
-                "**Add More Locations**\n" .
-                "To save another location use the same command, but give the location a name in quotes.\n" .
-                "- `!w set <location> \"<name>\"`\n" .
-                "- Example: `!w set 10002 \"home\"` or `!w set 10003 \"school\"`\n\n" .
-                "You can then use the Weather command with these names as shortcuts.\n" .
-                "- Example: `!w home` would now bring up the weather for the location you saved as \"home\"\n";
+            my $msg = $author->{'username'} . ": I have updated your default Weather location to `$location`\n";
 
             $discord->send_message( $channel, $msg );
         
