@@ -498,10 +498,10 @@ sub format_weather
 {
     my ($self, $json) = @_;
 
-    my $temp_f = $json->{'temperature'};
-    my $temp_c = ftoc($temp_f);
-    my $feel_f = $json->{'apparentTemperature'};
-    my $feel_c = ftoc($feel_f);
+    my $temp_f = round($json->{'temperature'});
+    my $temp_c = round(ftoc($temp_f));
+    my $feel_f = round($json->{'apparentTemperature'});
+    my $feel_c = round(ftoc($feel_f));
     my $cond = $json->{'summary'};
     my $wind_mi = $json->{'windSpeed'};
     my $wind_km = kph($wind_mi);
@@ -594,13 +594,25 @@ sub get_stored_coords
 sub ctof
 {
     my $c = shift;
-    return sprintf("%0.1f", ($c * (9/5) + 32));
+    return $c * (9/5) + 32;
 }
 
 sub ftoc
 {
     my $f = shift;
-    return sprintf("%0.1f", ($f - 32) / (1.8));
+    return ($f - 32) / (1.8);
+}
+
+sub round
+{
+    my $n = shift;
+
+    # Add .5 for positive numbers
+    # Subtract .5 for negative numbers
+    # This makes int() behave as expected.
+    $n+= ( $n > 0 ? 0.5 : -0.5 );
+    
+    return int($n);
 }
 
 sub mph
