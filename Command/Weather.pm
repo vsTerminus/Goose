@@ -449,7 +449,7 @@ sub weather_by_coords
         $json = $self->{'cache'}{'weather'}{"$lat,$lon"}{'json'};
 
         my $formatted_weather = $self->format_weather($json);
-        $formatted_weather =~ s/FUCKING.*$/**FUCKING**/ if $address =~ /Fucking, Austria/;
+        $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
     
         $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather);
     }
@@ -468,7 +468,7 @@ sub weather_by_coords
             $self->{'cache'}{'weather'}{"$lat,$lon"}{'expires'} = time + 3600; # Good for one hour.
     
             my $formatted_weather = $self->format_weather($json);
-            $formatted_weather =~ s/FUCKING.*$/**FUCKING**/ if $address =~ /Fucking, Austria/;
+            $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
             #say "Formatted Weather: $formatted_weather";
     
             $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather); # This sub handles whether it's a message or webhook.
