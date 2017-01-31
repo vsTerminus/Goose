@@ -32,6 +32,10 @@ my $usage = <<EOF;
 
 **Shorthand:** `!w` and `!we`
 
+**Check someone else's weather:** `!weather <\@username>`
+
+    eg. `!weather <\@231059560977137664>`
+
 **Save Your Location:** `!weather set <location> ["name"]`
     - You can save a default location and any number of other named locations for the bot to remember.
     - Storing your location allows the bot to give you the weather without needing to be told where you are.
@@ -374,6 +378,15 @@ sub cmd_weather
         
             $args = $location;
         }
+    }
+    # By @mention
+    elsif ( $args =~ /^\<\@\!?(\d+)\>$/ )
+    { 
+        unless ( $args = $self->get_stored_location({id => $1}) )
+        {
+            $discord->send_message($channel, "Sorry " . $author->{'username'} . ", I don't have a stored location for that user.");
+        }
+        say "Found stored location for $1: $args";
     }
     else # Check to see if this is a stored location.
     {
