@@ -11,6 +11,7 @@ use Component::YouTube;
 use Component::DarkSky;
 use Component::Maps;
 use Component::CAH;
+use Component::UrbanDictionary;
 use Mojo::IOLoop;
 
 use Exporter qw(import);
@@ -65,6 +66,9 @@ sub new
 
     # CAH Cards
     $self->{'cah'} = Component::CAH->new('api_url' => $params{'cah'}{'api_url'}) if ( $params{'cah'}{'use_cah'} );
+
+    # Urban Dictionary
+    $self->{'urbandictionary'} = Component::UrbanDictionary->new(); # Needs nothing, so no need to check if it's configured.
 
     return $self;
 }
@@ -505,6 +509,12 @@ sub cah
 {
     my $self = shift;
     return $self->{'cah'};
+}
+
+sub urbandictionary
+{
+    my $self = shift;
+    return $self->{'urbandictionary'};
 }
 
 1;
