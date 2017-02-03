@@ -39,7 +39,7 @@ sub define
     my $ua      = $self->{'ua'};
     my $api_url = $self->{'api_url'};
     my $url     = $api_url . '/define?term=' . uri_encode($word);
-    say "URL: $url";
+#    say "URL: $url";
 
     # Non-blocking if they provided a callback function
     if ( defined $callback )

@@ -16,12 +16,16 @@ use Data::Dumper;
 # Command Info
 my $command = "Define";
 my $access = 0; # Public
-my $description = "Look up the definition of a word on UrbanDictionary";
+my $description = "Look up the definition of a word or phrase.\nPowered by UrbanDictionary";
 my $pattern = '^(def(ine)?|urban|ud) ?(.*)$';
 my $function = \&cmd_define;
 my $usage = <<EOF;
 Usage: `!define <word or phrase>`
 Example `!define Xyzzy`
+
+See more results: `!define`
+
+Aliases: `!def`, `!urban`, `!ud`
 EOF
 ###########################################################################################
 
@@ -69,7 +73,7 @@ sub cmd_define
         $urban->define($args, sub
         {
             my $json = shift;
-            say Dumper($json);
+#            say Dumper($json);
    
             if ( $json->{'result_type'} eq 'no_results' )
             {
@@ -116,15 +120,49 @@ sub to_string
     my $thumbs = $tup - $tdn;
     $thumbs = "+" . $thumbs if $thumbs > 0;
     my $word = ucfirst lc $json->{'word'};
-    my $example = $json->{'example'};
-    my $def = $json->{'definition'};
+    my $def = trunc($json->{'definition'});
+    my $example = trunc($json->{'example'});
 
+    undef $example if ( $example !~ /[A-Za-z0-9]/m );
+
+    my $str = "__**$word**__ [**$thumbs**]" .
+              "\n\n$def";
+    $str .= "\n\n\n*$example*" if ( defined $example );
+    $str .= "\n\n<$json->{'permalink'}>";
+    
+    return $str;
+}
+
+sub trunc
+{
+    my $str = shift;
+    my $max = 500;
+    
     # Do some formatting replacements
-    $def =~ s/\`/'/g;
-    $example =~ s/\`/'/g;
+    $str =~ s/\`/'/gm;
+    $str =~ s/\[word\](.*?)\[\/word\]/$1/igm;
+    $str =~ s/\*//gm;
+    $str =~ s/\_//gm;
 
-    return  "__**$word**__ (**$thumbs**)\n\n" .
-            "$def\n\n**Example:**\n$example";
+    if ( length $str > $max )
+    {
+        for ( my $i = 0; $i < 20 and length $str > $max; $i++ )
+        {
+#            $str =~ s/\s*\n*$//gm;
+            $str =~ s/^(.*)(\n(?:.*(?!\n)))+$//gm;
+            $str =~ s/\n\s*\n*\s*$/\n/gm;
+        }
+        if ( length $str > $max )
+        {
+            say "Length is still " . length $str . ", resorting to substring.";
+        }
+        
+        $str = substr($str,0,$max) if ( length $str > $max );
+
+        $str .= "[...]";
+    }
+
+    return $str;
 }
 
 1;
