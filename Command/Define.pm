@@ -141,8 +141,7 @@ sub trunc
     # Do some formatting replacements
     $str =~ s/\`/'/gm;
     $str =~ s/\[word\](.*?)\[\/word\]/$1/igm;
-    $str =~ s/\*//gm;
-    $str =~ s/\_//gm;
+    $str =~ s/[\*\[\]\_]//gm;
 
     if ( length $str > $max )
     {
