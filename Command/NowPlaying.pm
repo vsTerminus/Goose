@@ -8,7 +8,7 @@ use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_nowplaying);
 
 use Mojo::Discord;
-use Mojo::LastFM;
+use Mojo::WebService::LastFM;
 use DBI;
 use Component::Database;
 use Component::YouTube;

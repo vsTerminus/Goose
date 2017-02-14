@@ -85,7 +85,7 @@ Also, I have not included any sort of DB table schemas for this. If you are actu
     - Basically, once the Bot module hands something off to a Command module, it forgets all about it and goes on with life. It's up to the Command module to send a response back to the user.
 - **Component/\*.pm**
     - These are API wrapper modules for the Commands to use.
-    - I could turn these into separate projects on their own like I did for Mojo::LastFM, but I won't do that unless I have some other project that wants to use them. 
+    - I could turn these into separate projects on their own like I did for Mojo::WebService::LastFM, but I won't do that unless I have some other project that wants to use them. 
     - Basically, if you want to connect to a new API you'd create a new Component module that handles the API calls, and then write a Command that uses the Component module to get what it needs.
 
 That's about it. Maybe not the best, but it works.
@@ -98,7 +98,7 @@ If it is not launching there are two very common scenarios to check first:
 
 1. Is the config filled out properly and completely? API keys and user tokens should *not* have quotations around them.
 2. Do you have all of the required modules? The simplest way to make sure you do is to install cpanminus and run it against the *cpanfile* included in this project.
-    a. Don't forget that Mojo::Discord and Mojo::LastFM are not CPAN modules and have to be installed manually from my github page.
+    a. Don't forget that Mojo::Discord and Mojo::WebService::LastFM are not CPAN modules and have to be installed manually from my github page.
 
 If you are running this on Windows, I highly recommend Strawberry Perl. It comes with cpanminus, and seems to be the best option. Beyond that, it should work as long as you have the config filled out and have all the required modules installed.
 

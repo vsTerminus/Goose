@@ -62,7 +62,7 @@ sub new
     $self->{'maps'} = Component::Maps->new(%{$params{'maps'}}) if ( $params{'maps'}->{'use_maps'} );
 
     # LastFM
-    $self->{'lastfm'} = Mojo::LastFM->new('api_key' => $params{'lastfm'}{'api_key'}) if ( $params{'lastfm'}{'use_lastfm'} );
+    $self->{'lastfm'} = Mojo::WebService::LastFM->new('api_key' => $params{'lastfm'}{'api_key'}) if ( $params{'lastfm'}{'use_lastfm'} );
 
     # CAH Cards
     $self->{'cah'} = Component::CAH->new('api_url' => $params{'cah'}{'api_url'}) if ( $params{'cah'}{'use_cah'} );
