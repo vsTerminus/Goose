@@ -7,8 +7,8 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_nowplaying);
 
-use Net::Discord;
-use Net::Async::LastFM;
+use Mojo::Discord;
+use Mojo::LastFM;
 use DBI;
 use Component::Database;
 use Component::YouTube;

@@ -7,7 +7,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_avatar);
 
-use Net::Discord;
+use Mojo::Discord;
 use Bot::Goose;
 use Data::Dumper;
 

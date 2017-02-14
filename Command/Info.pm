@@ -7,7 +7,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_info);
 
-use Net::Discord;
+use Mojo::Discord;
 use Bot::Goose;
 use Data::Dumper;
 
@@ -65,7 +65,7 @@ sub cmd_info
                 "I am a semi-useful chat-bot that provides services such as `!weather`, `!nowplaying`, and `!youtube`\n" .
                 "Try the `!help` command for a complete listing. \n\n" .
                 "**Source Code**\n" .
-                "I am open source! I am written in Perl and built on the [Net::Discord](<https://github.com/vsTerminus/Net-Discord>) library.\n" .
+                "I am open source! I am written in Perl and built on the [Mojo::Discord](<https://github.com/vsTerminus/Net-Discord>) library.\n" .
                 "My source code is available [on GitHub](<https://github.com/vsTerminus/Goose>).\n\n" .
                 "**Add Me**\n" .
                 "[Click here](<https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368>) to add me to your own server, or share this link with your server admin if you don't have sufficient access.\n\n" .
@@ -82,7 +82,7 @@ sub cmd_info
                 "I am a semi-useful chat-bot that provides services such as `!weather`, `!nowplaying`, and `!youtube`\n".
                 "Try the `!help` command for a complete listing.\n\n" .
                 "**Source Code**\n" .
-                "I am open source! I am written in Perl, and am built on the Net::Discord library `[1]`\n" .
+                "I am open source! I am written in Perl, and am built on the Mojo::Discord library `[1]`\n" .
                 "My source code is available on GitHub `[2]`\n\n" .
                 "**Add Me**\n" .
                 "You can add me to your own server(s) by clicking the link below `[3]` or by sharing it with your server admin.\n\n".

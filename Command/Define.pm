@@ -7,7 +7,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_define);
 
-use Net::Discord;
+use Mojo::Discord;
 use Bot::Goose;
 use Component::UrbanDictionary;
 use Data::Dumper;
@@ -126,9 +126,9 @@ sub to_string
     undef $example if ( $example !~ /[A-Za-z0-9]/m );
 
     my $str = "__**$word**__ [**$thumbs**]" .
-              "\n\n$def";
-    $str .= "\n\n\n*$example*" if ( defined $example );
-    $str .= "\n\n<$json->{'permalink'}>";
+              "\n$def";
+    $str .= "\n\n*$example*" if ( defined $example );
+    $str .= "\n<$json->{'permalink'}>";
     
     return $str;
 }
@@ -147,9 +147,9 @@ sub trunc
     {
         for ( my $i = 0; $i < 20 and length $str > $max; $i++ )
         {
-#            $str =~ s/\s*\n*$//gm;
+
+            $str =~ s/\s*\n*$//gm;
             $str =~ s/^(.*)(\n(?:.*(?!\n)))+$//gm;
-            $str =~ s/\n\s*\n*\s*$/\n/gm;
         }
         if ( length $str > $max )
         {

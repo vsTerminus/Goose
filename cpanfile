@@ -1,6 +1,6 @@
 # To use: cpanm --installdeps .
-requires 'Net::Discord';
-requires 'Net::Async::LastFM';
+requires 'Mojo::Discord';
+requires 'Mojo::LastFM';
 requires 'Mojo::IOLoop';
 requires 'Mojo::JSON';
 requires 'Config::Tiny';

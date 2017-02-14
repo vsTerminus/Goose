@@ -7,7 +7,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_youtube);
 
-use Net::Discord;
+use Mojo::Discord;
 use Bot::Goose;
 use Component::YouTube;
 use Data::Dumper;

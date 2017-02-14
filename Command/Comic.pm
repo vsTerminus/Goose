@@ -7,7 +7,7 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_comic);
 
-use Net::Discord;
+use Mojo::Discord;
 use Bot::Goose;
 use Mojo::UserAgent;
 use DBI;

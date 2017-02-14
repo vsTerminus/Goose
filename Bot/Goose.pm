@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Net::Discord;
+use Mojo::Discord;
 use Component::Database;
 use Component::YouTube;
 use Component::DarkSky;
@@ -26,7 +26,7 @@ sub new
     $self->{'commands'} = {};
     $self->{'patterns'} = {};
 
-    $self->{'discord'} = Net::Discord->new(
+    $self->{'discord'} = Mojo::Discord->new(
         'token'     => $params{'discord'}->{'token'},
         'name'      => $params{'discord'}->{'name'},
         'url'       => $params{'discord'}->{'redirect_url'},
@@ -62,7 +62,7 @@ sub new
     $self->{'maps'} = Component::Maps->new(%{$params{'maps'}}) if ( $params{'maps'}->{'use_maps'} );
 
     # LastFM
-    $self->{'lastfm'} = Net::Async::LastFM->new('api_key' => $params{'lastfm'}{'api_key'}) if ( $params{'lastfm'}{'use_lastfm'} );
+    $self->{'lastfm'} = Mojo::LastFM->new('api_key' => $params{'lastfm'}{'api_key'}) if ( $params{'lastfm'}{'use_lastfm'} );
 
     # CAH Cards
     $self->{'cah'} = Component::CAH->new('api_url' => $params{'cah'}{'api_url'}) if ( $params{'cah'}{'use_cah'} );
