@@ -109,7 +109,7 @@ sub search
     my $ua      = $self->{'ua'};
     my $api_key = $self->{'api_key'};
     my $api_url = $self->{'api_url'};
-    my $url     = $api_url . '/search?key=' . $api_key . '&part=snippet&maxResults=10&safeSearch=none&type=video&q=' . uri_escape($q);
+    my $url     = $api_url . '/search?key=' . $api_key . '&part=snippet&maxResults=10&safeSearch=none&type=video&q=' . uri_escape_utf8($q);
 
     $ua->get($url => sub {
         my ($ua, $tx) = @_;
