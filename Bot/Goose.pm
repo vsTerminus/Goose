@@ -141,7 +141,8 @@ sub discord_on_message_create
         $self->add_user($mention);
     }
 
-    if ( $msg =~ /^(\<\@\!?$discord_id\>|\Q$trigger\E)/i )
+    # Look for messages starting with a mention or a trigger, but not coming from a bot.
+    if ( !(exists $author->{'bot'} and $author->{'bot'}) and $msg =~ /^(\<\@\!?$discord_id\>|\Q$trigger\E)/i )
     {
         $msg =~ s/^((\<\@\!?$discord_id\>.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
 
