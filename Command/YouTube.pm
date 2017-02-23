@@ -69,20 +69,18 @@ sub cmd_youtube
 
     if ( defined $args and length $args )
     {
-        $self->{'previous'}{$channel} = $args;
-
         $youtube->search($args, sub 
         {
             my $json = shift;
             
-            $self->{'cache'}{$channel}{$args} = $json->{'items'};
+            $self->{'cache'}{$channel} = $json->{'items'};
 
             $discord->send_message($channel, '[1/10] https://www.youtube.com/watch?v=' . $json->{'items'}[0]{'id'}{'videoId'});
         });
     }
-    elsif ( exists $self->{'cache'}{$channel}{$self->{'previous'}{$channel}} )
+    elsif ( exists $self->{'cache'}{$channel} )
     {
-        my @arr = @{$self->{'cache'}{$channel}{$self->{'previous'}{$channel}}};
+        my @arr = @{$self->{'cache'}{$channel}};
         my $num = scalar @arr;
         
         if ( $num > 0 )
@@ -92,7 +90,7 @@ sub cmd_youtube
             my $i = 11 - scalar @arr;
             
             my $item = shift @arr;
-            $self->{'cache'}{$channel}{$self->{'previous'}{$channel}} = \@arr;
+            $self->{'cache'}{$channel} = \@arr;
     
 
             $discord->send_message($channel, "[$i/10] " . 'https://www.youtube.com/watch?v=' . $item->{'id'}{'videoId'});
