@@ -151,10 +151,11 @@ sub to_string
     my $word = ucfirst lc $json->{'word'};
     my $def = trunc($json->{'definition'});
     my $example = trunc($json->{'example'});
+    my $author = $json->{'author'};
 
     undef $example if ( $example !~ /[A-Za-z0-9]/m );
 
-    my $str = "__**$word**__ [**$thumbs**]" .
+    my $str = "__**$word**__ [**$thumbs** | $author]" .
               "\n$def";
     $str .= "\n\n*$example*" if ( defined $example );
     $str .= "\n<$json->{'permalink'}>";
