@@ -25,6 +25,8 @@ Example `!define Xyzzy`
 
 See more results: `!define`
 
+Word of the Day: `!define wotd`
+
 Aliases: `!def`, `!urban`, `!ud`
 EOF
 ###########################################################################################
@@ -70,23 +72,31 @@ sub cmd_define
     # If they passed a word or phrase to search, look it up.
     if ( defined $args and length $args > 0 )
     {
-        $urban->define($args, sub
+        # If the user wants to define the word of the day
+        if ( lc $args eq 'wotd' or lc $args eq 'word of the day' )
         {
-            my $json = shift;
-#            say Dumper($json);
-   
-            if ( $json->{'result_type'} eq 'no_results' )
+            # Use the wotd function to look it up
+            $urban->wotd(sub 
             {
-                $discord->send_message($channel, "No Results.");
-                return;
-            }
+                my $json = shift;
 
-            my $def = shift @{$json->{'list'}};
-            $self->{'cache'}{$channel} = $json->{'list'};
-            my $num = scalar @{$json->{'list'}};
-    
-            $discord->send_message($channel, to_string($def));
-        });
+                # Pass the word to the define function
+                $urban->define($json->{'word'}, sub
+                {
+                    # Display the results in the channel
+                    $self->define_word($channel, shift);
+                });
+            });
+        }
+        else    # If the user wants to supply their own word
+        {
+            # Look it up on UrbanDictionary
+            $urban->define($args, sub
+            {
+                # Display the results in the channel
+                $self->define_word($channel, shift);
+            });
+        }
     }
     elsif ( exists $self->{'cache'}{$channel} )
     {
@@ -101,6 +111,25 @@ sub cmd_define
     {
         $discord->send_message($channel, "No more results.");
     }
+}
+
+sub define_word
+{
+    my ($self, $channel, $json) = @_;
+    
+    my $discord = $self->{'discord'};
+
+    if ( $json->{'result_type'} eq 'no_results' )
+    {
+        $discord->send_message($channel, "No Results.");
+        return;
+    }
+
+    my $def = shift @{$json->{'list'}};
+    $self->{'cache'}{$channel} = $json->{'list'};
+    my $num = scalar @{$json->{'list'}};
+ 
+    $discord->send_message($channel, to_string($def));
 }
 
 sub get_cached
