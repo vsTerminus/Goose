@@ -32,11 +32,19 @@ sub new
         'url'       => $params{'discord'}->{'redirect_url'},
         'version'   => '1.0',
         'bot'       => $self,
-        'callbacks' => {
-            'on_ready'              => sub { $self->discord_on_ready(shift) },
-            'on_guild_create'       => sub { $self->discord_on_guild_create(shift) },
-            'on_message_create'     => sub { $self->discord_on_message_create(shift) },
-            'on_webhooks_update'    => sub { $self->discord_on_webhooks_update(shift) },
+        'callbacks' => {    # Discord Gateway Dispatch Event Types
+            'READY'             => sub { $self->discord_on_ready(shift) },
+            'GUILD_CREATE'      => sub { $self->discord_on_guild_create(shift) },
+            'GUILD_UPDATE'      => sub { $self->discord_on_guild_update(shift) },
+            'GUILD_DELETE'      => sub { $self->discord_on_guild_delete(shift) },
+            'CHANNEL_CREATE'    => sub { $self->discord_on_channel_create(shift) },
+            'CHANNEL_UPDATE'    => sub { $self->discord_on_channel_update(shift) },
+            'CHANNEL_DELETE'    => sub { $self->discord_on_channel_delete(shift) },
+            'TYPING_START'      => sub { $self->discord_on_typing_start(shift) }, 
+            'MESSAGE_CREATE'    => sub { $self->discord_on_message_create(shift) },
+            'MESSAGE_UPDATE'    => sub { $self->discord_on_message_update(shift) },
+            'PRESENCE_UPDATE'   => sub { $self->discord_on_presence_update(shift) },
+            'WEBHOOKS_UPDATE'   => sub { $self->discord_on_webhooks_update(shift) },
         },
         'reconnect' => $params{'discord'}->{'auto_reconnect'},
         'verbose'   => $params{'discord'}->{'verbose'},
@@ -109,6 +117,41 @@ sub discord_on_guild_create
     #say Dumper($hash);
 }
 
+sub discord_on_guild_update
+{
+    my ($self, $hash) = @_;
+
+    # Probably just use add_guild here too.
+}
+
+sub discord_on_guild_delete
+{
+    my ($self, $hash) = @_;
+
+    # Remove the guild
+}
+
+sub discord_on_channel_create
+{
+    my ($self, $hash) = @_;
+
+    # Create the channel
+}
+
+sub discord_on_channel_update
+{
+    my ($self, $hash) = @_;
+
+    # Probably just call the same as on_channel_create does
+}
+
+sub discord_on_channel_delete
+{
+    my ($self, $hash) = @_;
+
+    # Remove the channel
+}
+
 # Whenever we get this we should request the webhooks for the channel.
 # The only one we care about is the one we created.
 sub discord_on_webhooks_update
@@ -116,10 +159,16 @@ sub discord_on_webhooks_update
     my ($self, $hash) = @_;
 
     my $channel = $hash->{'channel_id'};
-    say "Webhooks updated in $channel.";
     delete $self->{'webhooks'}{$channel};
 
     $self->cache_channel_webhooks($channel);
+}
+
+sub discord_on_typing_start
+{
+    my ($self, $hash) = @_;
+
+    # Not sure if we'll ever do anything with this event, but it's here in case we do.
 }
 
 sub discord_on_message_create
@@ -173,6 +222,22 @@ sub discord_on_message_create
             }
         }
     }
+}
+
+sub discord_on_message_update
+{
+    my ($self, $hash) = @_;
+
+    # Might be worth checking how old the message is, and if it's recent enough re-process it for commands?
+    # Would let people fix typos without having to send a new message to trigger the bot.
+    # Have to track replied message IDs in that case so we don't reply twice.
+}
+
+sub discord_on_presence_update
+{
+    my ($self, $hash) = @_;
+
+    # Will be useful for a !playing command to show the user's currently playing "game".
 }
 
 sub cache_channel_webhooks
@@ -442,6 +507,53 @@ sub webhook_avatar
 {
     my $self = shift;
     return $self->{'webhook_avatar'};
+}
+
+# Check if a webhook already exists - return it if so.
+# If not, create one and add it to the webhooks hashref.
+# Is non-blocking if callback is defined.
+sub create_webhook
+{
+    my ($self, $channel, $callback) = @_;
+
+    return $_ if ( $self->has_webhook($channel) );
+
+    # Create a new webhook
+    my $discord = $self->discord;
+
+    my $params = {
+        'name' => $self->webhook_name, 
+        'avatar' => $self->webhook_avatar 
+    };
+
+    if ( defined $callback )
+    {
+        $discord->create_webhook($channel, $params, sub
+        {
+            my $json = shift;
+
+            if ( defined $json->{'name'} ) # Success
+            {
+                $callback->($json);
+            }
+            elsif ( $json->{'code'} == 50013 ) # No permission
+            {
+                say localtime(time) . ": Unable to create webhook in $channel - Need Manage Webhooks permission";
+                $callback->(undef);
+            }
+            else
+            {
+                say localtime(time) . ": Unable to create webhook in $channel - Unknown reason";
+                $callback-(undef);
+            }
+        });
+    }
+    else
+    {
+        my $json = $discord->create_webhook($channel); # Blocking
+
+        return defined $json->{'name'} ? $json : undef;
+    }
 }
 
 sub add_webhook

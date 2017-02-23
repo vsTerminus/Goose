@@ -72,11 +72,6 @@ sub cmd_webhook
         }
 
         # Iterate through the webhooks looking for one matching the one in the config file.
-
-        my $params = {  'name' => $bot->webhook_name,
-                        'avatar' => $bot->webhook_avatar,
-                     };
-
         foreach my $hook ( @{$json} )
         {
             if ( $hook->{'name'} eq $bot->webhook_name )
@@ -87,26 +82,17 @@ sub cmd_webhook
             }
         }
 
-
-        $discord->create_webhook($channel, $params, sub
+        $bot->create_webhook($channel, sub
         {
             my $json = shift;
 
             if ( defined $json->{'name'} )
             {
                 $discord->send_message($channel, "Successfully created a new webhook named '" . $json->{'name'} . "' for this channel.");
-
-                # Store this for future use
-                $bot->add_webhook($channel, $json);
-            }
-            elsif ( $json->{'code'} == 50013 )
-            {
-                $discord->send_message($channel, "I was unable to create a new webhook. Please ensure that I have the 'Manage Webhooks' permission and then try again.");
             }
             else
             {
-                $discord->send_message($channel, "I was unable to create a new webhook, and I'm not sure why. Please try again later.");
-                say Dumper($json);
+                $discord->send_message($channel, "I was unable to create a new webhook. Please ensure that I have the 'Manage Webhooks' permission and then try again.");
             }
         });
     
