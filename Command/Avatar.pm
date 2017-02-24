@@ -35,6 +35,20 @@ sub new
     $self->{'discord'} = $self->{'bot'}->discord;
     $self->{'pattern'} = $pattern;
 
+    # Webhook avatars
+    $self->{'avatars'} = [
+        'http://i.imgur.com/yjMRuF0.png',
+        'http://i.imgur.com/hI02I5p.png',
+        'http://i.imgur.com/Y91CzhM.png',
+        'http://i.imgur.com/y14nQAQ.png',
+        'http://i.imgur.com/gZeA5Tc.jpg',
+        'http://i.imgur.com/r2Qw3YE.jpg',
+        'http://i.imgur.com/STX2FxZ.png',
+        'http://i.imgur.com/GdCj0av.png',
+        'http://i.imgur.com/KnuqLXW.png',
+        'http://i.imgur.com/zsdbOj5.png',
+    ];
+    
     # Register our command with the bot
     $self->{'bot'}->add_command(
         'command'       => $command,
@@ -61,14 +75,10 @@ sub cmd_avatar
 
     my $id = $author->{'id'};
 
-    say Dumper($msg);
-    
     if ( $args =~ /\<\@\!?(\d+)\>/ )
     {
         $id = $1;
     }
-
-    say "Fetching avatar for ID: $id";
 
     $discord->get_user($id, sub
     {
@@ -78,9 +88,64 @@ sub cmd_avatar
 
         my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg?size=1024';
 
+        my $embed = $self->to_embed($name, $url);
+
         # Send a message back to the channel
-        $discord->send_message($channel, "Avatar for **$name**: $url");
+        $self->send_message($channel, $embed);
     });
+}
+
+# Creates an embed hashref with the name and avatar url
+sub to_embed
+{
+    my ($self, $name, $url) = @_;
+
+    my $embed = {
+        'title' => $name,
+        'url' => $url,
+        'type' => 'rich',
+        'color' => 0xa0c0e6,
+        'image' => {
+            'url' => $url,
+            'width' => 256,
+            'height' => 256,
+        },
+    };
+
+    return $embed;
+}
+
+# Takes an embed hashref and sends it as either a message or webhook
+sub send_message
+{
+    my ($self, $channel, $embed) = @_;
+
+    my $bot = $self->{'bot'};
+    my $discord = $self->{'discord'};
+
+    if ( my $hook = $bot->has_webhook($channel) )
+    {
+        my $num = rand(scalar @{$self->{'avatars'}});
+
+        my $message = {
+            'content' => '',
+            'embeds' => [ $embed ],
+            'username' => 'Avatar',
+            'avatar_url' => $self->{'avatars'}[$num],
+        };
+
+        $discord->send_webhook($channel, $hook, $message);
+    }
+    else
+    {
+        my $message = {
+            'content' => '',
+            'embed' => $embed
+        };
+
+        $discord->send_message($channel, $message);
+    }
+  
 }
 
 1;
