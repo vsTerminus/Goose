@@ -73,9 +73,11 @@ sub cmd_youtube
         {
             my $json = shift;
             
+            my $item = shift @{$json->{'items'}};
             $self->{'cache'}{$channel} = $json->{'items'};
 
-            $discord->send_message($channel, '[1/10] https://www.youtube.com/watch?v=' . $json->{'items'}[0]{'id'}{'videoId'});
+            my $embed = $self->to_embed($item);
+            $discord->send_message($channel, $embed);
         });
     }
     elsif ( exists $self->{'cache'}{$channel} )
@@ -85,15 +87,11 @@ sub cmd_youtube
         
         if ( $num > 0 )
         {
-            shift @arr if ( $num == 10 );
-
-            my $i = 11 - scalar @arr;
-            
             my $item = shift @arr;
             $self->{'cache'}{$channel} = \@arr;
-    
 
-            $discord->send_message($channel, "[$i/10] " . 'https://www.youtube.com/watch?v=' . $item->{'id'}{'videoId'});
+            my $embed = $self->to_embed($item);
+            $discord->send_message($channel, $embed);
         }
         else
         {
@@ -104,6 +102,45 @@ sub cmd_youtube
     {
         $discord->send_message($channel, "Please tell me what to search for like this: `!youtube <search phrase>`");
     }
+}
+
+sub to_embed
+{
+    my ($self, $json) = @_;
+
+    my $description = $json->{'snippet'}{'description'};
+    $description = substr($description,0,50) . "..." if ( length $description > 50 );
+
+    my $embed = {
+        'title' => $json->{'snippet'}{'title'},
+        'description' => $description,
+        'type' => 'rich',
+        'url' => 'https://youtube.com/watch?v=' . $json->{'id'}{'videoId'},
+        'thumbnail' => {
+            'url' => $json->{'snippet'}{'thumbnails'}{'medium'}{'url'},
+            'width' => $json->{'snippet'}{'thumbnails'}{'medium'}{'width'},
+            'height' => $json->{'snippet'}{'thumbnails'}{'medium'}{'height'},
+        },
+        # Embedding a video doesn't actually work, but I'll leave this here commented out in case they ever change that.
+#        'video' => {
+#            'url' => 'http://youtube.com/embed/' . $json->{'id'}{'videoId'},
+#            'height' => 480,
+#            'width' => 480,
+#        },
+        'timestamp' => $json->{'snippet'}{'publishedAt'},
+        'color' => 16711680,
+        'author' => {
+            'name' => $json->{'snippet'}{'channelTitle'},
+            'url' => 'https://youtube.com/channel/' . $json->{'snippet'}{'channelId'},
+        }
+    };
+
+    my $message = {
+        'content' => '',
+        'embed' => $embed,
+    };
+
+    return $message;
 }
 
 1;
