@@ -85,3 +85,9 @@ api_key = xxx
 [cah]
 use_cah = 1
 api_url = http://0:8080
+
+# This section is for Twitch integration
+# The api_key value should be your client ID, which you can create from your Connections tab: https://www.twitch.tv/settings/connections
+[twitch]
+use_twitch = 1
+api_key = xxx

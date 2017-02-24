@@ -12,6 +12,7 @@ use Component::DarkSky;
 use Component::Maps;
 use Component::CAH;
 use Component::UrbanDictionary;
+use Component::Twitch;
 use Mojo::IOLoop;
 
 use Exporter qw(import);
@@ -77,6 +78,10 @@ sub new
 
     # Urban Dictionary
     $self->{'urbandictionary'} = Component::UrbanDictionary->new(); # Needs nothing, so no need to check if it's configured.
+
+    # Twitch
+    # Needs an API Key (Client ID)
+    $self->{'twitch'} = Component::Twitch->new('api_key' => $params{'twitch'}{'api_key'}) if ( $params{'twitch'}{'use_twitch'} );
 
     return $self;
 }
@@ -628,6 +633,12 @@ sub urbandictionary
 {
     my $self = shift;
     return $self->{'urbandictionary'};
+}
+
+sub twitch
+{
+    my $self = shift;
+    return $self->{'twitch'};
 }
 
 1;

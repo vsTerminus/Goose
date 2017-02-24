@@ -1,4 +1,5 @@
 # To use: cpanm --installdeps .
+requires 'Mojo::Base';
 requires 'Mojo::Discord';
 requires 'Mojo::WebService::LastFM';
 requires 'Mojo::IOLoop';
