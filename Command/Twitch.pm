@@ -27,7 +27,7 @@ Set your own twitch channel: `!twitch set <twitch username>`
 
 Link your twitch channel: `!twitch`
 
-Link someone else's twitch channel: `!twitch <\@231059560977137664>`
+Link someone else's twitch channel: `!twitch \@username`
 
 EOF
 ############################################################################################
