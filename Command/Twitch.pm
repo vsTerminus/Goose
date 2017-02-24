@@ -96,14 +96,13 @@ sub cmd_twitch
     
             $self->{'cache'}{$discord_id} = $twitch_id; # Cache this so we don't have to check the DB all the time.
     
-            $discord->send_message($channel, "I have updated your Twitch info.");
+#            $discord->send_message($channel, "I have updated your Twitch info.");
 
             # Check if they are streaming
             my $stream = $twitch->get_stream($twitch_id);
     
             # Now display the new results.
-#            $self->to_embed($channel, {'$json->{'channels'}[0]);
-            $self->get_channel($channel, $twitch_id);
+            $self->get_twitch_info($channel, $twitch_id);
 
         });
     }
@@ -115,7 +114,7 @@ sub cmd_twitch
 
         if ( defined $twitch_id)
         {
-            $self->get_channel($channel, $twitch_id);
+            $self->get_twitch_info($channel, $twitch_id);
         }
         else
         {
@@ -129,7 +128,7 @@ sub cmd_twitch
         {
             my $json = shift;
 
-            $self->get_channel($channel, $json->{'channels'}[0]{'_id'});
+            $self->get_twitch_info($channel, $json->{'channels'}[0]{'_id'});
         });
     }
     # Searching by their own Discord ID
@@ -140,7 +139,7 @@ sub cmd_twitch
 
         if ( defined $twitch_id )
         {
-            $self->get_channel($channel, $twitch_id);
+            $self->get_twitch_info($channel, $twitch_id);
         }
         else
         {
@@ -182,8 +181,8 @@ sub get_stored_id
     }
 }
 
-# Query twitch channel
-sub get_channel
+# Query twitch channel and stream
+sub get_twitch_info
 {
     my ($self, $channel, $twitch_id) = @_;
     
@@ -196,7 +195,9 @@ sub get_channel
         if ( defined $stream_json->{'stream'} )
         {
             $stream_json->{'stream'}{'channel'}{'live'} = 1;
-            $self->to_embed($channel, $stream_json->{'stream'} );
+            my $embed = $self->to_embed($stream_json->{'stream'} );
+
+            $self->send_message($channel, $embed);
         }
         else
         {
@@ -208,16 +209,17 @@ sub get_channel
                     'channel' => $json_channel,
                 };
 
-                $self->to_embed($channel, $hash);
+                my $embed = $self->to_embed($hash);
+                $self->send_message($channel, $embed);
             });
         }
     });
 }
 
+# Create an embed hashref and return it
 sub to_embed
 {
-    my ($self, $channel, $json) = @_;
-    my $discord = $self->{'discord'};
+    my ($self, $json) = @_;
 
     my $fields;
 
@@ -263,7 +265,7 @@ sub to_embed
         'type' => 'rich',
         'description' => $json->{'channel'}{'status'},
         'url' => $json->{'channel'}{'url'},
-        'color' => 10040319,
+        'color' => 0x6441a5,
         'timestamp' => $json->{'channel'}{'updated_at'},
         'thumbnail' => {
             'url' => $json->{'channel'}{'logo'},
@@ -272,6 +274,8 @@ sub to_embed
         },
         'fields' => $fields,
     };
+    
+    return $embed;
 
     my $message = {
         #'content' => '<' . $json->{'url'} . '>',
@@ -279,7 +283,37 @@ sub to_embed
         'embed' => $embed,
     };
 
-    $discord->send_message($channel, $message);
+}
+
+# Takes an embed object and sends it via message or webhook (depending if we have one)
+sub send_message
+{
+    my ($self, $channel, $embed) = @_;
+
+    my $bot = $self->{'bot'};
+    my $discord = $self->{'discord'};
+
+    if ( my $hook = $bot->has_webhook($channel) )
+    {
+        my $message = {
+            'content' => '',
+            'embeds' => [ $embed ],
+            'username' => 'Twitch',
+            'avatar_url' => 'http://i.imgur.com/IiZWqhx.png', # Twitch Logo
+        };
+
+        $discord->send_webhook($channel, $hook, $message);
+    }
+    else
+    {
+        my $message = {
+            'content' => '',
+            'embed' => $embed,
+        };
+
+        $discord->send_message($channel, $message);
+    }
+
 }
 
 1;
