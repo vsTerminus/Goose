@@ -299,7 +299,7 @@ sub send_message
             'content' => '',
             'embeds' => [ $embed ],
             'username' => 'Twitch',
-            'avatar_url' => 'http://i.imgur.com/IiZWqhx.png', # Twitch Logo
+            'avatar_url' => 'http://i.imgur.com/695J22Q.png', # Twitch Logo
         };
 
         $discord->send_webhook($channel, $hook, $message);
