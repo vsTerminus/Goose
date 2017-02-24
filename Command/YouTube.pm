@@ -66,6 +66,7 @@ sub cmd_youtube
     my $replyto = '<@' . $author->{'id'} . '>';
 
     my $youtube = $self->{'youtube'};
+    my $bot = $self->{'bot'};
 
     if ( defined $args and length $args )
     {
@@ -77,7 +78,7 @@ sub cmd_youtube
             $self->{'cache'}{$channel} = $json->{'items'};
 
             my $embed = $self->to_embed($item);
-            $discord->send_message($channel, $embed);
+            $self->send_message($channel, $embed);
         });
     }
     elsif ( exists $self->{'cache'}{$channel} )
@@ -91,7 +92,8 @@ sub cmd_youtube
             $self->{'cache'}{$channel} = \@arr;
 
             my $embed = $self->to_embed($item);
-            $discord->send_message($channel, $embed);
+
+            $self->send_message($channel, $embed);
         }
         else
         {
@@ -128,19 +130,43 @@ sub to_embed
 #            'width' => 480,
 #        },
         'timestamp' => $json->{'snippet'}{'publishedAt'},
-        'color' => 16711680,
+        'color' => 0xdf2925,
         'author' => {
             'name' => $json->{'snippet'}{'channelTitle'},
             'url' => 'https://youtube.com/channel/' . $json->{'snippet'}{'channelId'},
         }
     };
 
-    my $message = {
-        'content' => '',
-        'embed' => $embed,
-    };
 
-    return $message;
+    return $embed;
+}
+
+sub send_message
+{
+    my ($self, $channel, $embed) = @_;
+
+    my $bot = $self->{'bot'};
+    my $discord = $self->{'discord'};
+
+    if ( my $hook = $bot->has_webhook($channel) )
+    {
+        my $param = {
+            'username' => "YouTube",
+            'content' => '',
+            'embeds' => [ $embed ],
+            'avatar_url' => 'http://i.imgur.com/bOSQa41.png', #YouTube logo
+        };
+
+        $discord->send_webhook($channel, $hook, $param);
+    }
+    else
+    {
+        my $message = {
+            'content' => '',
+            'embed' => $embed,
+        };
+        $discord->send_message($channel, $message);
+    }
 }
 
 1;
