@@ -13,6 +13,7 @@ use DBI;
 use Component::Database;
 use Component::YouTube;
 use Mojo::JSON qw(encode_json decode_json);
+use DateTime;
 use Data::Dumper;
 
 ###########################################################################################
@@ -173,12 +174,54 @@ sub nowplaying_by_id
     }
 }
 
+# Converts the JSON response from lastfm into a rich embed
+sub to_embed
+{
+    my ($self, $username, $json, $youtube_url) = @_;
+    my $bot = $self->{'bot'};
+
+    my $embed = {
+        'description' => '[' . $username . ' on Last.FM](http://last.fm/user/' . $username . ')',
+        'fields' => [
+            {
+                'name' => $json->{'artist'} . ' - ' . $json->{'title'},
+                'value' => $json->{'album'},
+                'inline' => \1,
+            },
+        ],
+        'thumbnail' => {
+            'url' => $json->{'image'}[1]{'#text'},
+        },
+        'type' => 'rich',
+        'url' => 'http://last.fm/user/' . $username,
+        'color' => 0xffffff,
+    };
+
+    # If the song is currently playing there will not be a timestamp.
+    # If there is nothing currently playing the first result will be historical and will have a timestamp.
+    # If it's there, we should show it.
+    if ( defined $json->{'date'} )
+    {
+        $embed->{'timestamp'} = DateTime->from_epoch(epoch => $json->{'date'}{'uts'})->iso8601().'Z';
+    }
+    
+    # If we have access to the YouTube component this sub should receive a YouTube URL to include in the description.
+    if ( defined $youtube_url )
+    {
+        $embed->{'description'} .= ' | [Listen on YouTube](' . $youtube_url . ')';
+    }
+
+    return $embed;
+}
+
 # This sub does NowPlaying by username.
 sub nowplaying_by_username
 {
     my ($self, $channel, $author, $username, $user) = @_;
     my $discord = $self->{'discord'};
     my $lastfm = $self->{'lastfm'};
+    my $youtube = $self->{'youtube'};
+    my $bot = $self->{'bot'};
 
     my $discord_name = $author->{'username'};
 
@@ -188,71 +231,57 @@ sub nowplaying_by_username
 
     $lastfm->nowplaying({ user => $username, callback => sub
     { 
-        my $res = shift;
-        my $artist = $res->{'artist'};
-        my $album  = $res->{'album'};
-        my $title  = $res->{'title'};
-        
-        my $formatted = 
-            "```apache\n".
-            "Track | %artist% - %title%\n".
-            "Album | %album%".
-            "```";
-
-        $formatted =~ s/%artist%/$artist/g;
-        $formatted =~ s/%album%/$album/g;
-        $formatted =~ s/%title%/$title/g;
+        my $np_json = shift;
 
         # If we have access to the YouTube component we can also add a link to the song on YouTube.
-        if ( defined $self->{'youtube'} ) 
+        if ( defined $self->{'youtube'} ) #and $bot->has_webhook($channel) ) 
         {
-            $self->{'youtube'}->search("$artist - $title", sub
+            $youtube->search($np_json->{'artist'} . ' - ' . $np_json->{'title'}, sub
             {
-                my $json = shift;
-                my $youtube_link = 'https://youtube.com/watch?v=' . $json->{'items'}[0]{'id'}{'videoId'};
+                my $yt_json = shift;
+                my $youtube_link = 'https://youtube.com/watch?v=' . $yt_json->{'items'}[0]{'id'}{'videoId'};
+                my $embed = $self->to_embed($username, $np_json, $youtube_link);
 
-                $self->send_np($channel, $discord_name, $username, $formatted, $youtube_link);
+                $self->send_message($channel, $embed);
             });
         }
         else
         {
-            $self->send_np($channel, $discord_name, $username, $formatted);
+            my $embed = $self->to_embed($username, $np_json);
+            $self->send_message($channel, $embed);
         }
     }});
 }
 
-# This sub will be the one to actually send the NowPlaying message to the Discord channel.
-sub send_np
+# Figure out whether to send via regular message or webhook, and then do so
+sub send_message
 {
-    my ($self, $channel, $discord_name, $username, $formatted, $youtube_link) = @_;
-
+    my ($self, $channel, $embed) = @_;
+    
+    my $bot = $self->{'bot'};
     my $discord = $self->{'discord'};
 
-    # Do we have a webhook for this channel?
-    if ( my $hook = $self->{'bot'}->has_webhook($channel) )
+    if ( my $hook = $bot->has_webhook($channel) )
     {
-        # Now we can do some more interesting formatting for this.
-        # Instead of the user's avatar, we're going to try using the Audioscrobbler icon for everyone.
-        my $avatar_url = 'http://i.imgur.com/F9FDlQ8.png';
-        my $profile_url = "http://last.fm/user/" . $username;
+        my $param = {
+            'username' => 'Last.FM',
+            'avatar_url' => 'http://i.imgur.com/F9FDlQ8.png', # Audioscrobbler Logo
+            'content' => '',
+            'embeds' => [ $embed ],
+        };
 
-        if (defined $avatar_url and defined $profile_url)
-        {
-            my $hookparam = {
-                'username' => "$discord_name",
-                'content' => "$formatted\n[View Profile on Last.FM](<$profile_url>)",
-                'avatar_url' => $avatar_url
-            };
-
-            $hookparam->{'content'} .= " | [Listen on YouTube](<$youtube_link>)" if defined $youtube_link;
-
-            $discord->send_webhook($channel, $hook, $hookparam);
-        }
+        $discord->send_webhook($channel, $hook, $param);
     }
-    else
+    else    # Regular message
     {
-        $discord->send_message( $channel, "**Now Playing for " . $discord_name . "** (http://last.fm/user/" . $username . ")\n" . $formatted ); 
+        my $message = {
+            'content' => '',
+            'embed' => $embed,
+        };
+
+        $discord->send_message($channel, $message);
     }
+
 }
 
 1;
