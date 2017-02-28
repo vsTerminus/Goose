@@ -22,17 +22,17 @@ Roll X number of Y sided dice with optional bonus.
 
 Individual results will be displayed if you are rolling 25 or fewer dice.
 
-Usage:
+**Usage:**
 
 Format is `!roll [num dice]d[num sides]+[bonus]`
 
-The number of dice is optional, will default to one.
+The number of dice is optional, will default to 1.
 The number of sides is also optional, will default to 20.
 The bonus is optional, will default to 0.
 
 That means that `!roll` by itself is the equivalent of `!roll 1d20+0`.
 
-More examples:
+**More examples:**
 
 Roll a single 6-sided die: `!roll d6`
 Roll four 6-sided dice: `!roll 4d6`
@@ -40,7 +40,7 @@ Roll 4 20-sided dice: `!roll 4`
 Roll 4 20-sided dice with 10 bonus: `!roll 4+10`
 Roll 10 100-sided dice with 69 bonus: `!roll 10d100+69`
 
-Aliases:
+**Aliases:**
 
 Also accepts: !dice, !di, and !ro
 EOF
@@ -94,7 +94,7 @@ sub cmd_roll
         my $num = int(rand($num_sides))+1;
         $total += $num;
 
-        $rolls .= "$num+" if $num_dice > 1 and $num_dice < 25;
+        $rolls .= "$num+" if $num_dice > 1 and $num_dice <= 25;
     }
     $total += $bonus;
 
