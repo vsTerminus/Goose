@@ -84,23 +84,26 @@ sub cmd_roll
 
     my $num_dice = ( $args =~ /^(\d+)/ ) ? $1 : 1;
     my $num_sides = ( $args =~ /d(\d+)/ ) ? $1 : 20;
-    my $bonus = ( $args =~ /\+(\d+)$/ ) ? $1 : 0;
+    my $bonus = ( $args =~ /([+-]\d+)$/ ) ? int($1) : 0;
+    my $plus = $bonus >= 0 ? '+' : '';
 
     my $total = 0;
-    my $rolls = "";
+    my @rolls;
 
     for(1..$num_dice)
     {
         my $num = int(rand($num_sides))+1;
         $total += $num;
 
-        $rolls .= "$num+" if $num_dice > 1 and $num_dice <= 25;
+        push @rolls, $num;
     }
     $total += $bonus;
 
-    $rolls = ":  `" . $rolls . "$bonus`" if ( length $rolls );
+    my $rolltext = "";
+    
+    $rolltext = ": `" . join('+', @rolls) . "$plus$bonus`" if ( $num_dice > 1 and $num_dice <= 25 );
 
-    $discord->send_message($channel, 'Rolling ' . $num_dice . 'd' . $num_sides . '+' . $bonus . ' ' . $rolls . "\nResult: **$total**");
+    $discord->send_message($channel, 'Rolling ' . $num_dice . 'd' . $num_sides . $plus . $bonus . ' ' . $rolltext . "\nResult: **$total**");
 }
 
 1;
