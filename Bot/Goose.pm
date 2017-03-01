@@ -11,7 +11,6 @@ use Component::CAH;
 use Component::UrbanDictionary;
 use Component::Twitch;
 use Mojo::IOLoop;
-use Discord::Guild;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(add_command command get_patterns);
@@ -112,100 +111,17 @@ sub discord_on_ready
     #$self->{'discord'}->status_update({'game' => $self->{'playing'}});
 
     say localtime(time) . " Connected to Discord.";
-
-#    say Dumper($hash);
 }
 
-sub discord_on_guild_create
-{
-    my ($self, $hash) = @_;
-    
-    my ($roles, $members, $channels, $presences, $emojis) = {};
-
-    # Now do Channels, Roles, Members, Presences, and Emojis
-    $roles->{$_->{'id'}}                = Discord::Guild::Role->new($_)     foreach (@{$hash->{'roles'}});
-    $members->{$_->{'user'}{'id'}}      = Discord::Guild::Member->new($_)   foreach (@{$hash->{'members'}});
-    $channels->{$_->{'id'}}             = Discord::Guild::Channel->new($_)  foreach (@{$hash->{'channels'}});
-    $presences->{$_->{'user'}{'id'}}    = Discord::Guild::Presence->new($_) foreach (@{$hash->{'presences'}});
-    $emojis->{$_->{'id'}}               = Discord::Guild::Emoji->new($_)    foreach (@{$hash->{'emojis'}});
-
-    # Channels requires an extra step
-    # Since messages only give you the channel ID we need an easy way to figure out which Guild that channel belongs to
-    # so we can look up roles and permissions and stuff without having to iterate through every guild entry every time.
-    foreach (@{$hash->{'channels'}})
-    {
-        # Create the channel object
-        $channels->{$_->{'id'}} = Discord::Guild::Channel->new($_);
-
-        # Create a link from the channel ID to the Guild ID
-        $self->channels($_->{'id'}, $hash->{'id'});
-    }
-
-    # Create the new Guild object
-    my $guild = Discord::Guild->new(
-        'owner_id'                      => $hash->{'owner_id'},
-        'id'                            => $hash->{'id'},
-        'name'                          => $hash->{'name'},
-        'splash'                        => $hash->{'splash'},
-        'joined_at'                     => $hash->{'joined_at'},
-        'icon'                          => $hash->{'icon'},
-        'region'                        => $hash->{'region'},
-        'application_id'                => $hash->{'application_id'},
-        'unavailable'                   => $hash->{'unavailable'},
-        'member_count'                  => $hash->{'member_count'},
-        'afk_channel_id'                => $hash->{'afk_channel_id'},
-        'default_message_notifications' => $hash->{'default_message_notifications'},
-        'large'                         => $hash->{'large'},
-        'afk_timeout'                   => $hash->{'afk_timeout'},
-        'verification_level'            => $hash->{'verification_level'},
-        'mfa_level'                     => $hash->{'mfa_level'},
-        'roles'                         => $roles,
-        'members'                       => $members,
-        'channels'                      => $channels,
-        'presences'                     => $presences,
-        'emojis'                        => $emojis,
-    );
-
-    say "Added Guild: " . $guild->id . " -> " . $guild->name;
-    $self->guilds($guild->id, $guild);
-}
-
-sub discord_on_guild_update
-{
-    my ($self, $hash) = @_;
-
-    # Probably just use add_guild here too.
-    say Dumper($hash);
-}
-
-sub discord_on_guild_delete
-{
-    my ($self, $hash) = @_;
-
-    # Remove the guild
-    say Dumper($hash);
-}
-
-sub discord_on_channel_create
-{
-    my ($self, $hash) = @_;
-
-    # Create the channel
-}
-
-sub discord_on_channel_update
-{
-    my ($self, $hash) = @_;
-
-    # Probably just call the same as on_channel_create does
-}
-
-sub discord_on_channel_delete
-{
-    my ($self, $hash) = @_;
-
-    # Remove the channel
-}
+# Might do something with these?
+# The tracking of information is done by the Mojo::Discord library now,
+# so we only need these if we're going to have the bot actually do something when they happen.
+sub discord_on_guild_create{}
+sub discord_on_guild_update{}
+sub discord_on_guild_delete{}
+sub discord_on_channel_create{}
+sub discord_on_channel_update{}
+sub discord_on_channel_delete{}
 
 # Whenever we get this we should request the webhooks for the channel.
 # The only one we care about is the one we created.
@@ -239,19 +155,6 @@ sub discord_on_message_create
     my $discord_id = $self->id();
 
 #    say Dumper($hash);
-    my $guild_id = $self->channels->{$channel_id};
-
-    my $guild = $self->guilds->{$guild_id};
-
-
-    my $guild_name = $guild->name;
-    my $channel = $guild->channels->{$channel_id};
-
-    say Dumper($channel);
-
-    my $channel_name = $channel->name;
-
-    say "$guild_name -> $channel_name";
 
     foreach my $mention (@mentions)
     {
@@ -358,49 +261,6 @@ sub cache_guild_webhooks
     });
 }
 
-# Takes a permission integer and returns the permission(s) that comprise it
-sub permissions
-{
-    my ($self, $permission) = @_;
-
-    my $return = {};
-
-    # Loop through all known permissions
-    foreach my $key (@{$permissions})
-    {
-        # Bitwise AND the passed-in parameter permission with whichever one we're currently looking at in the foreach loop
-        # If you get permission back (instead of 0) it means they have it.
-        # If you get zero, they don't.
-        $return->{$permissions->{$key}} = $key if ( $permission & $permissions->{$key} );
-    }
-
-    return $return;
-}
-
-# Takes a permission string and returns the hex value for it
-sub permission
-{
-    my ($self, $str) = @_;
-
-    return $permissions->{$str};
-}
-
-# This sub takes a guild ID, a user ID, a channel ID, and a permission string.
-# It will return 1 (true) if they have the permission and 0 (false) if they do not.
-sub has_permission
-{
-    my ($self, $guild_id, $user_id, $channel_id, $perm_str) = @_;
-
-    # First, get the permission value
-    my $perm_val = $self->permission($perm_str);
-
-    # Get user's roles
-    # Check role permissions
-    # Check channel overrides
-    # Compare to perm_val
-    # Return result
-}
-
 sub add_me
 {
     my ($self, $user) = @_;
@@ -438,43 +298,6 @@ sub me
     my ($self, $user) = @_;
 
     defined $user ? $self->{'me'} = $user : return $self->{'me'};
-}
-
-# If nothing passed in, returns all guilds
-# If guild_id passed in, returns that guild object
-# If guild_id and guild passed in, points guild_id at the specified guild object
-sub guilds
-{
-    my ($self, $guild_id, $guild) = @_;
-
-    return $self->{'guilds'} if !defined $guild_id;
-
-    defined $guild ?
-        $self->{'guilds'}{$guild_id} = $guild :
-        return $self->{'guilds'}{$guild_id};
-}
-
-# If nothing passed in, returns all channel id to guild id associations
-# If channel ID passed in, returns guild ID for that channel
-# If channel ID and guild ID passed in, creates new association
-sub channels
-{
-    my ($self, $channel_id, $guild_id) = @_;
-
-    return $self->{'channels'} if !defined $channel_id;
-
-    defined $guild_id ?
-        $self->{'channels'}{$channel_id} = $guild_id :
-        return $self->{'channels'}{$channel_id};
-}
-
-sub remove_guild
-{
-    my ($self, $id) = @_;
-
-    return undef unless defined $id;
-
-    delete $self->{'guilds'}{$id} if exists $self->{'guilds'}{$id};
 }
 
 sub get_patterns
@@ -639,62 +462,6 @@ sub has_webhook
     {
         return undef;
     }
-}
-
-# Returns the discord object associated to this bot.
-sub discord
-{
-    my $self = shift;
-    return $self->{'discord'};
-}
-
-# returns the DB object associated to this bot
-sub db
-{
-    my $self = shift;
-    return $self->{'db'};
-}
-
-sub youtube
-{
-    my $self = shift;
-    return $self->{'youtube'};
-}
-
-sub darksky
-{
-    my $self = shift;
-    return $self->{'darksky'};
-}
-
-sub maps
-{
-    my $self = shift;
-    return $self->{'maps'};
-}
-
-sub lastfm
-{
-    my $self = shift;
-    return $self->{'lastfm'};
-}
-
-sub cah
-{
-    my $self = shift;
-    return $self->{'cah'};
-}
-
-sub urbandictionary
-{
-    my $self = shift;
-    return $self->{'urbandictionary'};
-}
-
-sub twitch
-{
-    my $self = shift;
-    return $self->{'twitch'};
 }
 
 1;
