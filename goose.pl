@@ -34,7 +34,7 @@ say localtime(time) . " Loaded Config: $config_file";
 my $self = {};  # For miscellaneous information about this bot such as discord id
 
 # Initialize the bot
-my $bot = Bot::Goose->new(%{$config});
+my $bot = Bot::Goose->new('config' => $config);
 
 # Register the commands
 # The new() function in each command will register with the bot.

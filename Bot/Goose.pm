@@ -1,9 +1,6 @@
 package Bot::Goose;
 
-use v5.10;
-use strict;
-use warnings;
-
+use Mojo::Base -base;
 use Data::Dumper;
 use Mojo::Discord;
 use Component::Database;
@@ -14,77 +11,85 @@ use Component::CAH;
 use Component::UrbanDictionary;
 use Component::Twitch;
 use Mojo::IOLoop;
+use Discord::Guild;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(add_command command get_patterns);
 
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
+my $permissions = {
+    'CREATE_INSTANT_INVITE' => 0x00000001,
+    'KICK_MEMBERS'          => 0x00000002,
+    'BAN_MEMBERS'           => 0x00000004,
+    'ADMINISTRATOR'         => 0x00000008,
+    'MANAGE_CHANNELS'       => 0x00000010,
+    'MANAGE_GUILD'          => 0x00000020,
+    'ADD_REACTIONS'         => 0x00000040,
+    'READ_MESSAGES'         => 0x00000400,
+    'SEND_MESSAGES'         => 0x00000800,
+    'SEND_TTS_MESSAGES'     => 0x00001000,
+    'MANAGE_MESSAGES'       => 0x00002000,
+    'EMBED_LINKS'           => 0x00004000,
+    'ATTACH_FILES'          => 0x00008000,
+    'READ_MESSAGE_HISTORY'  => 0x00010000,
+    'MENTION_EVERYONE'      => 0x00020000,
+    'USE_EXTERNAL_EMOJIS'   => 0x00040000,
+    'CONNECT'               => 0x00100000,
+    'SPEAK'                 => 0x00200000,
+    'MUTE_MEMBERS'          => 0x00400000,
+    'DEAFEN_MEMBERS'        => 0x00800000,
+    'MOVE_MEMBERS'          => 0x01000000,
+    'USE_VAD'               => 0x02000000,
+    'CHANGE_NICKNAME'       => 0x04000000,
+    'MANAGE_NICKNAMES'      => 0x08000000,
+    'MANAGE_ROLES'          => 0x10000000,
+    'MANAGE_WEBHOOKS'       => 0x20000000,
+    'MANAGE_EMOJIS'         => 0x40000000,
+};
 
-    $self->{'commands'} = {};
-    $self->{'patterns'} = {};
+has 'config';
+has ['commands', 'patterns'];
+#has ['channels', 'guilds'];
 
-    $self->{'discord'} = Mojo::Discord->new(
-        'token'     => $params{'discord'}->{'token'},
-        'name'      => $params{'discord'}->{'name'},
-        'url'       => $params{'discord'}->{'redirect_url'},
+has 'db'                => sub { my $self = shift; Component::Database->new(%{$self->config->{'db'}})};
+has 'youtube'           => sub { my $self = shift; Component::YouTube->new(%{$self->config->{'youtube'}})};
+has 'darksky'           => sub { my $self = shift; Component::DarkSky->new(%{$self->config->{'weather'}})};
+has 'maps'              => sub { my $self = shift; Component::Maps->new(%{$self->config->{'maps'}})};
+has 'lastfm'            => sub { my $self = shift; Mojo::WebService::LastFM->new('api_key' => $self->config->{'lastfm'}{'api_key'})};
+has 'cah'               => sub { my $self = shift; Component::CAH->new('api_url' => $self->config->{'cah'}{'api_url'})};
+has 'urbandictionary'   => sub { my $self = shift; Component::UrbanDictionary->new()};
+has 'twitch'            => sub { my $self = shift; Component::Twitch->new('api_key' => $self->config->{'twitch'}{'api_key'})};
+
+has 'owner_id'          => sub { my $self = shift; $self->config->{'discord'}{'owner_id'} };
+has 'trigger'           => sub { my $self = shift; $self->config->{'discord'}{'trigger'} };
+has 'playing'           => sub { my $self = shift; $self->config->{'discord'}{'playing'} };
+has 'client_id'         => sub { my $self = shift; $self->config->{'discord'}{'client_id'} };
+has 'webhook_name'      => sub { my $self = shift; $self->config->{'discord'}{'webhook_name'} };
+has 'webhook_avatar'    => sub { my $self = shift; $self->config->{'discord'}{'webhook_avatar'} };
+
+has 'discord'           => sub { my $self = shift; 
+    Mojo::Discord->new(
+        'token'     => $self->config->{'discord'}{'token'},
+        'name'      => $self->config->{'discord'}{'name'},
+        'url'       => $self->config->{'discord'}{'redirect_url'},
         'version'   => '1.0',
-        'bot'       => $self,
         'callbacks' => {    # Discord Gateway Dispatch Event Types
-            'READY'             => sub { $self->discord_on_ready(shift) },
-            'GUILD_CREATE'      => sub { $self->discord_on_guild_create(shift) },
-            'GUILD_UPDATE'      => sub { $self->discord_on_guild_update(shift) },
-            'GUILD_DELETE'      => sub { $self->discord_on_guild_delete(shift) },
-            'CHANNEL_CREATE'    => sub { $self->discord_on_channel_create(shift) },
-            'CHANNEL_UPDATE'    => sub { $self->discord_on_channel_update(shift) },
-            'CHANNEL_DELETE'    => sub { $self->discord_on_channel_delete(shift) },
-            'TYPING_START'      => sub { $self->discord_on_typing_start(shift) }, 
-            'MESSAGE_CREATE'    => sub { $self->discord_on_message_create(shift) },
-            'MESSAGE_UPDATE'    => sub { $self->discord_on_message_update(shift) },
-            'PRESENCE_UPDATE'   => sub { $self->discord_on_presence_update(shift) },
-            'WEBHOOKS_UPDATE'   => sub { $self->discord_on_webhooks_update(shift) },
+            'READY'             => sub { $self->discord_on_ready(@_) },
+            'GUILD_CREATE'      => sub { $self->discord_on_guild_create(@_) },
+            'GUILD_UPDATE'      => sub { $self->discord_on_guild_update(@_) },
+            'GUILD_DELETE'      => sub { $self->discord_on_guild_delete(@_) },
+            'CHANNEL_CREATE'    => sub { $self->discord_on_channel_create(@_) },
+            'CHANNEL_UPDATE'    => sub { $self->discord_on_channel_update(@_) },
+            'CHANNEL_DELETE'    => sub { $self->discord_on_channel_delete(@_) },
+            'TYPING_START'      => sub { $self->discord_on_typing_start(@_) }, 
+            'MESSAGE_CREATE'    => sub { $self->discord_on_message_create(@_) },
+            'MESSAGE_UPDATE'    => sub { $self->discord_on_message_update(@_) },
+            'PRESENCE_UPDATE'   => sub { $self->discord_on_presence_update(@_) },
+            'WEBHOOKS_UPDATE'   => sub { $self->discord_on_webhooks_update(@_) },
         },
-        'reconnect' => $params{'discord'}->{'auto_reconnect'},
-        'verbose'   => $params{'discord'}->{'verbose'},
+        'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
+        'verbose'   => $self->config->{'discord'}{'verbose'},
     );
-    
-    $self->{'owner_id'} = $params{'discord'}->{'owner_id'};
-    $self->{'trigger'} = $params{'discord'}->{'trigger'};
-    $self->{'playing'} = $params{'discord'}->{'playing'};
-    $self->{'client_id'} = $params{'discord'}->{'client_id'};
-    $self->{'webhook_name'} = $params{'discord'}->{'webhook_name'};
-    $self->{'webhook_avatar'} = $params{'discord'}->{'webhook_avatar'};
-
-    # Database
-    $self->{'db'} = Component::Database->new(%{$params{'db'}});
-
-    # YouTube API 
-    $self->{'youtube'} = Component::YouTube->new(%{$params{'youtube'}}) if ( $params{'youtube'}->{'use_youtube'} );
-
-    # DarkSky Weather API
-    $self->{'darksky'} = Component::DarkSky->new(%{$params{'weather'}})  if ( $params{'weather'}->{'use_weather'} );
-
-    # Google Maps API
-    $self->{'maps'} = Component::Maps->new(%{$params{'maps'}}) if ( $params{'maps'}->{'use_maps'} );
-
-    # LastFM
-    $self->{'lastfm'} = Mojo::WebService::LastFM->new('api_key' => $params{'lastfm'}{'api_key'}) if ( $params{'lastfm'}{'use_lastfm'} );
-
-    # CAH Cards
-    $self->{'cah'} = Component::CAH->new('api_url' => $params{'cah'}{'api_url'}) if ( $params{'cah'}{'use_cah'} );
-
-    # Urban Dictionary
-    $self->{'urbandictionary'} = Component::UrbanDictionary->new(); # Needs nothing, so no need to check if it's configured.
-
-    # Twitch
-    # Needs an API Key (Client ID)
-    $self->{'twitch'} = Component::Twitch->new('api_key' => $params{'twitch'}{'api_key'}) if ( $params{'twitch'}{'use_twitch'} );
-
-    return $self;
-}
+};
 
 # Connect to discord and start running.
 sub start
@@ -108,18 +113,61 @@ sub discord_on_ready
 
     say localtime(time) . " Connected to Discord.";
 
-    #say Dumper($hash);
+#    say Dumper($hash);
 }
 
 sub discord_on_guild_create
 {
     my ($self, $hash) = @_;
+    
+    my ($roles, $members, $channels, $presences, $emojis) = {};
 
-    say "Adding guild: " . $hash->{'id'} . " -> " . $hash->{'name'};
+    # Now do Channels, Roles, Members, Presences, and Emojis
+    $roles->{$_->{'id'}}                = Discord::Guild::Role->new($_)     foreach (@{$hash->{'roles'}});
+    $members->{$_->{'user'}{'id'}}      = Discord::Guild::Member->new($_)   foreach (@{$hash->{'members'}});
+    $channels->{$_->{'id'}}             = Discord::Guild::Channel->new($_)  foreach (@{$hash->{'channels'}});
+    $presences->{$_->{'user'}{'id'}}    = Discord::Guild::Presence->new($_) foreach (@{$hash->{'presences'}});
+    $emojis->{$_->{'id'}}               = Discord::Guild::Emoji->new($_)    foreach (@{$hash->{'emojis'}});
 
-    $self->add_guild($hash);
+    # Channels requires an extra step
+    # Since messages only give you the channel ID we need an easy way to figure out which Guild that channel belongs to
+    # so we can look up roles and permissions and stuff without having to iterate through every guild entry every time.
+    foreach (@{$hash->{'channels'}})
+    {
+        # Create the channel object
+        $channels->{$_->{'id'}} = Discord::Guild::Channel->new($_);
 
-    #say Dumper($hash);
+        # Create a link from the channel ID to the Guild ID
+        $self->channels($_->{'id'}, $hash->{'id'});
+    }
+
+    # Create the new Guild object
+    my $guild = Discord::Guild->new(
+        'owner_id'                      => $hash->{'owner_id'},
+        'id'                            => $hash->{'id'},
+        'name'                          => $hash->{'name'},
+        'splash'                        => $hash->{'splash'},
+        'joined_at'                     => $hash->{'joined_at'},
+        'icon'                          => $hash->{'icon'},
+        'region'                        => $hash->{'region'},
+        'application_id'                => $hash->{'application_id'},
+        'unavailable'                   => $hash->{'unavailable'},
+        'member_count'                  => $hash->{'member_count'},
+        'afk_channel_id'                => $hash->{'afk_channel_id'},
+        'default_message_notifications' => $hash->{'default_message_notifications'},
+        'large'                         => $hash->{'large'},
+        'afk_timeout'                   => $hash->{'afk_timeout'},
+        'verification_level'            => $hash->{'verification_level'},
+        'mfa_level'                     => $hash->{'mfa_level'},
+        'roles'                         => $roles,
+        'members'                       => $members,
+        'channels'                      => $channels,
+        'presences'                     => $presences,
+        'emojis'                        => $emojis,
+    );
+
+    say "Added Guild: " . $guild->id . " -> " . $guild->name;
+    $self->guilds($guild->id, $guild);
 }
 
 sub discord_on_guild_update
@@ -127,6 +175,7 @@ sub discord_on_guild_update
     my ($self, $hash) = @_;
 
     # Probably just use add_guild here too.
+    say Dumper($hash);
 }
 
 sub discord_on_guild_delete
@@ -134,6 +183,7 @@ sub discord_on_guild_delete
     my ($self, $hash) = @_;
 
     # Remove the guild
+    say Dumper($hash);
 }
 
 sub discord_on_channel_create
@@ -182,13 +232,26 @@ sub discord_on_message_create
 
     my $author = $hash->{'author'};
     my $msg = $hash->{'content'};
-    my $channel = $hash->{'channel_id'};
+    my $channel_id = $hash->{'channel_id'};
     my @mentions = @{$hash->{'mentions'}};
-    my $trigger = $self->{'trigger'};
+    my $trigger = $self->trigger;
     my $discord_name = $self->name();
     my $discord_id = $self->id();
 
-    #say Dumper($hash);
+#    say Dumper($hash);
+    my $guild_id = $self->channels->{$channel_id};
+
+    my $guild = $self->guilds->{$guild_id};
+
+
+    my $guild_name = $guild->name;
+    my $channel = $guild->channels->{$channel_id};
+
+    say Dumper($channel);
+
+    my $channel_name = $channel->name;
+
+    say "$guild_name -> $channel_name";
 
     foreach my $mention (@mentions)
     {
@@ -210,7 +273,7 @@ sub discord_on_message_create
                 {
                     my $command = $self->get_command_by_pattern($pattern);
                     my $access = $command->{'access'};
-                    my $owner = $self->owner;
+                    my $owner = $self->owner_id;
 
                     if ( defined $access and $access > 0 and defined $owner and $owner != $author->{'id'} )
                     {
@@ -221,7 +284,7 @@ sub discord_on_message_create
                     {
                         my $object = $command->{'object'};
                         my $function = $command->{'function'};
-                        $object->$function($channel, $author, $msg);
+                        $object->$function($channel_id, $author, $msg);
                     }
                 }
             }
@@ -295,12 +358,54 @@ sub cache_guild_webhooks
     });
 }
 
+# Takes a permission integer and returns the permission(s) that comprise it
+sub permissions
+{
+    my ($self, $permission) = @_;
+
+    my $return = {};
+
+    # Loop through all known permissions
+    foreach my $key (@{$permissions})
+    {
+        # Bitwise AND the passed-in parameter permission with whichever one we're currently looking at in the foreach loop
+        # If you get permission back (instead of 0) it means they have it.
+        # If you get zero, they don't.
+        $return->{$permissions->{$key}} = $key if ( $permission & $permissions->{$key} );
+    }
+
+    return $return;
+}
+
+# Takes a permission string and returns the hex value for it
+sub permission
+{
+    my ($self, $str) = @_;
+
+    return $permissions->{$str};
+}
+
+# This sub takes a guild ID, a user ID, a channel ID, and a permission string.
+# It will return 1 (true) if they have the permission and 0 (false) if they do not.
+sub has_permission
+{
+    my ($self, $guild_id, $user_id, $channel_id, $perm_str) = @_;
+
+    # First, get the permission value
+    my $perm_val = $self->permission($perm_str);
+
+    # Get user's roles
+    # Check role permissions
+    # Check channel overrides
+    # Compare to perm_val
+    # Return result
+}
+
 sub add_me
 {
     my ($self, $user) = @_;
     say "Adding my ID as " . $user->{'id'};
     $self->{'id'} = $user->{'id'};
-    $self->add_user($user);
 }
 
 sub id
@@ -328,80 +433,48 @@ sub client_id
     return $self->{'client_id'};
 }
 
-sub my_user
-{
-    my $self = shift;
-    my $id = $self->{'id'};
-    return $self->{'users'}{$id};
-}
-
-sub add_user
+sub me
 {
     my ($self, $user) = @_;
-    my $id = $user->{'id'};
-    $self->{'users'}{$id} = $user;
+
+    defined $user ? $self->{'me'} = $user : return $self->{'me'};
 }
 
-sub get_user
+# If nothing passed in, returns all guilds
+# If guild_id passed in, returns that guild object
+# If guild_id and guild passed in, points guild_id at the specified guild object
+sub guilds
 {
-    my ($self, $id) = @_;
-    return $self->{'users'}{$id};
+    my ($self, $guild_id, $guild) = @_;
+
+    return $self->{'guilds'} if !defined $guild_id;
+
+    defined $guild ?
+        $self->{'guilds'}{$guild_id} = $guild :
+        return $self->{'guilds'}{$guild_id};
 }
 
-sub remove_user
+# If nothing passed in, returns all channel id to guild id associations
+# If channel ID passed in, returns guild ID for that channel
+# If channel ID and guild ID passed in, creates new association
+sub channels
 {
-    my ($self, $id) = @_;
+    my ($self, $channel_id, $guild_id) = @_;
 
-    delete $self->{'users'}{$id};
-}
+    return $self->{'channels'} if !defined $channel_id;
 
-
-# Tell the bot it has connected to a new guild.
-sub add_guild
-{
-    my ($self, $guild) = @_;
-
-    # Nice and simple. Just add what we're given.
-    $self->{'guilds'}{$guild->{'id'}} = $guild;
-
-    # Also, let's request the webhooks for this guild.
-    $self->cache_guild_webhooks($guild);
-
-    # Also add entries for channels in this guild.
-    foreach my $channel (@{$guild->{'channels'}})
-    {
-        $self->{'channels'}{$channel->{'id'}} = $guild->{'id'};
-    }
-}
-
-sub get_guild_by_channel
-{
-    my ($self, $channel) = @_;
-
-    return $self->{'channels'}{$channel};
+    defined $guild_id ?
+        $self->{'channels'}{$channel_id} = $guild_id :
+        return $self->{'channels'}{$channel_id};
 }
 
 sub remove_guild
 {
     my ($self, $id) = @_;
 
+    return undef unless defined $id;
+
     delete $self->{'guilds'}{$id} if exists $self->{'guilds'}{$id};
-}
-
-# Return a single guild by ID
-sub get_guild
-{
-    my ($self, $id) = @_;
-
-    exists $self->{'guilds'}{$id} ? return $self->{'guilds'}{$id} : return undef;
-}
-
-# Return the list of guilds.
-sub get_guilds
-{
-    my $self = shift;
-
-    return keys %{$self->{'guilds'}};
 }
 
 sub get_patterns
@@ -494,26 +567,6 @@ sub command
     return 0;
 }
 
-# Returns the owner ID for the bot
-sub owner
-{
-    my $self = shift;
-    return $self->{'owner_id'};
-}
-
-# Return the webhook name the bot will use
-sub webhook_name
-{
-    my $self = shift;
-    return $self->{'webhook_name'};
-}
-
-sub webhook_avatar
-{
-    my $self = shift;
-    return $self->{'webhook_avatar'};
-}
-
 # Check if a webhook already exists - return it if so.
 # If not, create one and add it to the webhooks hashref.
 # Is non-blocking if callback is defined.
@@ -522,6 +575,9 @@ sub create_webhook
     my ($self, $channel, $callback) = @_;
 
     return $_ if ( $self->has_webhook($channel) );
+
+    # If we don't have one cached we should check to see if we have Manage Webhooks
+
 
     # Create a new webhook
     my $discord = $self->discord;
@@ -570,7 +626,7 @@ sub add_webhook
 }
 
 # This retrieves a cached webhook object for the specified channel.
-# If there isn't one, return undef and let the caller go make one or request an existing one from Discord.
+# If there isn't one we should return undef.
 sub has_webhook
 {
     my ($self, $channel) = @_;
