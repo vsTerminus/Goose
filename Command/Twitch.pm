@@ -81,23 +81,41 @@ sub cmd_twitch
         # Query the name, get the channel ID, and then store both.
         my $twitch_name = $1;
 
+
         $twitch->search('channels', $twitch_name, sub
         {
             my $json = shift;
+#            say Dumper($json);
 
             my $db = $self->{'db'};
-    
+   
             my $discord_id = $author->{'id'};
             my $discord_name = $author->{'username'};
-            my $twitch_id = $json->{'channels'}[0]{'_id'};
-                 
+            my $twitch_id;
+
+            foreach my $tchan( @{$json->{'channels'}} )
+            {
+                #say Dumper($tchan);
+                if ( lc $twitch_name eq lc $tchan->{'display_name'} )
+                {
+                    $twitch_id = $tchan->{'_id'};
+                    last;
+                }
+            }
+
+            if ( !defined $twitch_id )
+            {
+                $discord->send_message($channel, "Sorry, I couldn't find an account by that name.") unless defined $twitch_id;
+                return;
+            }
+
+            $discord->send_message($channel, "I've updated your twitch display name.");
+
             my $sql = "INSERT INTO twitch VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE discord_name = ?, twitch_name = ?, twitch_id = ?";
             $db->query($sql, $discord_id, $discord_name, $twitch_id, $twitch_name, $discord_name, $twitch_name, $twitch_id);
     
             $self->{'cache'}{$discord_id} = $twitch_id; # Cache this so we don't have to check the DB all the time.
     
-#            $discord->send_message($channel, "I have updated your Twitch info.");
-
             # Check if they are streaming
             my $stream = $twitch->get_stream($twitch_id);
     

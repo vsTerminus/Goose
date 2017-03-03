@@ -26,7 +26,7 @@ sub search
     }
 
     # Else, type is good.
-    my $url = $self->api_url . '/search/' . lc $type . '?query=' . uri_escape_utf8($q) . '&limit=1&client_id=' . $self->api_key;
+    my $url = $self->api_url . '/search/' . lc $type . '?query=' . uri_escape_utf8($q) . '&limit=10&client_id=' . $self->api_key;
 
     if ( defined $callback )    # Non-Blocking
     {
