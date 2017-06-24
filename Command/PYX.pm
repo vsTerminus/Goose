@@ -77,23 +77,23 @@ sub cmd_pyx
 
     # If the user specifies a number or no args at all, go by pick
     # where the bot picks both the black and white cards.
-    if ( !defined $args or $args =~ /^(w )?(\d+)$/ or $args =~ /^\s*$/ )
+    if ( !defined $args or $args =~ /^(w )?(\d+)$/i or $args =~ /^\s*$/ )
     {
-        say "PYX By Pick";
+        #say "PYX By Pick";
         $self->by_pick($channel, $author, $args);
     }
     # If the user specifies w <card 1>... 
     # then the bot just has to pick a suitable black card
     elsif ( $args =~ /^w (.+)$/i )
     {
-        say "PYX by White Cards";
+        #say "PYX by White Cards";
         $self->by_white_cards($channel, $author, $args);
     }
     # Anything else should be treated like the user gave us a black card
     # and the bot just needs to fill in the blanks.
     else
     {
-        say "PYX by Black Card";
+        #say "PYX by Black Card";
         $self->by_black_card($channel, $author, $args);
 
     }
@@ -108,21 +108,22 @@ sub by_white_cards
 
     my $cah = $self->{'cah'};
     my $discord = $self->{'discord'};
+    $args = " " . $args;
 
-    my @cards = split / ?w /, $args; shift @cards; # Remove the first element, which will be empty.
+    my @cards = split(/ w /i, $args); shift @cards; # Remove the first element, which will be empty.
     my $count = scalar @cards;
 
     say "User gave me $count white cards.";
-    say "- $_" foreach @cards;
+    say "Cards: " . join('+', @cards);
 
     $cah->random_black($count, sub {
         my $json = shift;
-        say Dumper($json);
+        #say Dumper($json);
 
         my $text = $json->{'card'}{'text'};
         
         my $blanks = () = $text =~ /____/g;
-        say "by_white_cards found $blanks blanks, expected $count";
+        #say "by_white_cards found $blanks blanks, expected $count";
 
         # Handle cases like "make a haiku" where they don't have the appropriate number of blanks and it will confuse things.
         while ( $blanks < $count )
@@ -164,7 +165,7 @@ sub by_pick
     
     $cah->random_black($2, sub {
         my $json = shift;
-        say Dumper($json);
+        #say Dumper($json);
 
         if ( ref $json->{'card'} ne ref {} and !defined $json->{'card'} )
         {
@@ -201,14 +202,14 @@ sub by_black_card
     my $discord = $self->{'discord'};
 
     my $count = () = $args =~ /____/g;
-    say "Found $count blanks";
+    #say "Found $count blanks";
     
     if ( $count > 0 )
     {
         $cah->random_white($count, sub {
             my $json = shift;
 
-            say Dumper($json);
+            #say Dumper($json);
 
             foreach my $card (@{$json->{'cards'}})
             {
@@ -225,7 +226,7 @@ sub by_black_card
         $cah->random_white($count, sub {
             my $json = shift;
 
-            say Dumper($json);
+            #say Dumper($json);
 
             my $text = $json->{'cards'}[0]{'text'};
             $text =~ s/\.$//; # Remove the . at the end of the card.
