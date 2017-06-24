@@ -16,7 +16,7 @@ has discord         => ( is => 'rw' );
 has name            => ( is => 'ro', default => 'Roll' );
 has access          => ( is => 'ro', default => 0 ); # Public
 has description     => ( is => 'ro', default => 'Roll some dice' );
-has pattern         => ( is => 'ro', default => '^(di(?:ce)|ro(?:ll)?) ?(.*)$' );
+has pattern         => ( is => 'ro', default => '^(dice|roll) ?(.*)$' );
 has function        => ( is => 'ro', default => sub { return \&cmd_roll } );
 has usage           => ( is => 'ro', default => sub { return <<EOF;
 Roll X number of Y sided dice with optional bonus.
