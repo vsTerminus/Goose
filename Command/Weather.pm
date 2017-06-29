@@ -231,15 +231,28 @@ sub new
         ],
         'sixtynine'  => [
             "OH LA LA",
-            "PUT THE YOU KNOW WHAT, IN THE YOU KNOW WHERE",
-            "VULCANIZE THE WHOOPEE STICK, IN THE HAM WALLET",
-            "CATTLE PROD THE OYSTER DITCH, WITH THE LAP ROCKET",
-            "BATTER DIP THE CRANNY AXE, IN THE GUT LOCKER",
-            "RETROFIT THE PUDDING HATCH, WITH THE BOINK SWATTER",
-            "MARINATE THE NETHER ROD, IN THE SQUISH MITTEN",
-            "POWER DRILL THE YIPPEE BOG, WITH THE DUDE PISTON",
-            "PRESSURE WASH THE QUIVER BONE, IN THE BITCH WRINKLE",
-            "CANNONBALL THE FIDDLE COVE, WITH THE PORK STEEPLE",
+            "PUT THE YOU KNOW WHAT IN THE YOU KNOW WHERE",
+            "VULCANIZE THE WHOOPEE STICK IN THE HAM WALLET",
+            "CATTLE PROD THE OYSTER DITCH WITH THE LAP ROCKET",
+            "BATTER DIP THE CRANNY AXE IN THE GUT LOCKER",
+            "RETROFIT THE PUDDING HATCH WITH THE BOINK SWATTER",
+            "MARINATE THE NETHER ROD IN THE SQUISH MITTEN",
+            "POWER DRILL THE YIPPEE BOG WITH THE DUDE PISTON",
+            "PRESSURE WASH THE QUIVER BONE IN THE BITCH WRINKLE",
+            "CANNONBALL THE FIDDLE COVE WITH THE PORK STEEPLE",
+        ],
+        'minussixtynine' => [
+            "PUT THE FROZEN PENIS IN THE FROZEN VAGINA. NEVER MIND, NO, DON'T DO THAT.",
+            "IF TWO BLOCKS OF ICE GOING AT IT IS YOUR THING.",
+            "THAT MIGHT BE THE ONLY WAY TO START WARM RIGHT NOW.",
+            "ARE YOU HAPPY TO SEE ME OR IS YOUR DICK JUST FROZEN LIKE THAT?",
+            "IT'S LIKE WATCHING TWO POLAR BEARS GO AT IT.",
+            "EVERYTHING IS NUMB. ARE YOU IN YET?",
+            "IF ERECTION LASTS MORE THAN 4 HOURS IT MIGHT BE FROZEN SOLID.",
+            "MY NIPPLES ARE LITERALLY ICICLES RIGHT NOW.",
+            "I COULD LITERALLY CUT STEEL WITH MY NIPPLES.",
+            "JUST KIDDING. FUCK THAT.",
+            "FUCK NO. YOU DROP YOUR PANTS IN THIS WEATHER AND SEE HOW IT GOES.",
         ]
     };
 
@@ -291,6 +304,9 @@ sub new
             'WHAT THE FUCK?!'
         ],
         'sixtynine' => [
+            'SEXYTIME!'
+        ],
+        'minussixtynine' => [
             'SEXYTIME!'
         ],
     };
@@ -771,10 +787,16 @@ sub itsfucking
         @com = @{$self->{'comment'}{'boiling'}};
     }
 
-    if ( int($temp_f) == 69 )
+    if ( int($temp_f) == 69 or $temp == 69 )
     {
         @arr = @{$self->{'itsfucking'}{'sixtynine'}};
         @com = @{$self->{'comment'}{'sixtynine'}};
+    }
+
+    if ( int($temp_f) == -69 or int($temp) == -69 )
+    {
+        @arr = @{$self->{'itsfucking'}{'minussixtynine'}};
+        @com = @{$self->{'comment'}{'minussixtynine'}};
     }
 
     my $size = scalar @arr;
