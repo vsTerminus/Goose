@@ -180,12 +180,16 @@ sub to_embed
     my ($self, $username, $json, $youtube_url) = @_;
     my $bot = $self->{'bot'};
 
+    my $artist = length $json->{'artist'} ? $json->{'artist'} : "Unknown Artist";
+    my $title  = length $json->{'title'}  ? $json->{'title'}  : "Unknown Title";
+    my $album  = length $json->{'album'}  ? $json->{'album'}  : "Unknown Album";
+
     my $embed = {
         'description' => '[' . $username . ' on Last.FM](http://last.fm/user/' . $username . ')',
         'fields' => [
             {
-                'name' => $json->{'artist'} . ' - ' . $json->{'title'},
-                'value' => $json->{'album'},
+                'name' => $artist . ' - ' . $title,
+                'value' => $album,
                 'inline' => \1,
             },
         ],
@@ -233,6 +237,8 @@ sub nowplaying_by_username
     { 
         my $np_json = shift;
 
+        #say Dumper($np_json);
+
         # If we have access to the YouTube component we can also add a link to the song on YouTube.
         if ( defined $self->{'youtube'} ) #and $bot->has_webhook($channel) ) 
         {
@@ -278,6 +284,7 @@ sub send_message
             'content' => '',
             'embed' => $embed,
         };
+        #say Dumper($embed);
 
         $discord->send_message($channel, $message);
     }
