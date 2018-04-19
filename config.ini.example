@@ -24,6 +24,11 @@ name = DickBot9000
 # Set the "Playing" status of your bot
 playing = with myself
 
+# Set a character (or characters) to use as a command prefix.
+# The default of '!' is fine for servers with few bots, but it's a common one
+# and will most likely cause conflicts on busier servers with more bots.
+trigger = !
+
 # Set this to the same thing you entered for the Redirect/Callback URL in your Discord app.
 redirect_url = http://github.com/vsTerminus
 
