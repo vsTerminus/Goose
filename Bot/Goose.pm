@@ -107,8 +107,6 @@ sub discord_on_ready
     my ($self, $hash) = @_;
 
     $self->add_me($hash->{'user'});
-    
-    #$self->{'discord'}->status_update({'game' => $self->{'playing'}});
 
     say localtime(time) . " Connected to Discord.";
 }
@@ -155,6 +153,13 @@ sub discord_on_message_create
     my $discord_id = $self->id();
 
 #    say Dumper($hash);
+
+    my $channels = $self->discord->channels;
+
+    #say Dumper($channels);
+
+    say "Looking up Discord User ID " . $discord_id;
+    say Dumper($self->discord->get_user($discord_id));
 
     foreach my $mention (@mentions)
     {
@@ -340,6 +345,24 @@ sub trigger
 {
     my $self = shift;
     return $self->{'trigger'};
+}
+
+sub add_moo_command
+{
+    my ($self, $command) = @_;
+
+    my $name = $command->name;
+    $self->{'commands'}->{$name}{'name'} = ucfirst $name;
+    $self->{'commands'}->{$name}{'access'} = $command->access;
+    $self->{'commands'}->{$name}{'usage'} = $command->usage;
+    $self->{'commands'}->{$name}{'description'} = $command->description;
+    $self->{'commands'}->{$name}{'pattern'} = $command->pattern;
+    $self->{'commands'}->{$name}{'function'} = $command->function;
+    $self->{'commands'}->{$name}{'object'} = $command;
+
+    $self->{'patterns'}->{$command->pattern} = $name;
+
+    say localtime(time) . " Registered new Moo Command: '$name' identified by '$command->pattern'";
 }
 
 # Command modules can use this function to register themselves with the bot.
