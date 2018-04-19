@@ -104,7 +104,7 @@ sub discord_on_ready
 
     $self->add_me($hash->{'user'});
     
-    $self->{'discord'}->status_update({'game' => $self->{'playing'}});
+    #$self->{'discord'}->status_update({'game' => $self->{'playing'}});
 
     say localtime(time) . " Connected to Discord.";
 
