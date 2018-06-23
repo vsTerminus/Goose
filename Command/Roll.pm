@@ -206,7 +206,7 @@ sub cmd_roll
     my $replyto = '<@' . $author->{'id'} . '>';
 
     # Multiple rolls can be separated by a space.
-    my @rolls = split(' ', $args);
+    my @rolls = split(/[,\s]\s*/, $args);
 
     #say "Rolls: @rolls";
 
