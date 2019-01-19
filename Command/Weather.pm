@@ -115,7 +115,17 @@ sub new
             'MAXIMUM SHRINKAGE!',
             'FUCK THIS I\'M OUT.',
             'JUST MOVE ALREADY!',
-            "I HAVEN'T SEEN THE SUN FOR MONTHS."
+            "I HAVEN'T SEEN THE SUN FOR MONTHS.",
+            "FUCK THIS,",
+            "EWWWWWW",
+            "I NEED A SPACE HEATER FOR MY FACE",
+            "MY EYELIDS ARE FROZEN SHUT",
+            "MY FACE HURTS",
+            "I CAN'T FEEL MY EVERYTHING",
+            "I'M MOVING TO MEXICO",
+            "GROSS",
+            "I MISS SUMMER",
+            "CAN IT BE NOT WINTER PLEASE?",
         ],
         'minus40' => [
             "IN \N{DEGREE SIGN}C OR \N{DEGREE SIGN}F??? YES.",
@@ -258,15 +268,23 @@ sub new
 
     $self->{'itsfucking'} = {
         'frozen' => [
-            "FROZEN!", 
-            "RETARDED COLD!",
+            "FROZEN!",
             "WHAT THE FUCK?!",
             "FRIGID!",
             "COLDER THAN MARS!",
-            "INSANELY COLD!"
+            "EW!",
+            "COLDER THAN THE NORTH POLE!",
+            "COLDER THAN A HANDJOB FROM AN EDMONTON HOOKER!",
+            ":musical_note: COLD AS ICE :notes:",
+            "FROSTBITE TERRITORY",
+            "TIME TO MOVE SOMEWHERE WARMER!",
+            "PERFECT WEATHER TO BE ON FIRE!",
+            "DANGEROUS TO GO OUTSIDE!",
+            ".... FUCK THIS!"
         ],
         'minus40' => [
             "MINUS 40!",
+            "-40!",
         ],
         'freezing' => [
             "FREEZING!",
