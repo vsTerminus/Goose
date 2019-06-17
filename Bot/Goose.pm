@@ -163,7 +163,8 @@ sub discord_on_message_create
 
     foreach my $mention (@mentions)
     {
-        $self->add_user($mention);
+        # I think this can be removed now that the library tracks state and users.
+        # $self->add_user($mention);
     }
 
     # Look for messages starting with a mention or a trigger, but not coming from a bot.
