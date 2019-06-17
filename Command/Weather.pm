@@ -363,13 +363,6 @@ sub cmd_weather
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
 
-    # Start "Typing"
-    # Only do this if we aren't using a webhook, because the webhook won't stop the typing message.
-    $discord->start_typing($channel) unless $self->{'bot'}->has_webhook($channel);
-
-#    my $ds = $self->{'darksky'};
-
-
     # Handle empty args - Check to see if they have a saved location.
     if (!defined $args or length $args == 0 )
     {
