@@ -484,6 +484,7 @@ sub weather_by_coords
 
         my $formatted_weather = $self->format_weather($json);
         $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
+        $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and rand(1) > 0.10;
     
         $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather);
     }
@@ -503,6 +504,7 @@ sub weather_by_coords
     
             my $formatted_weather = $self->format_weather($json);
             $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
+            $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and rand(1) > 0.10;
             #say "Formatted Weather: $formatted_weather";
     
             $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather); # This sub handles whether it's a message or webhook.
