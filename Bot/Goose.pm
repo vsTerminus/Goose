@@ -120,25 +120,8 @@ sub discord_on_guild_delete{}
 sub discord_on_channel_create{}
 sub discord_on_channel_update{}
 sub discord_on_channel_delete{}
-
-# Whenever we get this we should request the webhooks for the channel.
-# The only one we care about is the one we created.
-sub discord_on_webhooks_update
-{
-    my ($self, $hash) = @_;
-
-    my $channel = $hash->{'channel_id'};
-    delete $self->{'webhooks'}{$channel};
-
-    $self->cache_channel_webhooks($channel);
-}
-
-sub discord_on_typing_start
-{
-    my ($self, $hash) = @_;
-
-    # Not sure if we'll ever do anything with this event, but it's here in case we do.
-}
+sub discord_on_webhooks_update{}
+sub discord_on_typing_start{} 
 
 sub discord_on_message_create
 {
@@ -152,20 +135,7 @@ sub discord_on_message_create
     my $discord_name = $self->name();
     my $discord_id = $self->id();
 
-#    say Dumper($hash);
-
     my $channels = $self->discord->channels;
-
-    #say Dumper($channels);
-
-    say "Looking up Discord User ID " . $discord_id;
-    say Dumper($self->discord->get_user($discord_id));
-
-    foreach my $mention (@mentions)
-    {
-        # I think this can be removed now that the library tracks state and users.
-        # $self->add_user($mention);
-    }
 
     # Look for messages starting with a mention or a trigger, but not coming from a bot.
     if ( !(exists $author->{'bot'} and $author->{'bot'}) and $msg =~ /^(\<\@\!?$discord_id\>|\Q$trigger\E)/i )
@@ -215,56 +185,6 @@ sub discord_on_presence_update
     my ($self, $hash) = @_;
 
     # Will be useful for a !playing command to show the user's currently playing "game".
-}
-
-sub cache_channel_webhooks
-{
-    my ($self, $channel, $callback) = @_;
-   
-    $self->{'discord'}->get_channel_webhooks($channel, sub
-    {
-        my $json = shift;
-
-        my $hookname = $self->webhook_name;
-
-        foreach my $hook (@{$json})
-        {
-            if ( $hook->{'name'} eq $self->webhook_name )
-            {
-                $self->{'webhooks'}{$channel} = $hook;
-            }
-        }
-    });
-}
-
-sub cache_guild_webhooks
-{
-    my ($self, $guild, $callback) = @_;
-
-    my $id = $guild->{'id'};
-
-    $self->{'discord'}->get_guild_webhooks($id, sub
-    {
-        my $json = shift;
-        #say  Dumper($json);
-
-        if ( ref $json eq ref {} and $json->{'code'} == 50013 )
-        {
-            # No Access.
-            return;
-        }
-
-        my $hookname = $self->webhook_name;
-
-        foreach my $hook (@{$json})
-        {
-            my $channel = $hook->{'channel_id'};
-            if ( $hook->{'name'} eq $self->webhook_name )
-            {
-                $self->{'webhooks'}{$channel} = $hook;
-            }
-        }
-    });
 }
 
 sub add_me
@@ -452,7 +372,7 @@ sub create_webhook
             else
             {
                 say localtime(time) . ": Unable to create webhook in $channel - Unknown reason";
-                $callback-(undef);
+                $callback->(undef);
             }
         });
     }
@@ -472,20 +392,17 @@ sub add_webhook
     return $self->{'webhooks'}{$channel};
 }
 
-# This retrieves a cached webhook object for the specified channel.
-# If there isn't one we should return undef.
+# Get the list of webhooks from $discord
+# and look for one matching our channel id and webhook_name.
 sub has_webhook
 {
     my ($self, $channel) = @_;
 
-    if ( exists $self->{'webhooks'}{$channel} )
+    foreach my $hook (@{$self->discord->get_cached_webhooks($channel)})
     {
-        return $self->{'webhooks'}{$channel};
+        return $hook if ( $hook->{'name'} eq $self->webhook_name )
     }
-    else
-    {
-        return undef;
-    }
+    return undef;
 }
 
 1;
