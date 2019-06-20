@@ -398,9 +398,13 @@ sub has_webhook
 {
     my ($self, $channel) = @_;
 
-    foreach my $hook (@{$self->discord->get_cached_webhooks($channel)})
+    my $hooks = $self->discord->get_cached_webhooks($channel);
+    if ( $hooks )
     {
-        return $hook if ( $hook->{'name'} eq $self->webhook_name )
+        foreach my $hook (@$hooks)
+        {
+            return $hook if ( $hook->{'name'} eq $self->webhook_name )
+        }
     }
     return undef;
 }
