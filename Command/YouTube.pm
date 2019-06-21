@@ -78,7 +78,8 @@ sub cmd_youtube
             $self->{'cache'}{$channel} = $json->{'items'};
 
             my $embed = $self->to_embed($item);
-            $self->send_message($channel, $embed);
+            my $url = 'https://youtube.com/watch?v=' . $item->{'id'}{'videoId'};
+            $discord->send_message($channel, $url);
         });
     }
     elsif ( exists $self->{'cache'}{$channel} )
@@ -92,8 +93,8 @@ sub cmd_youtube
             $self->{'cache'}{$channel} = \@arr;
 
             my $embed = $self->to_embed($item);
-
-            $self->send_message($channel, $embed);
+            my $url = 'https://youtube.com/watch?v=' . $item->{'id'}{'videoId'};
+            $discord->send_message($channel, $url);
         }
         else
         {
