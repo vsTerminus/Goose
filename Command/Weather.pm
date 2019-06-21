@@ -516,10 +516,6 @@ sub send_weather
         my $avatar = 'http://i.imgur.com/BVCiYSn.png'; # default
         $avatar = $avatars->{$json->{'icon'}} if exists $avatars->{$json->{'icon'}};    # per-weather icons
 
-        # Webhooks restrict usernames to 3-32 chars in length.
-        $address = "Weather for $address" if ( length $address < 3 );
-        $address = substr($address,0,29) . "..." if ( length $address > 32 );
-
         my $hookparam = {
             'username' => "Current Weather",
             'avatar_url' => $avatar,
