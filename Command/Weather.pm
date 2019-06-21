@@ -521,9 +521,9 @@ sub send_weather
         $address = substr($address,0,29) . "..." if ( length $address > 32 );
 
         my $hookparam = {
-            'username' => $address,
+            'username' => "Current Weather",
             'avatar_url' => $avatar,
-            'content' => $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
+            'content' => "**$address**\n" . $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
         };
 
         $self->{'discord'}->send_webhook($channel, $hook, $hookparam, sub { my $json = shift; say Dumper($json) if defined $json; });
@@ -552,7 +552,7 @@ sub format_weather
     my $wind_dir = wind_direction($json->{'windBearing'});
     my $humidity = int($json->{'humidity'} * 100);
         
-    my $fuckingweather = $self->itsfucking($feel_f, $feel_c, $cond);
+    my $fuckingweather = $self->itsfucking($temp_f, $temp_c, $feel_f, $feel_c, $cond);
 
     my $msg = "```c\n" .
         "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
@@ -739,74 +739,74 @@ sub add_coords
 }
 
 # Returns a comment based on the temperature and conditions
-# Takes temp in C
+# Takes both real and feel temperatures in c and f.
 sub itsfucking
 {
-    my ($self, $temp_f, $temp, $cond) = @_;
+    my ($self, $temp_f, $temp_c, $feel_f, $feel_c, $cond) = @_;
 
     my $ret = "IT'S FUCKING ";
 
     my @arr;
     my @com;
 
-    if ( int($temp) == -40 || int($temp_f) == -40 ) # -40
+    if ( int($temp_c) == -40 || int($feel_c) == -40 ) # -40
     {
         @arr = @{$self->{'itsfucking'}{'minus40'}};
         @com = @{$self->{'comment'}{'minus40'}};
     }
-    elsif ( $temp <= -34 ) # -35 and below
+    elsif ( $feel_c <= -34 ) # -35 and below
     {
         @arr = @{$self->{'itsfucking'}{'frozen'}};
         @com = @{$self->{'comment'}{'frozen'}};
     }
-    elsif ( $temp < -20 ) # -34 to -21
+    elsif ( $feel_c < -20 ) # -34 to -21
     {
         @arr = @{$self->{'itsfucking'}{'freezing'}};
         @com = @{$self->{'comment'}{'freezing'}};
     } 
-    elsif ( $temp < 0 ) # -20 to -1
+    elsif ( $feel_c < 0 ) # -20 to -1
     {
         @arr = @{$self->{'itsfucking'}{'cold'}};
         @com = @{$self->{'comment'}{'cold'}};
     }
-    elsif ( $temp < 9 ) # 0 to 8 
+    elsif ( $feel_c < 9 ) # 0 to 8 
     {
         @arr = @{$self->{'itsfucking'}{'cool'}};
         @com = @{$self->{'comment'}{'cool'}};
     }
-    elsif ( $temp < 18 ) # 9 to 17
+    elsif ( $feel_c < 18 ) # 9 to 17
     {
         @arr = @{$self->{'itsfucking'}{'alright'}};
         @com = @{$self->{'comment'}{'alright'}};
     }
-    elsif ( $temp < 25 ) # 18 to 24
+    elsif ( $feel_c < 25 ) # 18 to 24
     {
         @arr = @{$self->{'itsfucking'}{'nice'}};
         @com = @{$self->{'comment'}{'nice'}};
     }
-    elsif ( $temp < 31 ) # 25 - 30
+    elsif ( $feel_c < 31 ) # 25 - 30
     {
         @arr = @{$self->{'itsfucking'}{'warm'}};
         @com = @{$self->{'comment'}{'warm'}};
     }
-    elsif ( $temp < 35 ) # 30-34
+    elsif ( $feel_c < 35 ) # 30-34
     {
         @arr = @{$self->{'itsfucking'}{'hot'}};
         @com = @{$self->{'comment'}{'hot'}};
     }
-    elsif ( $temp >= 35 ) # 35+
+    elsif ( $feel_c >= 35 ) # 35+
     {
         @arr = @{$self->{'itsfucking'}{'boiling'}};
         @com = @{$self->{'comment'}{'boiling'}};
     }
 
-    if ( int($temp_f) == 69 or $temp == 69 )
+    if ( int($temp_f) == 69 or int($temp_c) == 69 or int($feel_f) == 69 or $feel_c == 69 )
     {
         @arr = @{$self->{'itsfucking'}{'sixtynine'}};
         @com = @{$self->{'comment'}{'sixtynine'}};
     }
 
-    if ( int($temp_f) == -69 or int($temp) == -69 )
+    if ( int($temp_f) == -69 or int($temp_c) == -69 or int($feel_f) == -69 or int($feel_c) == -69 )
     {
         @arr = @{$self->{'itsfucking'}{'minussixtynine'}};
         @com = @{$self->{'comment'}{'minussixtynine'}};
