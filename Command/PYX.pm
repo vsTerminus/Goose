@@ -215,6 +215,7 @@ sub by_black_card
             {
                 my $text = $card->{'text'};
                 $text =~ s/\.$//; # Remove the . at the end of the card.
+                $text = uc $text if $args !~ /[a-z]/; # If the white card is all caps, the black card should be too.
                 $args =~ s/____/**$text**/;
             }
 
@@ -230,6 +231,7 @@ sub by_black_card
 
             my $text = $json->{'cards'}[0]{'text'};
             $text =~ s/\.$//; # Remove the . at the end of the card.
+            $text = uc $text if $args !~ /[a-z]/; # If the white card is all caps, the black card should be too.
             $args .= " **$text**";
 
             $discord->send_message($channel, $args);
