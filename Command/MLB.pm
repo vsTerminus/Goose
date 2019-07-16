@@ -31,15 +31,23 @@ has subcommand      => ( is => 'ro', default => sub
                                                     return $hash;
                                                 });
 has usage           => ( is => 'ro', default => sub { return <<EOF;
-Use the MLB API to look up stats about players and games
+Use the MLB API to look up stats about players
 
 **Usage:**
 
-`!mlb stats <player name>`
+`!mlb stats <player name> [year] [hitting|pitching|fielding]`
+
+By default it will return career hitting stats for a player. To see stats for a specific season just specify the year. To see stats for pitching or fielding just add `pitching` or `fielding` after the name.
+
+**Examples:**
+
+Get career hitting stats: `!mlb stats Chase Utley`
+Get career pitching stats: `!mlb stats CC Sabathia pitching`
+Get 2019 fielding stats: `!mlb stats Javier Baez 2019 fielding`
 
 **Aliases:**
 
-Also accepts: !bb
+Also accepts: `!bb`
 EOF
 });
 
