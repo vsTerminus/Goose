@@ -156,8 +156,8 @@ sub to_string
     undef $example if ( $example !~ /[A-Za-z0-9]/m );
 
     my $str = "__**$word**__ [**$thumbs** | $author]" .
-              "\n$def";
-    $str .= "\n\n*$example*" if ( defined $example );
+              "\n||$def||";
+    $str .= "\n\nExample:\n||*$example*||" if ( defined $example );
     $str .= "\n<$json->{'permalink'}>";
     
     return $str;
