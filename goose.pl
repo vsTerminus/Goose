@@ -51,9 +51,9 @@ Command::Define->new        ('bot' => $bot);
 Command::Twitch->new        ('bot' => $bot);
 $bot->add_moo_command( Command::Roll->new('bot' => $bot) );
 $bot->add_moo_command( Command::MLB->new('bot' => $bot) );
+$bot->add_moo_command( Command::Weather->new('bot' => $bot) ) if ( $config->{'weather'}{'use_weather'} );
 Command::YouTube->new       ('bot' => $bot) if ( $config->{'youtube'}{'use_youtube'} );
 Command::Comic->new         ('bot' => $bot) if ( $config->{'comic'}{'use_comic'} );
-Command::Weather->new       ('bot' => $bot) if ( $config->{'weather'}{'use_weather'} );
 Command::NowPlaying->new    ('bot' => $bot) if ( $config->{'lastfm'}{'use_lastfm'} );
 Command::PYX->new           ('bot' => $bot) if ( $config->{'cah'}{'use_cah'} );
 
