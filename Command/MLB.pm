@@ -17,6 +17,19 @@ has bot             => ( is => 'rw', required => 1 );
 has discord         => ( is => 'rw' );
 has mlb             => ( is => 'rw', default => sub { Component::MLB->new() } );
 
+# Sorting provided by @NYVGF - Thanks John!
+has sorting         => ( is => 'ro', default => sub
+{
+    {
+        'Career Hitting'  => [ qw(g ab h d t hr tb r rbi bb ibb so hbp sf sac gidp sb cs go ao go_ao avg obp slg ops) ],
+        'Season Hitting'  => [ qw(g ab tpa h d t hr xbh tb r rbi bb ibb so hbp roe sf sac gidp gidp_opp lob go ao go_ao hfly hgnd hldr hpop sb cs avg obp slg ops babip ppa np wo) ],
+        'Career Fielding' => [ qw(position position_txt g gs inn tc po a e dp sb cs pb fpct rf) ],
+        'Season Fielding' => [ qw(position position_txt g gs inn tc po a e dp sb cs pb cwp fpct rf) ],
+        'Career Pitching' => [ qw(w l era g gs cg sho sv svo ir irs ip tbf ab h r er hr so bb ibb hb gidp go ao go_ao wp bk avg whip np s) ],
+        'Season Pitching' => [ qw(w l wpct era g gs qs cg sho hld sv svo gf bq bqs ir irs ip tbf ab h h9 r er db tr hr hr9 so k9 bb bb9 ibb kbb hb gidp gidp_opp go ao go_ao hfly hgnd hldr hpop wp sb cs pk bk avg obp slg ops babip whip rs9 ppa pip pgs np s spct) ],
+    }
+});
+
 has name            => ( is => 'ro', default => 'MLB' );
 has access          => ( is => 'ro', default => 0 ); # Public
 has description     => ( is => 'ro', default => 'Lookup Baseball Stats from the MLB API' );
@@ -212,12 +225,12 @@ sub _format_stats
 
 }
 
-
 sub _ascii_table
 {
     my ($self, $stats, $heading) = @_;
 
     my $size = scalar @$stats;
+    say "=> _ascii_table size=$size";
     # Don't do anything if we weren't provided any stats.
     return undef unless defined $size and $size > 0;
 
@@ -232,12 +245,15 @@ sub _ascii_table
     }
     $t->setCols(@cols);
 
-    # Rows
-    my @rows = sort keys %{$stats->[0]};
+    # Get the sorting order for this table
+    my $sort_cat = $heading; 
+    $sort_cat =~ s/^.*\n//;
+    $sort_cat =~ s/\d+/Season/;
+    say "=> _ascii_table sort_cat=$sort_cat";
+    my $rows = $self->sorting->{$sort_cat};
 
-    foreach my $row (@rows)
+    foreach my $row (@$rows)
     {
-        next if $row =~ /(team|league|player_id|sport|end_date)/;
         my @arr = ("$row");
         push @arr, $stats->[$_]{$row} foreach (0..$size-1);
         $t->addRow(@arr);
@@ -250,12 +266,8 @@ sub _ascii_table
         $t->alignCol($cols[$_],'right');
     }
 
-    print $t;
-
     return $t;
 }
-
-
 
 __PACKAGE__->meta->make_immutable;
 
