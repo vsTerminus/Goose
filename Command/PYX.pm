@@ -65,26 +65,26 @@ sub cmd_pyx
 {
     my ($self, $channel, $author, $msg) = @_;
 
-    $msg =~ s/[\`\*]//g;
-    $msg =~ s/_+/____/g;
+    $msg =~ s/[\`\*]//gs;
+    $msg =~ s/_+/____/gs;
 
     my $args = $msg;
     my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$2/i;
+    $args =~ s/$pattern/$2/si;
 
     my $discord = $self->{'discord'};
     my $replyto = '<@' . $author->{'id'} . '>';
 
     # If the user specifies a number or no args at all, go by pick
     # where the bot picks both the black and white cards.
-    if ( !defined $args or $args =~ /^(w )?(\d+)$/i or $args =~ /^\s*$/ )
+    if ( !defined $args or $args =~ /^(w )?(\d+)$/si or $args =~ /^\s*$/s )
     {
         #say "PYX By Pick";
         $self->by_pick($channel, $author, $args);
     }
     # If the user specifies w <card 1>... 
     # then the bot just has to pick a suitable black card
-    elsif ( $args =~ /^w (.+)$/i )
+    elsif ( $args =~ /^w (.+)$/si )
     {
         #say "PYX by White Cards";
         $self->by_white_cards($channel, $author, $args);
@@ -122,7 +122,7 @@ sub by_white_cards
 
         my $text = $json->{'card'}{'text'};
         
-        my $blanks = () = $text =~ /____/g;
+        my $blanks = () = $text =~ /____/sg;
         #say "by_white_cards found $blanks blanks, expected $count";
 
         # Handle cases like "make a haiku" where they don't have the appropriate number of blanks and it will confuse things.
@@ -135,14 +135,14 @@ sub by_white_cards
 
         foreach my $card (@cards)
         {
-            if ( $card =~ /^\?+$/ )
+            if ( $card =~ /^\?+$/s )
             {
                 # "w ?" should be replaced by a random card.
                 my $new = $cah->random_white(1); # Blocking request - no callback.
                 $card = $new->{'cards'}[0]{'text'};
-                $card =~ s/\. *$//; # Remove the . at the end of the card.
+                $card =~ s/\. *$//s; # Remove the . at the end of the card.
             }
-            $text =~ s/____/**$card**/;
+            $text =~ s/____/**$card**/s;
         }
 
         $discord->send_message($channel, "$text");
@@ -158,7 +158,7 @@ sub by_pick
     my $cah = $self->{'cah'};
     my $discord = $self->{'discord'};
 
-    $args =~ /^(w ?)(\d+)$/;
+    $args =~ /^(w ?)(\d+)$/s;
     my $pick = $2;
 
 #    say "User asked me for a Pick-$pick";
@@ -175,7 +175,7 @@ sub by_pick
         
         my $text = $json->{'card'}{'text'};
         $pick = $json->{'card'}{'pick'};
-        my $count = () = $text =~ /____/g;
+        my $count = () = $text =~ /____/sg;
 #        say "by_pick found $count blanks, expected $pick";
 
         # Handle cases like "make a haiku" where they don't have the appropriate number of blanks and it will confuse the by_black_card function.
@@ -201,7 +201,7 @@ sub by_black_card
     my $cah = $self->{'cah'};
     my $discord = $self->{'discord'};
 
-    my $count = () = $args =~ /____/g;
+    my $count = () = $args =~ /____/sg;
     #say "Found $count blanks";
     
     if ( $count > 0 )
@@ -214,9 +214,9 @@ sub by_black_card
             foreach my $card (@{$json->{'cards'}})
             {
                 my $text = $card->{'text'};
-                $text =~ s/\.$//; # Remove the . at the end of the card.
-                $text = uc $text if $args !~ /[a-z]/; # If the white card is all caps, the black card should be too.
-                $args =~ s/____/**$text**/;
+                $text =~ s/\.$//s; # Remove the . at the end of the card.
+                $text = uc $text if $args !~ /[a-z]/s; # If the white card is all caps, the black card should be too.
+                $args =~ s/____/**$text**/s;
             }
 
             $discord->send_message($channel, $args);
@@ -230,8 +230,8 @@ sub by_black_card
             #say Dumper($json);
 
             my $text = $json->{'cards'}[0]{'text'};
-            $text =~ s/\.$//; # Remove the . at the end of the card.
-            $text = uc $text if $args !~ /[a-z]/; # If the white card is all caps, the black card should be too.
+            $text =~ s/\.$//s; # Remove the . at the end of the card.
+            $text = uc $text if $args !~ /[a-z]/s; # If the white card is all caps, the black card should be too.
             $args .= " **$text**";
 
             $discord->send_message($channel, $args);

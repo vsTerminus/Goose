@@ -148,7 +148,7 @@ sub discord_on_message_create
             # If you find a match, call the command fuction.
             foreach my $pattern ($self->get_patterns())
             {
-                if ( $msg =~ /$pattern/i )
+                if ( $msg =~ /$pattern/si )
                 {
                     my $command = $self->get_command_by_pattern($pattern);
                     my $access = $command->{'access'};
