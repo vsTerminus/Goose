@@ -10,6 +10,7 @@ use Bot::Goose;
 use Component::MLB;
 use Text::ASCIITable;
 use Math::Expression;
+use Math::Round qw(nearest);
 use Data::Dumper;
 
 use namespace::clean;
@@ -63,6 +64,18 @@ has combine         => ( is => 'ro', default => sub
             'slg'   => 'slg_avg     := (h_sum + d_sum + (t_sum*2) + (hr_sum*3))/ab_sum', # Slugging is Hits (H) + Doubles (D) + 2x Triples (T) + 3x Home Runs (HR), all divided by At Bats (AB)
             'ops'   => 'ops_avg     := obp_avg + slg_avg', # On Base Percentage + Slugging
         }
+    }
+});
+
+# Rounding targets for various fields when they get combined
+has round           => ( is => 'ro', default => sub
+{
+    {
+        'go_ao'     => 0.01,
+        'avg'       => 0.001,
+        'obp'       => 0.001,
+        'slg'       => 0.001,
+        'ops'       => 0.001,
     }
 });
 
@@ -365,6 +378,13 @@ sub _career_totals
         my $val = $self->math->ParseToScalar($expr);
         say "=> _career_totals $row (Combined) = $val";
 
+        # Round field?
+        if (exists $self->round->{$row})
+        {
+            my $target = $self->round->{$row};
+            $val = nearest($target, $val);
+        }
+
         $combined_stats->[0]->{$row} = $val;
     }
 
@@ -394,8 +414,7 @@ sub _math_functions
         $num = $total / scalar @arglist if scalar @arglist > 0;
         return $num;
     }
-            
- 
+
     # Return undef so that in built functions are scanned
     return undef;
 }
