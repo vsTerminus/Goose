@@ -63,23 +63,10 @@ sub cmd_leave
 
     my $id = $msg;
     $id =~ s/^leave (\d+)$/$1/i;
-
-    say "Checking for Guild ID: $id";
     
     my $user = '@me';
-    say $discord->get_guilds($user);
-
-    if ( my $guild = $bot->get_guild($id) )
-    {
-        my $guild_name = $guild->{'name'};
-
-        $discord->send_message($channel, "Leaving Server: `$id ($guild_name)`");
-        $discord->leave_guild($user, $id);
-    }
-    else
-    {
-        $discord->send_message($channel, "Sorry " . $author->{'username'} . ", I don't appear to be connected to that server.");
-    }
+    $discord->send_message($channel, "Attempting to Leave Guild: `$id`");
+    $discord->leave_guild($user, $id);
 }
 
 1;
