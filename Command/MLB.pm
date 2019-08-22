@@ -229,6 +229,7 @@ async _player_stats => sub
     my @row = $size == 1 ? ($stats->{'row'}) : @{$stats->{'row'}};
     my $maxcols = 3; # Show results for three teams at a time.
     $maxcols = 1 if $group eq 'pitching' and defined $season; # Too many stats, will max out discord message length with more than one col.
+    $maxcols = scalar @row if $career; # This will need to be modified when the option to show per-team results is re-introduced.
 
     if ( $size > 0 ) 
     {
