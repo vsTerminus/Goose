@@ -8,7 +8,6 @@ requires 'Mojo::UserAgent';             # Used for HTTP(S) calls to APIs so we c
 requires 'Mojo::AsyncAwait';            # Brings async operations up a level compared to Mojo::Promise. Really nice syntax.
 requires 'Math::Random::Secure';        # Used to generate true random values instead of relying on pseudo-random.
 requires 'Math::Expression';            # Parsing math expression strings
-requires 'Math::Round';                 # Lots of options for rounding numbers
 requires 'Config::Tiny';                # .ini config file support
 requires 'URI::Escape';                 # Escape URLs for use with APIs
 requires 'Text::ASCIITable'             # Generate an ASCII table using data from perl structures

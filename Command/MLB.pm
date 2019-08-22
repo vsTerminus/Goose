@@ -10,7 +10,6 @@ use Bot::Goose;
 use Component::MLB;
 use Text::ASCIITable;
 use Math::Expression;
-use Math::Round qw(nearest);
 use Data::Dumper;
 
 use namespace::clean;
@@ -63,19 +62,36 @@ has combine         => ( is => 'ro', default => sub
             'obp'   => 'obp_avg     := (h_sum + bb_sum + hbp_sum) / (ab_sum + bb_sum + hbp_sum + sf_sum)', # On Base Percentage is Hits (H) + Walks (BB) + Hit By Pitch (HBP) all over At Bats (AB) + Walks (BB) + Hit By Pitch (HBP) + Sacrifice Flies (SF)
             'slg'   => 'slg_avg     := (h_sum + d_sum + (t_sum*2) + (hr_sum*3))/ab_sum', # Slugging is Hits (H) + Doubles (D) + 2x Triples (T) + 3x Home Runs (HR), all divided by At Bats (AB)
             'ops'   => 'ops_avg     := obp_avg + slg_avg', # On Base Percentage + Slugging
-        }
+        },
+        'pitching'      => {
+        },
+        'fielding'      => {
+            'g'     => 'g_sum       := sum_args(g_list)',
+            'gs'    => 'gs_sum      := sum_args(gs_list)',
+            'inn'   => 'inn_sum     := sum_args(inn_list)/0.3', # 0.3 = 1 because reasons.
+            'tc'    => 'tc_sum      := sum_args(tc_list)',
+            'po'    => 'po_sum      := sum_args(po_list)',
+            'a'     => 'a_sum       := sum_args(a_list)',
+            'e'     => 'e_sum       := sum_args(e_list)',
+            'dp'    => 'dp_sum      := sum_args(dp_list)',
+            'sb'    => 'sb_sum      := sum_args(sb_list)',
+            'cs'    => 'cs_sum      := sum_args(cs_list)',
+            'pb'    => 'pb_sum      := sum_args(pb_list)',
+            'fpct'  => 'fpct_avg    := avg_args(fpct_list)',
+            'rf'    => 'rf_avg      := avg_args(fpct_rf)',
+        },
     }
 });
 
-# Rounding targets for various fields when they get combined
+# sprintf formatting for various fields when they get combined
 has round           => ( is => 'ro', default => sub
 {
     {
-        'go_ao'     => 0.01,
-        'avg'       => 0.001,
-        'obp'       => 0.001,
-        'slg'       => 0.001,
-        'ops'       => 0.001,
+        'go_ao'     => '%0.2f',
+        'avg'       => '%0.3f',
+        'obp'       => '%0.3f',
+        'slg'       => '%0.3f',
+        'ops'       => '%0.3f',
     }
 });
 
@@ -381,8 +397,8 @@ sub _career_totals
         # Round field?
         if (exists $self->round->{$row})
         {
-            my $target = $self->round->{$row};
-            $val = nearest($target, $val);
+            my $format = $self->round->{$row};
+            $val = sprintf("$format", $val);
         }
 
         $combined_stats->[0]->{$row} = $val;
