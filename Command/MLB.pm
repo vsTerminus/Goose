@@ -17,17 +17,16 @@ use namespace::clean;
 has bot             => ( is => 'rw', required => 1 );
 has discord         => ( is => 'rw' );
 has mlb             => ( is => 'rw', default => sub { Component::MLB->new() } );
-has math            => ( is => 'rw', default => sub { Math::Expression->new() } );
 
 # Sorting and combining rules provided by @NYVGF - Thanks John!
 has sorting         => ( is => 'ro', default => sub
 {
     {
-        'Career Hitting'  => [ qw(g ab h d t hr tb r rbi bb ibb so hbp sf sac gidp sb cs go ao go_ao avg obp slg ops) ],
+        'Career Hitting'  => [ qw(g ab h d t hr tb r rbi bb ibb so bb_so hbp sf sac gidp sb cs sb_per go ao go_ao avg obp slg ops iso) ],
         'Season Hitting'  => [ qw(g ab tpa h d t hr xbh tb r rbi bb ibb so hbp roe sf sac gidp gidp_opp lob go ao go_ao hfly hgnd hldr hpop sb cs avg obp slg ops babip ppa np wo) ],
         'Career Fielding' => [ qw(position position_txt g gs inn tc po a e dp sb cs pb fpct rf) ],
         'Season Fielding' => [ qw(position position_txt g gs inn tc po a e dp sb cs pb cwp fpct rf) ],
-        'Career Pitching' => [ qw(w l era g gs cg sho sv svo ir irs ip tbf ab h r er hr so bb ibb hb gidp go ao go_ao wp bk avg whip np s) ],
+        'Career Pitching' => [ qw(w l era g gs cg sho sv svo ir irs ip tbf ab h r er hr hr_9 so so_9 so_per bb bb_9 bb_per ibb so_bb hb gidp go ao go_ao wp bk avg whip np s) ],
         'Season Pitching' => [ qw(w l wpct era g gs qs cg sho hld sv svo gf bq bqs ir irs ip tbf ab h h9 r er db tr hr hr9 so k9 bb bb9 ibb kbb hb gidp gidp_opp go ao go_ao hfly hgnd hldr hpop wp sb cs pk bk avg obp slg ops babip whip rs9 ppa pip pgs np s spct) ],
     }
 });
@@ -37,38 +36,79 @@ has combine         => ( is => 'ro', default => sub
 {
     { 
         'hitting'       => {
-            'g'     => 'g_sum       := sum_args(g_list)',
-            'ab'    => 'ab_sum      := sum_args(ab_list)',
-            'h'     => 'h_sum       := sum_args(h_list)',
-            'd'     => 'd_sum       := sum_args(d_list)',
-            't'     => 't_sum       := sum_args(t_list)',
-            'hr'    => 'hr_sum      := sum_args(hr_list)',
-            'tb'    => 'tb_sum      := sum_args(tb_list)',
-            'r'     => 'r_sum       := sum_args(r_list)',
-            'rbi'   => 'rbi_sum     := sum_args(rbi_list)',
-            'bb'    => 'bb_sum      := sum_args(bb_list)',
-            'ibb'   => 'ibb_sum     := sum_args(ibb_list)',
-            'so'    => 'so_sum      := sum_args(so_list)',
-            'hbp'   => 'hbp_sum     := sum_args(hbp_list)',
-            'sf'    => 'sf_sum      := sum_args(sf_list)',
-            'sac'   => 'sac_sum     := sum_args(sac_list)',
-            'gidp'  => 'gidp_sum    := sum_args(gidp_list)',
-            'sb'    => 'sb_sum      := sum_args(sb_list)',
-            'cs'    => 'cs_sum      := sum_args(cs_list)',
-            'go'    => 'go_sum      := sum_args(go_list)',
-            'ao'    => 'ao_sum      := sum_args(ao_list)',
-            'go_ao' => 'go_ao_ratio := go_sum / ao_sum', 
-            'avg'   => 'avg_avg     := h_sum / ab_sum',    # Batting Average is the number of hits (H) divided by number of at-bats (AB)
-            'obp'   => 'obp_avg     := (h_sum + bb_sum + hbp_sum) / (ab_sum + bb_sum + hbp_sum + sf_sum)', # On Base Percentage is Hits (H) + Walks (BB) + Hit By Pitch (HBP) all over At Bats (AB) + Walks (BB) + Hit By Pitch (HBP) + Sacrifice Flies (SF)
-            'slg'   => 'slg_avg     := (h_sum + d_sum + (t_sum*2) + (hr_sum*3))/ab_sum', # Slugging is Hits (H) + Doubles (D) + 2x Triples (T) + 3x Home Runs (HR), all divided by At Bats (AB)
-            'ops'   => 'ops_avg     := obp_avg + slg_avg', # On Base Percentage + Slugging
+            'g'     => 'g           := sum_args(g_list)',
+            'ab'    => 'ab          := sum_args(ab_list)',
+            'h'     => 'h           := sum_args(h_list)',
+            'd'     => 'd           := sum_args(d_list)',
+            't'     => 't           := sum_args(t_list)',
+            'hr'    => 'hr          := sum_args(hr_list)',
+            'tb'    => 'tb          := sum_args(tb_list)',
+            'r'     => 'r           := sum_args(r_list)',
+            'rbi'   => 'rbi         := sum_args(rbi_list)',
+            'bb'    => 'bb          := sum_args(bb_list)',
+            'ibb'   => 'ibb         := sum_args(ibb_list)',
+            'so'    => 'so          := sum_args(so_list)',
+            'bb_so' => 'bb_so       := (bb + ibb) / so',
+            'hbp'   => 'hbp         := sum_args(hbp_list)',
+            'sf'    => 'sf          := sum_args(sf_list)',
+            'sac'   => 'sac         := sum_args(sac_list)',
+            'gidp'  => 'gidp        := sum_args(gidp_list)',
+            'sb'    => 'sb          := sum_args(sb_list)',
+            'cs'    => 'cs          := sum_args(cs_list)',
+            'sb_per'=> 'sb_percent  := sb / (sb + cs)',
+            'go'    => 'go          := sum_args(go_list)',
+            'ao'    => 'ao          := sum_args(ao_list)',
+            'go_ao' => 'go_ao       := go / ao', 
+            'avg'   => 'avg         := h / ab',    # Batting Average is the number of hits (H) divided by number of at-bats (AB)
+            'obp'   => 'obp         := (h + bb + hbp) / (ab + bb + hbp + sf)', # On Base Percentage is Hits (H) + Walks (BB) + Hit By Pitch (HBP) all over At Bats (AB) + Walks (BB) + Hit By Pitch (HBP) + Sacrifice Flies (SF)
+            'slg'   => 'slg         := (h + d + (t*2) + (hr*3))/ab', # Slugging is Hits (H) + Doubles (D) + 2x Triples (T) + 3x Home Runs (HR), all divided by At Bats (AB)
+            'ops'   => 'ops         := obp + slg', # On Base Percentage + Slugging
+            'iso'   => 'iso_avg     := slg - avg',
         },
         'pitching'      => {
+            'w'     => 'w           := sum_args(w_list)',
+            'l'     => 'l           := sum_args(l_list)',
+            'era'   => 'era         := (sum_args(er_list) / sum_args(ip_list)) * 9', # Earned Runs Average = (Earned Runs / Innings Pitched) * 9
+            'g'     => 'g           := sum_args(g_list)',
+            'gs'    => 'gs          := sum_args(gs_list)',
+            'cg'    => 'cg          := sum_args(cg_list)',
+            'sho'   => 'sho         := sum_args(sho_list)',
+            'sv'    => 'sv          := sum_args(sv_list)',
+            'svo'   => 'svo         := sum_args(svo_list)',
+            'ir'    => 'ir          := sum_args(ir_list)',
+            'irs'   => 'irs         := sum_args(irs_list)',
+            'ip'    => 'ip          := sum_innings(ip_list)', # 0.3 = 1 inning pitched
+            'tbf'   => 'tbf         := sum_args(tbf_list)',
+            'ab'    => 'ab          := sum_args(ab_list)',
+            'h'     => 'h           := sum_args(h_list)',
+            'r'     => 'r           := sum_args(r_list)',
+            'er'    => 'er          := sum_args(er_list)',
+            'hr'    => 'hr          := sum_args(hr_list)',
+            'hr_9'  => 'hr_9        := (hr * 9) / ip',
+            'so'    => 'so          := sum_args(so_list)',
+            'so_9'  => 'so_9        := (so * 9) / ip',
+            'so_per'=> 'so_percent  := so / tbf',
+            'bb'    => 'bb          := sum_args(bb_list)',
+            'bb_9'  => 'bb_9        := (bb * 9) / ip',
+            'bb_per'=> 'bb_percent  := bb / tbf',
+            'ibb'   => 'ibb         := sum_args(ibb_list)',
+            'so_bb' => 'so_bb       := so / (bb + ibb)',
+            'hb'    => 'hb          := sum_args(hb_list)',
+            'gidp'  => 'gidp        := sum_args(gidp_list)',
+            'go'    => 'go          := sum_args(go_list)',
+            'ao'    => 'ao          := sum_args(ao_list)',
+            'go_ao' => 'go_ao       := sum_args(go_ao_list)',
+            'wp'    => 'wp          := sum_args(wp_list)',
+            'bk'    => 'bk          := sum_args(bk_list)',
+            'avg'   => 'avg         := sum_args(avg_list)',
+            'whip'  => 'whip        := sum_args(whip_list)',
+            'np'    => 'np          := sum_args(np_list)',
+            's'     => 's           := sum_args(s_list)',
         },
         'fielding'      => {
             'g'     => 'g_sum       := sum_args(g_list)',
             'gs'    => 'gs_sum      := sum_args(gs_list)',
-            'inn'   => 'inn_sum     := sum_args(inn_list)/0.3', # 0.3 = 1 because reasons.
+            'inn'   => 'inn_sum     := sum_innings(inn_list)', # 0.3 = 1 inning
             'tc'    => 'tc_sum      := sum_args(tc_list)',
             'po'    => 'po_sum      := sum_args(po_list)',
             'a'     => 'a_sum       := sum_args(a_list)',
@@ -92,6 +132,17 @@ has round           => ( is => 'ro', default => sub
         'obp'       => '%0.3f',
         'slg'       => '%0.3f',
         'ops'       => '%0.3f',
+        'iso'       => '%0.3f',
+        'hr_9'      => '%02.2f',
+        'so_9'      => '%02.2f',
+        'so_per'    => '%02.2f',
+        'bb_9'      => '%02.2f',
+        'bb_per'    => '%02.2f',
+        'so_bb'     => '%0.2f',
+        'era'       => '%0.2f',
+        'whip'      => '%0.3f',
+        'bb_so'     => '%0.2f',
+        'sb_per'    => '%0.2f',
     }
 });
 
@@ -134,11 +185,6 @@ sub BUILD
     my $self = shift;
 
     $self->discord( $self->bot->discord );
-
-    # Make sure Math::Expression knows about additional functions we have defined.
-    $self->math->{Functions}->{sum_args} = 1;
-    $self->math->{Functions}->{avg_args} = 1;
-    $self->math->SetOpt(ExtraFuncEval => \&_math_functions);
 }
 
 sub cmd_mlb
@@ -181,11 +227,11 @@ async _player_stats => sub
     say "=> _player_stats season=$season" if defined $season;
     my $match = ( $args =~ /\b(\d{1,2})\b/ ? $1 : undef );
     say "=> _player_stats match=$match" if defined $match;
-    my $group = ( $args =~/(hitting|pitching|fielding)/i ? lc $1 : 'hitting' );
+    my $group = ( $args =~/(hitting|pitching|fielding)/i ? lc $1 : 'hitting');
     my $name = $args;
     $name =~ s/ ?$match// if defined $match; # Remove the match number
     $name =~ s/ ?$season// if defined $season; # Remove the year
-    $name =~ s/ ?$group// if defined $group; # Remove the group
+    $name =~ s/ ?$group//i if defined $group; # Remove the group
     say "=> _player_stats name=$name";
 
     # Only one of career and season should be defined.
@@ -275,6 +321,18 @@ sub _format_stats
 
     say "=> _format_stats got all args";
 
+    # Each call to _format_stats requires its own Math::Expression object or there will be variable collisions.
+    my $math = Math::Expression->new();
+    
+    # Make sure Math::Expression knows about additional functions we have defined.
+    $math->{Functions}->{sum_args} = 1;
+    $math->{Functions}->{avg_args} = 1;
+    $math->{Functions}->{sum_innings} = 1;
+    $math->SetOpt(
+        ExtraFuncEval => \&_math_functions,
+        AutoInit => 1,
+    );
+
     my $mlb = $self->mlb;
     my $player_id = $player->{'row'}{'player_id'};
     my $player_name = $player->{'row'}{'name_display_first_last'};
@@ -292,7 +350,7 @@ sub _format_stats
         if ( $career and $combine )
         {
             say "=> _format_stats is calling _career_totals";
-            my $combined_stats = $self->_career_totals($stats, $group);
+            my $combined_stats = $self->_career_totals($stats, $math, $group);
             say "=> _format_stats is calling _ascii_table";
             $table = $self->_ascii_table($combined_stats, "$player_name\n$group_str");
         }
@@ -366,7 +424,7 @@ sub _ascii_table
 # This sub takes a hashref containing per-team career stats and totals them into a single set.
 sub _career_totals
 {
-    my ($self, $stats, $group) = @_;
+    my ($self, $stats, $math, $group) = @_;
 
     my $combined_stats = [{}];
 
@@ -379,11 +437,16 @@ sub _career_totals
     # Step two, generate lists of values for each row
     foreach my $row (@{$self->sorting->{$sort_key}})
     {
-        my $row_str = $row . "_list";
-        my @arr;
-        push @arr, $stats->[$_]{$row} foreach (0..$size-1);
-        $self->math->{VarHash}->{$row_str} = [@arr];
-        say "=> _career_totals $row_str = " . "@{$self->math->{VarHash}->{$row_str}}";
+        # Not all rows in the sort array will exist. Some are purely calculated.
+        # Don't try to build '_list' variables for those.
+        if ( exists ( $stats->[0]{$row} ) )
+        {
+            my $row_str = $row . "_list";
+            my @arr;
+            push @arr, $stats->[$_]{$row} foreach (0..$size-1);
+            $math->{VarHash}->{$row_str} = [@arr];
+            say "=> _career_totals $row_str = " . "@{$math->{VarHash}->{$row_str}}";
+        }
     }
 
     # Step three, evaluate the expression for each entry and populate the combined_stats hash
@@ -392,11 +455,14 @@ sub _career_totals
         my $expr = $self->combine->{$group}->{$row};
         say "=> _career_totals expr=$expr";
 
-        my $val = $self->math->ParseToScalar($expr);
+        my $val = "null";
+        eval {
+            $val = $math->ParseToScalar($expr);
+        };
         say "=> _career_totals $row (Combined) = $val";
 
         # Round field?
-        if (exists $self->round->{$row})
+        if ($val ne "null" and exists $self->round->{$row})
         {
             my $format = $self->round->{$row};
             $val = sprintf("$format", $val);
@@ -432,8 +498,36 @@ sub _math_functions
         return $num;
     }
 
+    # This is a weird one.
+    # Innings Pitched are returned like this:
+    # 1 = 1 inning pitched = 3 outs
+    # 1.1 = 1 inning + 1 out = 4 outs
+    # 1.2 = 1 inning + 1 out = 5 outs
+    # 2 = 2 innings pitched = 6 outs
+    # This function correctly sums up a list of these values and returns the sum in the correct format.
+    # eg, 1.2 + 0.2 = 2.1
+    if ( $fname eq 'sum_innings' )
+    {
+        my $sum = 0;
+        foreach my $num (@arglist)
+        {
+            $sum += $num;
+            my $remainder = _remainder($sum, 1);
+            say "=> _math_functions remainder is " . $remainder;
+            $sum += 0.7 if ( $remainder >= 0.3 );    # 0.3 rounds up to the next integer.
+        }
+        return $sum;
+    }
+
     # Return undef so that in built functions are scanned
     return undef;
+}
+
+# Perl does not have a remainder function and the modulo operator is an integer operation.
+sub _remainder {
+    my ($a, $b) = @_;
+    return 0 unless $b && $a;
+    return $a / $b - int($a / $b);
 }
 
 __PACKAGE__->meta->make_immutable;
