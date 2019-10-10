@@ -65,12 +65,11 @@ sub cmd_pick
     my @picks = split (/,+/, $args);
 
     my $count = scalar @picks;
-    my $pick = int(rand($count)+.5)+1;  #  Add .5 so the int() rounds instead of doing floor. Otherwise the final option has a very low chance of being picked.
+    my $pick = int(rand($count));
 
-    unshift @picks, "spacer";   # Start things at 1 instead of 0.
     $pick =~ s/^ *//;
     
-    for (my $i = 1; $i <= $count; $i++)
+    for (my $i = 0; $i < $count; $i++)
     {
         if ( $picks[$i] =~ /^\s*quiznos\s*$/i )
         {
@@ -80,15 +79,8 @@ sub cmd_pick
         }
     }
 
-    if ( !$quiznos and int(rand(500)) == 420 )
-    {
-        $pick = $count+1;
-        push @picks, 'Quiznos';
-    }
-    
-
     # Send a message back to the channel
-    $discord->send_message($channel, "**$pick:** $picks[$pick]");
+    $discord->send_message($channel, ":point_right: $picks[$pick]");
 }
 
 1;
