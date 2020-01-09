@@ -1,6 +1,9 @@
 package Bot::Goose;
+use feature 'say';
 
-use Mojo::Base -base;
+use Moo;
+use strictures 2;
+
 use Data::Dumper;
 use Mojo::Discord;
 use Component::Database;
@@ -12,83 +15,112 @@ use Component::UrbanDictionary;
 use Component::Twitch;
 use Mojo::IOLoop;
 
-use Exporter qw(import);
-our @EXPORT_OK = qw(add_command command get_patterns);
+use namespace::clean;
 
-my $permissions = {
-    'CREATE_INSTANT_INVITE' => 0x00000001,
-    'KICK_MEMBERS'          => 0x00000002,
-    'BAN_MEMBERS'           => 0x00000004,
-    'ADMINISTRATOR'         => 0x00000008,
-    'MANAGE_CHANNELS'       => 0x00000010,
-    'MANAGE_GUILD'          => 0x00000020,
-    'ADD_REACTIONS'         => 0x00000040,
-    'READ_MESSAGES'         => 0x00000400,
-    'SEND_MESSAGES'         => 0x00000800,
-    'SEND_TTS_MESSAGES'     => 0x00001000,
-    'MANAGE_MESSAGES'       => 0x00002000,
-    'EMBED_LINKS'           => 0x00004000,
-    'ATTACH_FILES'          => 0x00008000,
-    'READ_MESSAGE_HISTORY'  => 0x00010000,
-    'MENTION_EVERYONE'      => 0x00020000,
-    'USE_EXTERNAL_EMOJIS'   => 0x00040000,
-    'CONNECT'               => 0x00100000,
-    'SPEAK'                 => 0x00200000,
-    'MUTE_MEMBERS'          => 0x00400000,
-    'DEAFEN_MEMBERS'        => 0x00800000,
-    'MOVE_MEMBERS'          => 0x01000000,
-    'USE_VAD'               => 0x02000000,
-    'CHANGE_NICKNAME'       => 0x04000000,
-    'MANAGE_NICKNAMES'      => 0x08000000,
-    'MANAGE_ROLES'          => 0x10000000,
-    'MANAGE_WEBHOOKS'       => 0x20000000,
-    'MANAGE_EMOJIS'         => 0x40000000,
-};
+has permissions => ( is => 'ro', default => sub {
+        {
+            'CREATE_INSTANT_INVITE' => 0x00000001,
+            'KICK_MEMBERS'          => 0x00000002,
+            'BAN_MEMBERS'           => 0x00000004,
+            'ADMINISTRATOR'         => 0x00000008,
+            'MANAGE_CHANNELS'       => 0x00000010,
+            'MANAGE_GUILD'          => 0x00000020,
+            'ADD_REACTIONS'         => 0x00000040,
+            'READ_MESSAGES'         => 0x00000400,
+            'SEND_MESSAGES'         => 0x00000800,
+            'SEND_TTS_MESSAGES'     => 0x00001000,
+            'MANAGE_MESSAGES'       => 0x00002000,
+            'EMBED_LINKS'           => 0x00004000,
+            'ATTACH_FILES'          => 0x00008000,
+            'READ_MESSAGE_HISTORY'  => 0x00010000,
+            'MENTION_EVERYONE'      => 0x00020000,
+            'USE_EXTERNAL_EMOJIS'   => 0x00040000,
+            'CONNECT'               => 0x00100000,
+            'SPEAK'                 => 0x00200000,
+            'MUTE_MEMBERS'          => 0x00400000,
+            'DEAFEN_MEMBERS'        => 0x00800000,
+            'MOVE_MEMBERS'          => 0x01000000,
+            'USE_VAD'               => 0x02000000,
+            'CHANGE_NICKNAME'       => 0x04000000,
+            'MANAGE_NICKNAMES'      => 0x08000000,
+            'MANAGE_ROLES'          => 0x10000000,
+            'MANAGE_WEBHOOKS'       => 0x20000000,
+            'MANAGE_EMOJIS'         => 0x40000000,
+        }
+    }
+);
 
-has 'config';
-has ['commands', 'patterns'];
-#has ['channels', 'guilds'];
+has config              => ( is => 'ro' );
+has commands            => ( is => 'rw' );
+has patterns            => ( is => 'rw' );
+has stats               => ( is => 'rw', default => sub{ {'num_guilds' => 0} });
 
-has 'db'                => sub { my $self = shift; Component::Database->new(%{$self->config->{'db'}})};
-has 'youtube'           => sub { my $self = shift; Component::YouTube->new(%{$self->config->{'youtube'}})};
-has 'darksky'           => sub { my $self = shift; Component::DarkSky->new(%{$self->config->{'weather'}})};
-has 'maps'              => sub { my $self = shift; Component::Maps->new(%{$self->config->{'maps'}})};
-has 'lastfm'            => sub { my $self = shift; Mojo::WebService::LastFM->new('api_key' => $self->config->{'lastfm'}{'api_key'})};
-has 'cah'               => sub { my $self = shift; Component::CAH->new('api_url' => $self->config->{'cah'}{'api_url'})};
-has 'urbandictionary'   => sub { my $self = shift; Component::UrbanDictionary->new()};
-has 'twitch'            => sub { my $self = shift; Component::Twitch->new('api_key' => $self->config->{'twitch'}{'api_key'})};
+has db                  => ( is => 'rwp' );
+has youtube             => ( is => 'rwp' );
+has darksky             => ( is => 'rwp' );
+has maps                => ( is => 'rwp' );
+has lastfm              => ( is => 'rwp' );
+has cah                 => ( is => 'rwp' );
+has urbandictionary     => ( is => 'rwp' );
+has twitch              => ( is => 'rwp' );
 
-has 'owner_id'          => sub { my $self = shift; $self->config->{'discord'}{'owner_id'} };
-has 'trigger'           => sub { my $self = shift; $self->config->{'discord'}{'trigger'} };
-has 'playing'           => sub { my $self = shift; $self->config->{'discord'}{'playing'} };
-has 'client_id'         => sub { my $self = shift; $self->config->{'discord'}{'client_id'} };
-has 'webhook_name'      => sub { my $self = shift; $self->config->{'discord'}{'webhook_name'} };
-has 'webhook_avatar'    => sub { my $self = shift; $self->config->{'discord'}{'webhook_avatar'} };
+has owner_id            => ( is => 'rwp' );
+has user_id             => ( is => 'rwp' );
+has trigger             => ( is => 'rwp' );
+has playing             => ( is => 'rwp' );
+has client_id           => ( is => 'rwp' );
+has webhook_name        => ( is => 'rwp' );
+has webhook_avatar      => ( is => 'rwp' );
 
-has 'discord'           => sub { my $self = shift; 
-    Mojo::Discord->new(
-        'token'     => $self->config->{'discord'}{'token'},
-        'name'      => $self->config->{'discord'}{'name'},
-        'url'       => $self->config->{'discord'}{'redirect_url'},
-        'version'   => '1.0',
-        'callbacks' => {    # Discord Gateway Dispatch Event Types
-            'READY'             => sub { $self->discord_on_ready(@_) },
-            'GUILD_CREATE'      => sub { $self->discord_on_guild_create(@_) },
-            'GUILD_UPDATE'      => sub { $self->discord_on_guild_update(@_) },
-            'GUILD_DELETE'      => sub { $self->discord_on_guild_delete(@_) },
-            'CHANNEL_CREATE'    => sub { $self->discord_on_channel_create(@_) },
-            'CHANNEL_UPDATE'    => sub { $self->discord_on_channel_update(@_) },
-            'CHANNEL_DELETE'    => sub { $self->discord_on_channel_delete(@_) },
-            'TYPING_START'      => sub { $self->discord_on_typing_start(@_) }, 
-            'MESSAGE_CREATE'    => sub { $self->discord_on_message_create(@_) },
-            'MESSAGE_UPDATE'    => sub { $self->discord_on_message_update(@_) },
-            'PRESENCE_UPDATE'   => sub { $self->discord_on_presence_update(@_) },
-            'WEBHOOKS_UPDATE'   => sub { $self->discord_on_webhooks_update(@_) },
-        },
-        'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
-        'verbose'   => $self->config->{'discord'}{'verbose'},
+has discord             => ( is => 'rwp' );
+
+# There is almost definitely a better way to do this. Maybe goose.pl should be doing more up front?
+sub BUILD {
+
+    my $self = shift;
+
+    $self->_set_discord(
+        Mojo::Discord->new(
+            'token'     => $self->config->{'discord'}{'token'},
+            'name'      => $self->config->{'discord'}{'name'},
+            'url'       => $self->config->{'discord'}{'redirect_url'},
+            'version'   => '1.0',
+            'callbacks' => {    # Discord Gateway Dispatch Event Types
+                'READY'             => sub { $self->discord_on_ready(@_) },
+                'GUILD_CREATE'      => sub { $self->discord_on_guild_create(@_) },
+                'GUILD_UPDATE'      => sub { $self->discord_on_guild_update(@_) },
+                'GUILD_DELETE'      => sub { $self->discord_on_guild_delete(@_) },
+                'CHANNEL_CREATE'    => sub { $self->discord_on_channel_create(@_) },
+                'CHANNEL_UPDATE'    => sub { $self->discord_on_channel_update(@_) },
+                'CHANNEL_DELETE'    => sub { $self->discord_on_channel_delete(@_) },
+                'TYPING_START'      => sub { $self->discord_on_typing_start(@_) }, 
+                'MESSAGE_CREATE'    => sub { $self->discord_on_message_create(@_) },
+                'MESSAGE_UPDATE'    => sub { $self->discord_on_message_update(@_) },
+                'PRESENCE_UPDATE'   => sub { $self->discord_on_presence_update(@_) },
+                'WEBHOOKS_UPDATE'   => sub { $self->discord_on_webhooks_update(@_) },
+            },
+            'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
+            'verbose'   => $self->config->{'discord'}{'verbose'},
+        )
     );
-};
+
+    $self->_set_db               (Component::Database->new(%{$self->config->{'db'}}));
+    $self->_set_youtube          (Component::YouTube->new(%{$self->config->{'youtube'}}));
+    $self->_set_darksky          (Component::DarkSky->new(%{$self->config->{'weather'}}));
+    $self->_set_maps             (Component::Maps->new(%{$self->config->{'maps'}}));
+    $self->_set_lastfm           (Mojo::WebService::LastFM->new('api_key' => $self->config->{'lastfm'}{'api_key'}));
+    $self->_set_cah              (Component::CAH->new('api_url' => $self->config->{'cah'}{'api_url'}));
+    $self->_set_urbandictionary  (Component::UrbanDictionary->new());
+    $self->_set_twitch           (Component::Twitch->new('api_key' => $self->config->{'twitch'}{'api_key'}));;
+
+    $self->_set_owner_id         ($self->config->{'discord'}{'owner_id'});
+    $self->_set_trigger          ($self->config->{'discord'}{'trigger'});
+    $self->_set_playing          ($self->config->{'discord'}{'playing'});
+    $self->_set_client_id        ($self->config->{'discord'}{'client_id'});
+    $self->_set_webhook_name     ($self->config->{'discord'}{'webhook_name'});
+    $self->_set_webhook_avatar   ($self->config->{'discord'}{'webhook_avatar'});
+
+}
 
 # Connect to discord and start running.
 sub start
@@ -109,14 +141,39 @@ sub discord_on_ready
     $self->add_me($hash->{'user'});
 
     say localtime(time) . " Connected to Discord.";
+
+    Mojo::IOLoop->recurring(60 => sub { $self->_set_status() });
+}
+
+sub _set_status
+{
+    my $self = shift;
+   
+    my $status = {
+       'name' => $self->stats->{'num_guilds'} . ' servers',
+       'type' => 3 # "Watching"
+    };
+    my $discord = $self->discord->status_update($status);
+}
+
+sub discord_on_guild_create
+{
+    my ($self, $hash) = @_;
+
+    $self->stats->{'num_guilds'}++;
+}
+
+sub discord_on_guild_delete
+{
+    my ($self, $hash) = @_;
+
+    $self->stats->{'num_guilds'}--;
 }
 
 # Might do something with these?
 # The tracking of information is done by the Mojo::Discord library now,
 # so we only need these if we're going to have the bot actually do something when they happen.
-sub discord_on_guild_create{}
 sub discord_on_guild_update{}
-sub discord_on_guild_delete{}
 sub discord_on_channel_create{}
 sub discord_on_channel_update{}
 sub discord_on_channel_delete{}
@@ -132,8 +189,8 @@ sub discord_on_message_create
     my $channel_id = $hash->{'channel_id'};
     my @mentions = @{$hash->{'mentions'}};
     my $trigger = $self->trigger;
-    my $discord_name = $self->name();
-    my $discord_id = $self->id();
+    my $discord_name = $self->discord->name;
+    my $discord_id = $self->user_id;
 
     my $channels = $self->discord->channels;
 
@@ -146,7 +203,7 @@ sub discord_on_message_create
         {
             # Get all command patterns and iterate through them.
             # If you find a match, call the command fuction.
-            foreach my $pattern ($self->get_patterns())
+            foreach my $pattern (keys $self->patterns)
             {
                 if ( $msg =~ /$pattern/si )
                 {
@@ -191,45 +248,7 @@ sub add_me
 {
     my ($self, $user) = @_;
     say "Adding my ID as " . $user->{'id'};
-    $self->{'id'} = $user->{'id'};
-}
-
-sub id
-{
-    my $self = shift;
-
-    return $self->{'id'};
-}
-
-sub name
-{
-    my $self = shift;
-    return $self->{'users'}{$self->id}->{'username'}
-}
-
-sub discriminator
-{
-    my $self = shift;
-    return $self->{'users'}{$self->id}->{'discriminator'};
-}
-
-sub client_id
-{
-    my $self = shift;
-    return $self->{'client_id'};
-}
-
-sub me
-{
-    my ($self, $user) = @_;
-
-    defined $user ? $self->{'me'} = $user : return $self->{'me'};
-}
-
-sub get_patterns
-{
-    my $self = shift;
-    return keys %{$self->{'patterns'}};
+    $self->_set_user_id($user->{'id'});
 }
 
 # Return a list of all commands
@@ -259,13 +278,6 @@ sub get_command_by_pattern
     my ($self, $pattern) = @_;
 
     return $self->get_command_by_name($self->{'patterns'}{$pattern});
-}
-
-# Return the bot's trigger prefix
-sub trigger
-{
-    my $self = shift;
-    return $self->{'trigger'};
 }
 
 sub add_moo_command
@@ -408,5 +420,7 @@ sub has_webhook
     }
     return undef;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;
