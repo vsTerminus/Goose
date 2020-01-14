@@ -1,56 +1,43 @@
 package Component::DarkSky;
 
-use v5.10;
-use strict;
-use warnings;
+use feature 'say';
+use Moo;
+
+use Mojo::UserAgent;
+use Mojo::AsyncAwait;
+use Data::Dumper;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(weather);
 
-use Mojo::UserAgent;
-use Data::Dumper;
+has api_key     => ( is => 'ro' );
+has api_url     => ( is => 'ro', default => 'https://api.darksky.net/forecast' );
+has ua          => ( is => 'rw', default => sub { Mojo::UserAgent->new } );
 
-# This module exists to make it easier to include the database in command modules.
-# The modules don't have to care about connection info or manually connecting, they can just call this module's 'do' function.
 
-sub new
+sub BUILD
 {
-    my ($class, %params) = @_;
-    my $self = {};
+    my $self = shift;
    
-    my $api_key = $params{'api_key'};
-    my $api_url = 'https://api.darksky.net/forecast';
-    my $ua = Mojo::UserAgent->new;
-    $ua->connect_timeout(5);
-
-    $self->{'ua'} = $ua;
-    $self->{'api_key'} = $api_key;
-    $self->{'api_url'} = $api_url;
-
-    bless($self, $class); 
-    return $self;
+    $self->ua->connect_timeout(5);
+    $self->ua->inactivity_timeout(120);
 }
 
 # Queries the API for weather by Latitude and Longitude
-# JSON results are provided to the callback function.
-sub weather
+# JSON results are returned or provided to a callback if defined.
+async weather => sub
 {
     my ($self, $lat, $lon, $callback) = @_;
+    my $url = $self->api_url . '/' . $self->api_key . '/' . $lat . ',' . $lon;
 
-    my $ua      = $self->{'ua'};
-    my $api_key = $self->{'api_key'};
-    my $api_url = $self->{'api_url'};
+    my $tx = await $self->ua->get_p($url);
+    my $json = $tx->res->json;
 
-    my $url     = $api_url . "/$api_key/$lat,$lon";
+    # Return only the current conditions
+    ( defined $callback ) ? $callback->($json->{'currently'}) : return $json->{'currently'};
+};
 
-    $ua->get($url => sub {
-        my ($ua, $tx) = @_;
-
-        my $json = $tx->res->json;
-
-        # We're only dealing with current weather here, so don't send the historical/hourly/forecast stuff. Just current conditions.
-        $callback->($json->{'currently'});
-    });
-}
+__PACKAGE__->meta->make_immutable;
 
 1;
