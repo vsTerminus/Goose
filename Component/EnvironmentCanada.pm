@@ -44,10 +44,13 @@ async weather => sub
         my $p_code = $site->at('provinceCode')->text;
         next unless $name =~ /$city/i and lc $p_code eq lc $province;
 
+        say "FOUND: $site->{'code'}";
         $site_code = $site->{'code'};
         last;
     }
-   
+
+    return undef unless defined $site_code;
+
     my $weather_url = $self->api_url . '/' . (uc $province) . '/' . $site_code . '_e.xml'; #_e for english
     say "Found weather at: $weather_url";
 

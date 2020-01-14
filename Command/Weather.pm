@@ -218,6 +218,7 @@ async weather_by_coords => sub
     else
     {
 
+        my $weather_found = 0;
         if ( $address =~ /Canada$/ )
         {
             my ($city, $province) = ($address =~ /^(?:.*, )?([^,]+), ([^,]+), Canada$/);
@@ -225,9 +226,14 @@ async weather_by_coords => sub
             say localtime(time) . " Requesting weather for $city, $province from Environment Canada";
 
             $json = await $self->bot->environmentcanada->weather($city, $province);
-            $address .= " *";
+
+            if ( defined $json )
+            {
+                $address .= " *";
+                $weather_found = 1;
+            }
         }
-        else
+        unless ( $weather_found )
         {
             say localtime(time) . " Requesting weather for $lat,$lon from Dark Sky";
             $json = await $self->bot->darksky->weather($lat, $lon);
