@@ -27,7 +27,7 @@ has darksky     => ( is => 'rw' );
 # The rest are specific to this command
 has name        => ( is => 'ro', default => 'Weather' );
 has access      => ( is => 'ro', default => 0 ); # Public
-has description => ( is => 'ro', default => 'Current Weather Conditions. Powered by Google Maps and Dark Sky.' );
+has description => ( is => 'ro', default => 'Current Weather Conditions. Powered by Google Maps, Dark Sky, and Environment Canada' );
 has pattern     => ( is => 'ro', default => '^(we?(ather)?) ?([^\s].*)?$' );
 has function    => ( is => 'ro', default => sub { return \&cmd_weather } );
 
@@ -38,9 +38,9 @@ has usage       => ( is => 'ro', default => sub { return <<EOF;
 **Basic Usage:** `!weather <Address>`
     The command accepts City Names, ZIP Codes, Postal Codes, and even Street Addresses.
 
-    eg. `!weather Dildo, NL`
-    eg. `!weather 80085`
-    eg. `!weather V4G 1N4`
+    eg. `!weather Moscow`
+    eg. `!weather 58201`
+    eg. `!weather M4B 1B5`
 
 **Shorthand:** `!w` and `!we`
 
