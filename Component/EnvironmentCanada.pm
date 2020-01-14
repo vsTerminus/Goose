@@ -30,7 +30,7 @@ sub BUILD
 # JSON results are provided to the callback function.
 async weather => sub 
 {
-    my ($self, $city, $province, $callback) = @_;
+    my ($self, $city, $province) = @_;
 
     my ($tx, $dom, $site_code, $json);
 
@@ -105,10 +105,7 @@ async weather => sub
         $json->{'warning'} = $warn->{'description'};
     }
 
-
-
-    # Return the values to the caller. Callback is optional.
-    ( defined $callback ) ? $callback->($json) : return $json;
+    return $json;
 };
 
 sub icon_url

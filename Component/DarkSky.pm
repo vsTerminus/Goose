@@ -25,10 +25,9 @@ sub BUILD
 }
 
 # Queries the API for weather by Latitude and Longitude
-# JSON results are returned or provided to a callback if defined.
 async weather => sub
 {
-    my ($self, $lat, $lon, $callback) = @_;
+    my ($self, $lat, $lon) = @_;
     my $url = $self->api_url . '/' . $self->api_key . '/' . $lat . ',' . $lon;
 
     my $tx = await $self->ua->get_p($url);
@@ -46,7 +45,7 @@ async weather => sub
     $json->{'currently'}{'icon_emote'} = icon_emote($json->{'currently'}{'icon'});
 
     # Return only the current conditions
-    ( defined $callback ) ? $callback->($json->{'currently'}) : return $json->{'currently'};
+    return $json->{'currently'};
 };
 
 sub icon_url
