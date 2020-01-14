@@ -66,15 +66,16 @@ async weather => sub
     # Extract values needed by weather command, put them in a hash.
     $json = {
         'temperature_c'         => $curr->at('temperature')->text,
-        'apparentTemperature_c' => $curr->at('windChill')->text,
         'windBearing'           => wind_direction($curr->at('wind')->at('direction')->text),
         'windSpeed_km'          => $curr->at('wind')->at('speed')->text,
         'humidity'              => $curr->at('relativeHumidity')->text,
     };
     say "Base Values";
 
-    # Looks like the Current Conditions are sometimes blank with Environment Canada
+    # Looks like the Current Conditions and WindChill are sometimes blank with Environment Canada
     # so we need to handle that.
+    $json->{'apparentTemperature_c'} = ( defined $curr->at('windChill') ? $curr->at('windChill')->text : $curr->at('temperature')->text );
+
     $json->{'summary'} = ( length $curr->at('condition')->text ? $curr->at('condition')->text : 'Unknown' );
     say "Summary";
 
