@@ -98,6 +98,15 @@ async weather => sub
 
     say Dumper($json);
 
+    # Weather Warnings
+    if ( my $warn = $dom->at('warnings')->at('event') )
+    {
+        say "Found a weather warning";
+        $json->{'warning'} = $warn->{'description'};
+    }
+
+
+
     # Return the values to the caller. Callback is optional.
     ( defined $callback ) ? $callback->($json) : return $json;
 };

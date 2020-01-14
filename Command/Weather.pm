@@ -262,10 +262,13 @@ sub send_weather
         my $avatar = 'http://i.imgur.com/BVCiYSn.png'; # default
         $avatar = $json->{'icon_url'} if exists $json->{'icon_url'};
 
+        
+        my $header = ( exists $json->{'warning'} ? "**$address - " . $json->{'warning'} . "**" : "**$address**" );
+
         my $hookparam = {
             'username' => "Current Weather",
             'avatar_url' => $avatar,
-            'content' => "**$address**\n" . $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
+            'content' => "$header\n" . $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
         };
 
         $self->discord->send_webhook($channel, $hook, $hookparam, sub { my $json = shift; say Dumper($json) if defined $json; });
@@ -274,8 +277,10 @@ sub send_weather
     {
         my $icon = '';
         $icon = $json->{'icon_emote'} if exists $json->{'icon_emote'};
+
+        my $warning = ( exists $json->{'warning'} ? $json->{'warning'} . "\n" : "" );
             
-        $self->discord->send_message($channel, "**Weather for $address** $icon\n$formatted_weather\n");
+        $self->discord->send_message($channel, "**Weather for $address** $icon\n$warning$formatted_weather\n");
     }
 }
 
