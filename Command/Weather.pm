@@ -12,6 +12,7 @@ use Bot::Goose;
 use Component::Maps;
 use Component::Database;
 use Command::Weather::Content;
+use Mojo::AsyncAwait;
 use Data::Dumper;
 
 use namespace::clean;
@@ -196,7 +197,7 @@ sub cmd_weather
     }
 }
 
-sub weather_by_coords
+async weather_by_coords => sub
 {
     my ($self, $channel, $author, $lat, $lon, $address) = @_;
 
@@ -213,29 +214,37 @@ sub weather_by_coords
     
         $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather);
     }
-    # If we don't have cached weather (or it is expired), ask DarkSky for it.
+    # If we don't have cached weather (or it is expired), ask Dark Sky or Environment Canada for it
     else
     {
-        say localtime(time) . " Requesting weather for $lat,$lon";
-        # Take the coords and lookup the weather.
-        $self->bot->darksky->weather($lat, $lon, sub
-        {
-            $json = shift;
-            #say Dumper($json);
 
-            # Cache the results;
-            $self->cache->{'weather'}{"$lat,$lon"}{'json'} = $json;
-            $self->cache->{'weather'}{"$lat,$lon"}{'expires'} = time + 3600; # Good for one hour.
-    
-            my $formatted_weather = $self->format_weather($json);
-            $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
-            $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and rand(1) > 0.10;
-            #say "Formatted Weather: $formatted_weather";
-    
-            $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather); # This sub handles whether it's a message or webhook.
-        });
+        if ( $address =~ /Canada$/ )
+        {
+            my ($city, $province) = ($address =~ /^(?:.*, )?([^,]+), ([^,]+), Canada$/);
+            $province = substr($province,0,2);
+            say localtime(time) . " Requesting weather for $city, $province from Environment Canada";
+
+            $json = await $self->bot->environmentcanada->weather($city, $province);
+            $address .= " *";
+        }
+        else
+        {
+            say localtime(time) . " Requesting weather for $lat,$lon from Dark Sky";
+            $json = await $self->bot->darksky->weather($lat, $lon);
+        }
+
+        # Cache the results;
+        $self->cache->{'weather'}{"$lat,$lon"}{'json'} = $json;
+        $self->cache->{'weather'}{"$lat,$lon"}{'expires'} = time + 3600; # Good for one hour.
+
+        my $formatted_weather = $self->format_weather($json);
+        $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
+        $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and rand(1) > 0.10;
+        #say "Formatted Weather: $formatted_weather";
+
+        $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather); # This sub handles whether it's a message or webhook.
     }
-}
+};
 
 sub send_weather
 {
@@ -244,9 +253,8 @@ sub send_weather
     # Do we have a webhook here?
     if ( my $hook = $self->bot->has_webhook($channel) )
     {
-        my $avatars = $self->content->webhook_icons;
         my $avatar = 'http://i.imgur.com/BVCiYSn.png'; # default
-        $avatar = $avatars->{$json->{'icon'}} if exists $avatars->{$json->{'icon'}};    # per-weather icons
+        $avatar = $json->{'icon_url'} if exists $json->{'icon_url'};
 
         my $hookparam = {
             'username' => "Current Weather",
@@ -258,9 +266,8 @@ sub send_weather
     }
     else # Regular message.
     {
-        my $icons= $self->content->icons;
         my $icon = '';
-        $icon = $icons->{$json->{'icon'}} if exists $icons->{$json->{'icon'}};
+        $icon = $json->{'icon_emote'} if exists $json->{'icon_emote'};
             
         $self->discord->send_message($channel, "**Weather for $address** $icon\n$formatted_weather\n");
     }
@@ -270,17 +277,35 @@ sub format_weather
 {
     my ($self, $json) = @_;
 
+    # Accept temperature and wind speed in either units
     my $temp_f = round($json->{'temperature'});
-    my $temp_c = round(ftoc($temp_f));
+    my $temp_c = round($json->{'temperature_c'});
+    say "Formatted Temperature";
+    
     my $feel_f = round($json->{'apparentTemperature'});
-    my $feel_c = round(ftoc($feel_f));
+    my $feel_c = round($json->{'apparentTemperature_c'});
+    say "Formatted Feels Like";
+
+    my $wind_mi = round($json->{'windSpeed'});
+    my $wind_km = round($json->{'windSpeed_km'});
+    say "Formatted Wind speed";
+
+    my $wind_dir = $json->{'windBearing'};
+    say "Formatted Wind Bearing";
+
+    # Accept percent or decimal value
+    my $humidity = $json->{'humidity'};
+    $humidity *= 100 if $humidity <= 1;
+    $humidity = int($humidity);
+    say "Formatted Humidity";
+    
     my $cond = $json->{'summary'};
-    my $wind_mi = $json->{'windSpeed'};
-    my $wind_km = kph($wind_mi);
-    my $wind_dir = wind_direction($json->{'windBearing'});
-    my $humidity = int($json->{'humidity'} * 100);
-        
+    say "Formatted Summary";
+
     my $fuckingweather = $self->content->itsfucking_comment($temp_f, $temp_c, $feel_f, $feel_c, $cond);
+    say "Got the fucking weather:";
+    say $fuckingweather;
+
 
     my $msg = "```c\n" .
         "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
@@ -288,6 +313,9 @@ sub format_weather
         "Conditions  | $cond, ${humidity}% Humidity\n" .
         "Winds       | $wind_dir ${wind_mi}mph/${wind_km}kph```\n" .
         "$fuckingweather";
+    say "Formatted entire message";
+
+    say $msg;
 
     return $msg;
 }
@@ -318,7 +346,7 @@ sub get_stored_location
         if ( my $row = $query->fetchrow_hashref )
         {
             $self->cache->{'userlocation'}{$author->{'id'}}{$name} = $row->{'location'};  # Cache this so we don't need to hit the DB all the time.
-            say localtime(time) . " Found stored DB location for " . $author->{'username'} . ": " . $row->{'location'};
+            say localtime(time) . " Found stored DB location for " . $author->{'id'} . ": " . $row->{'location'};
             return $row->{'location'};
         }
     }
@@ -362,19 +390,6 @@ sub get_stored_coords
     return undef
 }
 
-
-sub ctof
-{
-    my $c = shift;
-    return $c * (9/5) + 32;
-}
-
-sub ftoc
-{
-    my $f = shift;
-    return ($f - 32) / (1.8);
-}
-
 sub round
 {
     my $n = shift;
@@ -385,28 +400,6 @@ sub round
     $n+= ( $n > 0 ? 0.5 : -0.5 );
     
     return int($n);
-}
-
-sub mph
-{
-    my $kph = shift;
-    return sprintf("%0.1f", ($kph / 1.609344));
-}
-
-sub kph
-{
-    my $mph = shift;
-    return sprintf("%0.1f", ($mph * 1.609344));
-}
-
-sub wind_direction
-{
-    my $deg = shift;
-
-    my @dirs = qw[North North-Northeast Northeast East-Northeast East East-Southeast Southeast South-Southeast South South-Southwest Southwest West-Southwest West West-Northwest Northwest North-Northwest];
-
-    my $val = int(($deg/22.5)+.5);
-    return $dirs[$val%16];
 }
 
 sub weather_types

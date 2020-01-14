@@ -6,48 +6,9 @@ use strictures 2;
 use namespace::clean;
 
 # This is a helper file for the Weather command which stores all of the phrases,
-# icon links, emotes, comments, etc the command displays along with current conditions.
+# comments, etc the command displays along with current conditions.
 # It exists largely to cut down on the size of the main Weather.pm file, and
 # to better separate the code from the message content.
-
-has icons => ( is => 'ro', default => sub
-{
-    # DarkSky Icon to Discord Emoji mappings
-    {
-        'clear-day'             => ':sun_with_face:',
-        'clear-night'           => ':full_moon_with_face:',
-        'rain'                  => ':cloud_rain:',
-        'snow'                  => ':cloud_snow:',
-        'sleet'                 => ':cloud_snow:',
-        'wind'                  => ':dash:',
-        'fog'                   => ':cloud:',
-        'cloudy'                => ':cloud:',
-        'partly-cloudy-day'     => ':partly_sunny:',
-        'partly-cloudy-night'   => ':white_sun_cloud:',
-        'tornado'               => ':cloud_tornado:',
-        'thunderstorm'          => ':thunder_cloud_rain:',
-        'hail'                  => ':cloud_snow:',
-    }
-});
-
-has webhook_icons => ( is => 'ro', default => sub
-{
-    # If we have a webhook in the channel we can use images for avatars instead of emoji!
-    {
-        'clear-day'             => 'http://i.imgur.com/HIQkdIt.png',
-        'clear-night'           => 'http://i.imgur.com/sbsDekE.png',
-        'rain'                  => 'http://i.imgur.com/oB7xaGs.png',
-        'snow'                  => 'http://i.imgur.com/gEBNP3r.png',
-        'sleet'                 => 'http://i.imgur.com/veklDbN.png',
-        'wind'                  => 'http://i.imgur.com/Saq1Hvo.png',
-        'fog'                   => 'http://i.imgur.com/Fh2kqYX.png',
-        'cloudy'                => 'http://i.imgur.com/Zk3iwN6.png',
-        'partly-cloudy-day'     => 'http://i.imgur.com/Hu9yAZm.png',
-        'partly-cloudy-night'   => 'http://i.imgur.com/J0fcEhu.png',
-        'tornado'               => 'http://i.imgur.com/3cqR9To.png',
-        'hail'                  => 'http://i.imgur.com/OdRYPri.png',
-    }
-});
 
 has comment => ( is => 'ro', default => sub
 {
