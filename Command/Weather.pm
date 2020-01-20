@@ -28,7 +28,7 @@ has darksky     => ( is => 'rw' );
 has name        => ( is => 'ro', default => 'Weather' );
 has access      => ( is => 'ro', default => 0 ); # Public
 has description => ( is => 'ro', default => 'Current Weather Conditions. Powered by Google Maps, Dark Sky, and Environment Canada' );
-has pattern     => ( is => 'ro', default => '^(we?(ather)?) ?([^\s].*)?$' );
+has pattern     => ( is => 'ro', default => '^(?:we?(?:ather)?) ?([^\s].*)?$' );
 has function    => ( is => 'ro', default => sub { return \&cmd_weather } );
 
 has content     => ( is => 'ro', default => sub { Command::Weather::Content->new() });
@@ -85,20 +85,19 @@ sub BUILD
 # Also, the location can be cached for the duration of runtime,
 # while the weather should be cached for 1 hour.
 # This cuts down on unnecessary API calls, as I have a limit on both.
-sub cmd_weather
+async cmd_weather => sub
 {
     my ($self, $channel, $author, $msg) = @_;
 
     my $args = $msg;
-    my $pattern = $self->pattern;
-    defined $3 ? $args =~ s/$pattern/$3/i : undef $args;
-
+    $args =~ s/we?(ather)? ?//;
     my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';
 
     # Handle empty args - Check to see if they have a saved location.
     if (!defined $args or length $args == 0 )
     {
+        say "Empty Args";
         $args = $self->get_stored_location($author);
 
         if ( !defined $args )
@@ -163,39 +162,48 @@ sub cmd_weather
     # If we have the coordinates cached already, just use those.
     if ( defined $coords and exists $coords->{'lat'} and exists $coords->{'lon'} )
     {
+        say "Found cached coords already";
         $self->weather_by_coords($channel, $author, $coords->{'lat'}, $coords->{'lon'}, $coords->{'address'});
     }
     # If not, we'll have to geocode the query location.
     else
     {
         say localtime(time) . " Could not find cached coords for '$args'. Geocoding...";
-        $self->bot->maps->geocode($args, sub
-        {
-            my $json = shift;
-        
-            my $lat = $json->{'geometry'}{'location'}{'lat'};
-            my $lon = $json->{'geometry'}{'location'}{'lng'};
-            my $formatted_address = $json->{'formatted_address'};
-       
-            #die("Could not retrieve coords from Component::Maps->geocode") unless defined $lat and defined $lon;
+        my $json = await $self->geocode($args);
+    
+        my $lat = $json->{'geometry'}{'location'}{'lat'};
+        my $lon = $json->{'geometry'}{'location'}{'lng'};
+        my $formatted_address = $json->{'formatted_address'};
+   
+        #die("Could not retrieve coords from Component::Maps->geocode") unless defined $lat and defined $lon;
 
-            unless ( defined $lat and defined $lon and defined $formatted_address )
-            {
-                $discord->send_message($channel, $author->{'username'} . ": Sorry, I can't find `" . $args . "`");
-                say localtime(time) . " Could not geocode '$args'";
-                return undef;
-            }
-    
-            say localtime(time) . " Geocoding Results: $formatted_address ($lat,$lon)";
-    
-            # Store these coords.
-            $self->add_coords($args, $lat, $lon, $formatted_address);
-    
-            # Now look up the weather.
-            $self->weather_by_coords($channel, $author, $lat, $lon, $formatted_address);
-        });
+        unless ( defined $lat and defined $lon and defined $formatted_address )
+        {
+            $discord->send_message($channel, $author->{'username'} . ": Sorry, I can't find `" . $args . "`");
+            say localtime(time) . " Could not geocode '$args'";
+            return undef;
+        }
+
+        say localtime(time) . " Geocoding Results: $formatted_address ($lat,$lon)";
+
+        # Store these coords.
+        $self->add_coords($args, $lat, $lon, $formatted_address);
+
+        # Now look up the weather.
+        $self->weather_by_coords($channel, $author, $lat, $lon, $formatted_address);
     }
-}
+};
+
+async geocode => sub
+{
+    my ($self, $args) = @_;
+
+    say Data::Dumper->Dump([$args], ['args']);
+
+    my $json = await $self->bot->maps->geocode($args);
+
+    return $json;
+};
 
 async weather_by_coords => sub
 {
@@ -229,7 +237,6 @@ async weather_by_coords => sub
 
             if ( defined $json )
             {
-                $address .= " *";
                 $weather_found = 1;
             }
         }

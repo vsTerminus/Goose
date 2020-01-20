@@ -37,10 +37,10 @@ redirect_url = http://github.com/vsTerminus
 # 1 = yes, 0 = no
 auto_reconnect = 1
 
-# Enable this if you want a bunch of info displayed on your screen about messages being passed between client and server.
-# Mostly useful for debugging, or if you're just curious.
-# 1 = yes, 0 = no
-verbose = 1
+# Control the mimimum level of info written to the log file.
+# Valid options are: fatal, error, warn, info, debug
+# default: info
+log_level=info
 
 # Do you want the AI to learn from the chat messages in Discord?
 # Set this to false if you talk about private or sensitive things that you don't want the bot to repeat.

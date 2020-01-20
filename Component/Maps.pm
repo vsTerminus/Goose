@@ -1,56 +1,45 @@
 package Component::Maps;
 
-use v5.10;
-use strict;
-use warnings;
+use feature 'say';
+
+use Moo;
+use strictures 2;
+
+use Mojo::UserAgent;
+use Mojo::AsyncAwait;
+use Data::Dumper;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(geocode);
 
-use Mojo::UserAgent;
-use Data::Dumper;
+has api_url     => ( is => 'ro', default => 'https://maps.googleapis.com/maps' );
+has api_key     => ( is => 'ro' );
+has ua          => ( is => 'rw', default => sub { Mojo::UserAgent->new } );
 
-# This module connects to the Google Maps API
-
-sub new
+sub BUILD
 {
-    my ($class, %params) = @_;
-    my $self = {};
-   
-    my $api_key = $params{'api_key'};
-    my $api_url = 'https://maps.googleapis.com/maps';
-    my $ua = Mojo::UserAgent->new;
-    $ua->connect_timeout(5);
+    my $self = shift;
 
-    $self->{'ua'} = $ua;
-    $self->{'api_key'} = $api_key;
-    $self->{'api_url'} = $api_url;
-    
-    bless($self, $class); 
-    return $self;
+    $self->ua->connect_timeout(5);
 }
 
 # Returns lat/long coords for supplied address string
-sub geocode
+async geocode => sub
 {
-    my ($self, $addr, $callback) = @_;
+    my ($self, $addr) = @_;
 
-    my $ua      = $self->{'ua'};
-    my $api_key = $self->{'api_key'};
-    my $api_url = $self->{'api_url'};
     $addr =~ s/ /+/g; # Replace spaces with + for the URL
-    my $url     = $api_url . '/api/geocode/json?key=' . $api_key . '&address=' . $addr;
+    my $url     = $self->api_url . '/api/geocode/json?key=' . $self->api_key . '&address=' . $addr;
 
-    $ua->get($url => sub {
-        my ($ua, $tx) = @_;
+    my $tx = await $self->ua->get_p($url);
 
-        my $json = $tx->res->json;
+    my $json = $tx->res->json;
         
-        # Send back the first result only.
-        my $result = $json->{'results'}[0];
+    # Send back the first result only.
+    my $result = $json->{'results'}[0];
 
-        $callback->($result);
-    });
-}
+    return $result;
+};
 
 1;

@@ -102,7 +102,7 @@ sub BUILD {
                 'WEBHOOKS_UPDATE'   => sub { $self->discord_on_webhooks_update(@_) },
             },
             'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
-            'verbose'   => $self->config->{'discord'}{'verbose'},
+            'loglevel'   => $self->config->{'discord'}{'log_level'},
         )
     );
 
@@ -110,7 +110,7 @@ sub BUILD {
     $self->_set_youtube          (Component::YouTube->new(%{$self->config->{'youtube'}}));
     $self->_set_darksky          (Component::DarkSky->new(%{$self->config->{'weather'}}));
     $self->_set_environmentcanada(Component::EnvironmentCanada->new());
-    $self->_set_maps             (Component::Maps->new(%{$self->config->{'maps'}}));
+    $self->_set_maps             (Component::Maps->new('api_key' => $self->config->{'maps'}{'api_key'}));
     $self->_set_lastfm           (Mojo::WebService::LastFM->new('api_key' => $self->config->{'lastfm'}{'api_key'}));
     $self->_set_cah              (Component::CAH->new('api_url' => $self->config->{'cah'}{'api_url'}));
     $self->_set_urbandictionary  (Component::UrbanDictionary->new());
