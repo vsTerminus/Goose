@@ -76,6 +76,12 @@ has webhook_avatar      => ( is => 'rwp' );
 
 has discord             => ( is => 'rwp' );
 
+# Logging
+has log                 => ( is => 'rwp' );
+has logdir              => ( is => 'rw', default => '/var/log/goose-bot' );
+has logfile             => ( is => 'rw', default => 'goose-bot.log' );
+has loglevel            => ( is => 'rw', default => 'debug' );
+
 # There is almost definitely a better way to do this. Maybe goose.pl should be doing more up front?
 sub BUILD {
 
@@ -124,6 +130,11 @@ sub BUILD {
     $self->_set_webhook_name     ($self->config->{'discord'}{'webhook_name'});
     $self->_set_webhook_avatar   ($self->config->{'discord'}{'webhook_avatar'});
 
+    $self->logdir($self->config->{'discord'}{'log_dir'}) if defined $self->config->{'discord'}{'log_dir'};
+    $self->loglevel($self->config->{'discord'}{'log_level'}) if defined $self->config->{'discord'}{'log_level'};
+
+    $self->_set_log( Mojo::Log->new( path=> $self->logdir . '/' . $self->logfile, level => $self->loglevel ) );
+    $self->log->info('[Goose.pm] [BUILD] New session beginning ' .  localtime(time));
 }
 
 # Connect to discord and start running.
