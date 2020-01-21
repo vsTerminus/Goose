@@ -102,7 +102,8 @@ sub BUILD {
                 'WEBHOOKS_UPDATE'   => sub { $self->discord_on_webhooks_update(@_) },
             },
             'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
-            'loglevel'   => $self->config->{'discord'}{'log_level'},
+            'loglevel'  => $self->config->{'discord'}{'log_level'},
+            'logdir'    => $self->config->{'discord'}{'log_dir'},
         )
     );
 

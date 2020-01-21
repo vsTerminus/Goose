@@ -42,6 +42,11 @@ auto_reconnect = 1
 # default: info
 log_level=info
 
+# Where should the logs be written? 
+# You must have access to write to this location. Recommended location is somewhere in your home folder.
+# log_dir should be an absolute path with no trailing slash, eg "/home/yourname/log/mojo-discord"
+log_dir=/path/to/log//mojo-discord
+
 # Do you want the AI to learn from the chat messages in Discord?
 # Set this to false if you talk about private or sensitive things that you don't want the bot to repeat.
 # 1 = yes, 0 = no
