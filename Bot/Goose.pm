@@ -74,7 +74,17 @@ has client_id           => ( is => 'rwp' );
 has webhook_name        => ( is => 'rwp' );
 has webhook_avatar      => ( is => 'rwp' );
 
-has discord             => ( is => 'rwp' );
+has discord             => ( is => 'lazy', builder => sub {
+                        my $self = shift;
+                        Mojo::Discord->new(
+                            'token'     => $self->config->{'discord'}{'token'},
+                            'name'      => $self->config->{'discord'}{'name'},
+                            'url'       => $self->config->{'discord'}{'redirect_url'},
+                            'version'   => '1.0',
+                            'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
+                            'loglevel'  => $self->config->{'discord'}{'log_level'},
+                            'logdir'    => $self->config->{'discord'}{'log_dir'},
+                        )});
 
 # Logging
 has log                 => ( is => 'rwp' );
@@ -87,32 +97,7 @@ sub BUILD {
 
     my $self = shift;
 
-    $self->_set_discord(
-        Mojo::Discord->new(
-            'token'     => $self->config->{'discord'}{'token'},
-            'name'      => $self->config->{'discord'}{'name'},
-            'url'       => $self->config->{'discord'}{'redirect_url'},
-            'version'   => '1.0',
-            'callbacks' => {    # Discord Gateway Dispatch Event Types
-                'READY'             => sub { $self->discord_on_ready(@_) },
-                'GUILD_CREATE'      => sub { $self->discord_on_guild_create(@_) },
-                'GUILD_UPDATE'      => sub { $self->discord_on_guild_update(@_) },
-                'GUILD_DELETE'      => sub { $self->discord_on_guild_delete(@_) },
-                'CHANNEL_CREATE'    => sub { $self->discord_on_channel_create(@_) },
-                'CHANNEL_UPDATE'    => sub { $self->discord_on_channel_update(@_) },
-                'CHANNEL_DELETE'    => sub { $self->discord_on_channel_delete(@_) },
-                'TYPING_START'      => sub { $self->discord_on_typing_start(@_) }, 
-                'MESSAGE_CREATE'    => sub { $self->discord_on_message_create(@_) },
-                'MESSAGE_UPDATE'    => sub { $self->discord_on_message_update(@_) },
-                'PRESENCE_UPDATE'   => sub { $self->discord_on_presence_update(@_) },
-                'WEBHOOKS_UPDATE'   => sub { $self->discord_on_webhooks_update(@_) },
-            },
-            'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
-            'loglevel'  => $self->config->{'discord'}{'log_level'},
-            'logdir'    => $self->config->{'discord'}{'log_dir'},
-        )
-    );
-
+   
     $self->_set_db               (Component::Database->new(%{$self->config->{'db'}}));
     $self->_set_youtube          (Component::YouTube->new(%{$self->config->{'youtube'}}));
     $self->_set_darksky          (Component::DarkSky->new(%{$self->config->{'weather'}}));
@@ -142,7 +127,26 @@ sub start
 {
     my $self = shift;
 
-    $self->{'discord'}->init();
+    # This is a bit of a hack - I'm not exactly proud of it
+    # Something to revisit in the future, I'm sure.
+    # The idea is, in order for the event handler to have access to THIS module's $self,
+    # it needs to be enclosed by a sub that has access to $self already.
+    # If I don't want to define all of the handler subs in full inside of start(),
+    # one alternative is to just call all of the encapsulating subs one by one here to set them up.
+    $self->discord_on_ready();
+    $self->discord_on_guild_create();
+    $self->discord_on_guild_update();
+    $self->discord_on_guild_delete();
+    $self->discord_on_channel_create();
+    $self->discord_on_channel_update();
+    $self->discord_on_channel_delete();
+    $self->discord_on_typing_start();
+    $self->discord_on_message_create();
+    $self->discord_on_message_update();
+    $self->discord_on_presence_update();
+    $self->discord_on_webhooks_update();
+
+    $self->discord->init();
     
     # Start the IOLoop unless it is already running. 
     Mojo::IOLoop->start unless Mojo::IOLoop->is_running; 
@@ -151,13 +155,18 @@ sub start
 
 sub discord_on_ready
 {
-    my ($self, $hash) = @_;
+    my $self = shift;
 
-    $self->add_me($hash->{'user'});
+    $self->discord->gw->on('READY' => sub 
+    {
+        my ($gw, $hash) = @_;
 
-    say localtime(time) . " Connected to Discord.";
+        $self->add_me($hash->{'user'});
 
-    Mojo::IOLoop->recurring(60 => sub { $self->_set_status() });
+        say localtime(time) . " Connected to Discord.";
+
+        Mojo::IOLoop->recurring(60 => sub { $self->_set_status() });
+    });
 }
 
 sub _set_status
@@ -173,16 +182,20 @@ sub _set_status
 
 sub discord_on_guild_create
 {
-    my ($self, $hash) = @_;
+    my $self = shift;
 
-    $self->stats->{'num_guilds'}++;
+    $self->discord->gw->on('GUILD_CREATE' => sub {
+        $self->stats->{'num_guilds'}++;
+    });
 }
 
 sub discord_on_guild_delete
 {
-    my ($self, $hash) = @_;
+    my $self = shift;
 
-    $self->stats->{'num_guilds'}--;
+    $self->discord->gw->on('GUILD_DELETE' => sub {
+        $self->stats->{'num_guilds'}--;
+    });
 }
 
 # Might do something with these?
@@ -193,70 +206,80 @@ sub discord_on_channel_create{}
 sub discord_on_channel_update{}
 sub discord_on_channel_delete{}
 sub discord_on_webhooks_update{}
-sub discord_on_typing_start{} 
+sub discord_on_typing_start{}
 
 sub discord_on_message_create
 {
-    my ($self, $hash) = @_;
+    my $self = shift;
 
-    my $author = $hash->{'author'};
-    my $msg = $hash->{'content'};
-    my $channel_id = $hash->{'channel_id'};
-    my @mentions = @{$hash->{'mentions'}};
-    my $trigger = $self->trigger;
-    my $discord_name = $self->discord->name;
-    my $discord_id = $self->user_id;
-
-    my $channels = $self->discord->channels;
-
-    # Look for messages starting with a mention or a trigger, but not coming from a bot.
-    if ( !(exists $author->{'bot'} and $author->{'bot'}) and $msg =~ /^(\<\@\!?$discord_id\>|\Q$trigger\E)/i )
+    $self->discord->gw->on('MESSAGE_CREATE' => sub 
     {
-        $msg =~ s/^((\<\@\!?$discord_id\>.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
+        my ($gw, $hash) = @_;
 
-        if ( defined $msg )
+        my $author = $hash->{'author'};
+        my $msg = $hash->{'content'};
+        my $channel_id = $hash->{'channel_id'};
+        my @mentions = @{$hash->{'mentions'}};
+        my $trigger = $self->trigger;
+        my $discord_name = $self->discord->name;
+        my $discord_id = $self->user_id;
+
+        my $channels = $self->discord->channels;
+
+        # Look for messages starting with a mention or a trigger, but not coming from a bot.
+        if ( !(exists $author->{'bot'} and $author->{'bot'}) and $msg =~ /^(\<\@\!?$discord_id\>|\Q$trigger\E)/i )
         {
-            # Get all command patterns and iterate through them.
-            # If you find a match, call the command fuction.
-            foreach my $pattern (keys $self->patterns)
-            {
-                if ( $msg =~ /$pattern/si )
-                {
-                    my $command = $self->get_command_by_pattern($pattern);
-                    my $access = $command->{'access'};
-                    my $owner = $self->owner_id;
+            $msg =~ s/^((\<\@\!?$discord_id\>.? ?)|(\Q$trigger\E))//i;   # Remove the username. Can I do this as part of the if statement?
 
-                    if ( defined $access and $access > 0 and defined $owner and $owner != $author->{'id'} )
+            if ( defined $msg )
+            {
+                # Get all command patterns and iterate through them.
+                # If you find a match, call the command fuction.
+                foreach my $pattern (keys %{$self->patterns})
+                {
+                    if ( $msg =~ /$pattern/si )
                     {
-                        # Sorry, no access to this command.
-                        say localtime(time) . ": '" . $author->{'username'} . "' (" . $author->{'id'} . ") tried to use a restricted command and is not the bot owner.";
-                    }
-                    elsif ( ( defined $access and $access == 0 ) or ( defined $owner and $owner == $author->{'id'} ) )
-                    {
-                        my $object = $command->{'object'};
-                        my $function = $command->{'function'};
-                        $object->$function($channel_id, $author, $msg);
+                        my $command = $self->get_command_by_pattern($pattern);
+                        my $access = $command->{'access'};
+                        my $owner = $self->owner_id;
+
+                        if ( defined $access and $access > 0 and defined $owner and $owner != $author->{'id'} )
+                        {
+                            # Sorry, no access to this command.
+                            say localtime(time) . ": '" . $author->{'username'} . "' (" . $author->{'id'} . ") tried to use a restricted command and is not the bot owner.";
+                        }
+                        elsif ( ( defined $access and $access == 0 ) or ( defined $owner and $owner == $author->{'id'} ) )
+                        {
+                            my $object = $command->{'object'};
+                            my $function = $command->{'function'};
+                            $object->$function($channel_id, $author, $msg);
+                        }
                     }
                 }
             }
         }
-    }
+    });
 }
 
 sub discord_on_message_update
 {
-    my ($self, $hash) = @_;
+    my $self = shift;
 
     # Might be worth checking how old the message is, and if it's recent enough re-process it for commands?
     # Would let people fix typos without having to send a new message to trigger the bot.
     # Have to track replied message IDs in that case so we don't reply twice.
+    $self->discord->gw->on('MESSAGE_UPDATE' => sub
+    {
+        my ($gw, $hash) = @_;
+
+        $self->log->debug("MESSAGE_UPDATE");
+        $self->log->debug(Data::Dumper->Dump([$hash], ['hash']));
+    });
 }
 
 sub discord_on_presence_update
 {
-    my ($self, $hash) = @_;
-
-    # Will be useful for a !playing command to show the user's currently playing "game".
+    my $self = shift;
 }
 
 sub add_me
