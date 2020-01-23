@@ -15,14 +15,7 @@ our @EXPORT_OK = qw(geocode);
 
 has api_url     => ( is => 'ro', default => 'https://maps.googleapis.com/maps' );
 has api_key     => ( is => 'ro' );
-has ua          => ( is => 'rw', default => sub { Mojo::UserAgent->new } );
-
-sub BUILD
-{
-    my $self = shift;
-
-    $self->ua->connect_timeout(5);
-}
+has ua          => ( is => 'lazy', builder => sub { my $ua =  Mojo::UserAgent->new; $ua->connect_timeout(5); } );
 
 # Returns lat/long coords for supplied address string
 async geocode => sub
