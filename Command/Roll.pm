@@ -10,8 +10,8 @@ use Math::Random::Secure qw(irand); # Cryptographically-secure, cross-platform r
 
 use namespace::clean;
 
-has bot             => ( is => 'rw', required => 1 );
-has discord         => ( is => 'rw' );
+has bot             => ( is => 'ro' );
+has discord         => ( is => 'lazy', builder => sub { shift->bot->discord } );
 
 has name            => ( is => 'ro', default => 'Roll' );
 has access          => ( is => 'ro', default => 0 ); # Public
@@ -46,13 +46,6 @@ Roll 10 100-sided dice with 69 bonus: `!roll 10d100+69`
 Also accepts: !dice, !di, and !ro
 EOF
 });
-
-sub BUILD
-{
-    my $self = shift;
-
-    $self->discord( $self->bot->discord );
-}
 
 # This takes the modifier string and the rolls as an array
 # It will figure out the min and max.
@@ -104,7 +97,7 @@ sub _do_modifier
     elsif ( uc $mod eq '-L' )
     {
         $total -= $min;
-        $rolls[$minpos] = "~~ " . $rolls[$minpos] . " ~~"; # Cross it out.
+        $rolls[$minpos] = "~~" . $rolls[$minpos] . "~~"; # Cross it out.
     }
     #  Same as above but for highest roll.
     elsif ( uc $mod eq '-H' )
@@ -202,7 +195,7 @@ sub cmd_roll
     my $pattern = $self->pattern;
     $args =~ s/$pattern/$2/i;
 
-    my $discord = $self->{'discord'};
+    my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';
 
     # Multiple rolls can be separated by a space.
