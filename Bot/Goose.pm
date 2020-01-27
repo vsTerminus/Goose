@@ -6,6 +6,8 @@ use strictures 2;
 
 use Data::Dumper;
 use Mojo::Discord;
+use Mojo::IOLoop;
+use Time::Duration;
 use Component::Database;
 use Component::YouTube;
 use Component::DarkSky;
@@ -14,7 +16,6 @@ use Component::Maps;
 use Component::CAH;
 use Component::UrbanDictionary;
 use Component::Twitch;
-use Mojo::IOLoop;
 
 use namespace::clean;
 
@@ -153,6 +154,13 @@ sub _reset_stats
 
     $self->stats->{'num_guilds'} = 0;
     $self->stats->{'last_connected'} = time;    
+}
+
+sub uptime
+{
+    my $self = shift;
+
+    return duration(time - $self->stats->{'last_connected'});
 }
 
 sub _set_status

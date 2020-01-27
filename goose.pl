@@ -25,6 +25,7 @@ use Command::Define;
 use Command::Twitch;
 use Command::Roll;
 use Command::MLB;
+use Command::Uptime;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -52,6 +53,7 @@ Command::Twitch->new        ('bot' => $bot);
 $bot->add_moo_command( Command::Roll->new('bot' => $bot) );
 $bot->add_moo_command( Command::MLB->new('bot' => $bot) );
 $bot->add_moo_command( Command::Weather->new('bot' => $bot) ) if ( $config->{'weather'}{'use_weather'} );
+$bot->add_moo_command( Command::Uptime->new('bot' => $bot) );
 Command::YouTube->new       ('bot' => $bot) if ( $config->{'youtube'}{'use_youtube'} );
 Command::Comic->new         ('bot' => $bot) if ( $config->{'comic'}{'use_comic'} );
 Command::NowPlaying->new    ('bot' => $bot) if ( $config->{'lastfm'}{'use_lastfm'} );
