@@ -12,4 +12,5 @@ requires 'Math::Random::Secure';        # Used to generate true random values in
 requires 'Math::Expression';            # Parsing math expression strings
 requires 'Config::Tiny';                # .ini config file support
 requires 'URI::Escape';                 # Escape URLs for use with APIs
-requires 'Text::ASCIITable'             # Generate an ASCII table using data from perl structures
+requires 'Text::ASCIITable';            # Generate an ASCII table using data from perl structures
+requires 'Time::Duration';              # Used for uptime calculation currently
