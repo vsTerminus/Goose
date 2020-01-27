@@ -16,6 +16,7 @@ use Component::Maps;
 use Component::CAH;
 use Component::UrbanDictionary;
 use Component::Twitch;
+use Component::Stats;
 
 use namespace::clean;
 
@@ -55,7 +56,7 @@ has permissions => ( is => 'ro', default => sub {
 has config              => ( is => 'ro' );
 has commands            => ( is => 'rw' );
 has patterns            => ( is => 'rw' );
-has stats               => ( is => 'rw', default => sub { {} } );
+has session             => ( is => 'rw', default => sub { {} } );
 
 has db                  => ( is => 'lazy', builder => sub { Component::Database->new(%{shift->config->{'db'}}) } );
 has youtube             => ( is => 'lazy', builder => sub { Component::YouTube->new(%{shift->config->{'youtube'}}) } );
@@ -66,6 +67,7 @@ has lastfm              => ( is => 'lazy', builder => sub { Mojo::WebService::La
 has cah                 => ( is => 'lazy', builder => sub { Component::CAH->new('api_url' => shift->config->{'cah'}{'api_url'}) } );
 has urbandictionary     => ( is => 'lazy', builder => sub { Component::UrbanDictionary->new() } );
 has twitch              => ( is => 'lazy', builder => sub { Component::Twitch->new('api_key' => shift->config->{'twitch'}{'api_key'}) } );
+has stats               => ( is => 'lazy', builder => sub { Component::Stats->new('db' => shift->db) } ); 
 
 has user_id             => ( is => 'rwp' );
 has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );
@@ -139,7 +141,7 @@ sub discord_on_ready
         my ($gw, $hash) = @_;
 
         $self->_add_me($hash->{'user'});
-        $self->_reset_stats();
+        $self->_reset_session();
 
         say localtime(time) . " Connected to Discord.";
 
@@ -148,19 +150,19 @@ sub discord_on_ready
 }
 
 # Any stats which should be cleared when the bot reconnects (Eg, the number of guilds joined, the "last-connected" timestamp, etc) should be done here.
-sub _reset_stats
+sub _reset_session
 {
     my $self = shift;
 
-    $self->stats->{'num_guilds'} = 0;
-    $self->stats->{'last_connected'} = time;    
+    $self->session->{'num_guilds'} = 0;
+    $self->session->{'last_connected'} = time;    
 }
 
 sub uptime
 {
     my $self = shift;
 
-    return duration(time - $self->stats->{'last_connected'});
+    return duration(time - $self->session->{'last_connected'});
 }
 
 sub _set_status
@@ -168,7 +170,7 @@ sub _set_status
     my $self = shift;
    
     my $status = {
-       'name' => $self->stats->{'num_guilds'} . ' servers',
+       'name' => $self->session->{'num_guilds'} . ' servers',
        'type' => 3 # "Watching"
     };
     my $discord = $self->discord->status_update($status);
@@ -179,7 +181,7 @@ sub discord_on_guild_create
     my $self = shift;
 
     $self->discord->gw->on('GUILD_CREATE' => sub {
-        $self->stats->{'num_guilds'}++;
+        $self->session->{'num_guilds'}++;
     });
 }
 
@@ -188,7 +190,7 @@ sub discord_on_guild_delete
     my $self = shift;
 
     $self->discord->gw->on('GUILD_DELETE' => sub {
-        $self->stats->{'num_guilds'}--;
+        $self->session->{'num_guilds'}--;
     });
 }
 
@@ -246,6 +248,16 @@ sub discord_on_message_create
                         {
                             my $object = $command->{'object'};
                             my $function = $command->{'function'};
+
+                            # Track command usage in the DB
+                            $self->stats->add_command(
+                                'command'       => lc $command->{'name'},
+                                'channel_id'    => $channel_id,
+                                'user_id'       => $author->{'id'},
+                                'timestamp'     => time,
+                                'msg'           => $hash->{'content'},
+                            );
+
                             $object->$function($channel_id, $author, $msg);
                         }
                     }
