@@ -54,73 +54,48 @@ has permissions => ( is => 'ro', default => sub {
 has config              => ( is => 'ro' );
 has commands            => ( is => 'rw' );
 has patterns            => ( is => 'rw' );
-has stats               => ( is => 'rw', default => sub{ {'num_guilds' => 0} });
+has stats               => ( is => 'rw', default => sub { {} } );
 
-has db                  => ( is => 'rwp' );
-has youtube             => ( is => 'rwp' );
-has darksky             => ( is => 'rwp' );
-has environmentcanada   => ( is => 'rwp' );
-has maps                => ( is => 'rwp' );
-has lastfm              => ( is => 'rwp' );
-has cah                 => ( is => 'rwp' );
-has urbandictionary     => ( is => 'rwp' );
-has twitch              => ( is => 'rwp' );
+has db                  => ( is => 'lazy', builder => sub { Component::Database->new(%{shift->config->{'db'}}) } );
+has youtube             => ( is => 'lazy', builder => sub { Component::YouTube->new(%{shift->config->{'youtube'}}) } );
+has darksky             => ( is => 'lazy', builder => sub { Component::DarkSky->new(%{shift->config->{'weather'}}) } );
+has environmentcanada   => ( is => 'lazy', builder => sub { Component::EnvironmentCanada->new() } );
+has maps                => ( is => 'lazy', builder => sub { Component::Maps->new('api_key' => shift->config->{'maps'}{'api_key'}) } );
+has lastfm              => ( is => 'lazy', builder => sub { Mojo::WebService::LastFM->new('api_key' => shift->config->{'lastfm'}{'api_key'}) } );
+has cah                 => ( is => 'lazy', builder => sub { Component::CAH->new('api_url' => shift->config->{'cah'}{'api_url'}) } );
+has urbandictionary     => ( is => 'lazy', builder => sub { Component::UrbanDictionary->new() } );
+has twitch              => ( is => 'lazy', builder => sub { Component::Twitch->new('api_key' => shift->config->{'twitch'}{'api_key'}) } );
 
-has owner_id            => ( is => 'rwp' );
 has user_id             => ( is => 'rwp' );
-has trigger             => ( is => 'rwp' );
-has playing             => ( is => 'rwp' );
-has client_id           => ( is => 'rwp' );
-has webhook_name        => ( is => 'rwp' );
-has webhook_avatar      => ( is => 'rwp' );
+has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );
+has trigger             => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'trigger'} } );
+has client_id           => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'client_id'} } );
+has webhook_name        => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'webhook_name'} } );
+has webhook_avatar      => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'webhook_avatar'} } );
 
 has discord             => ( is => 'lazy', builder => sub {
-                        my $self = shift;
-                        Mojo::Discord->new(
-                            'token'     => $self->config->{'discord'}{'token'},
-                            'name'      => $self->config->{'discord'}{'name'},
-                            'url'       => $self->config->{'discord'}{'redirect_url'},
-                            'version'   => '1.0',
-                            'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
-                            'loglevel'  => $self->config->{'discord'}{'log_level'},
-                            'logdir'    => $self->config->{'discord'}{'log_dir'},
-                        )});
+                            my $self = shift;
+                            Mojo::Discord->new(
+                                'token'     => $self->config->{'discord'}{'token'},
+                                'name'      => $self->config->{'discord'}{'name'},
+                                'url'       => $self->config->{'discord'}{'redirect_url'},
+                                'version'   => '1.0',
+                                'reconnect' => $self->config->{'discord'}{'auto_reconnect'},
+                                'loglevel'  => $self->config->{'discord'}{'log_level'},
+                                'logdir'    => $self->config->{'discord'}{'log_dir'},
+                            )});
 
 # Logging
-has log                 => ( is => 'rwp' );
-has logdir              => ( is => 'rw', default => '/var/log/goose-bot' );
-has logfile             => ( is => 'rw', default => 'goose-bot.log' );
-has loglevel            => ( is => 'rw', default => 'debug' );
-
-# There is almost definitely a better way to do this. Maybe goose.pl should be doing more up front?
-sub BUILD {
-
-    my $self = shift;
-
-   
-    $self->_set_db               (Component::Database->new(%{$self->config->{'db'}}));
-    $self->_set_youtube          (Component::YouTube->new(%{$self->config->{'youtube'}}));
-    $self->_set_darksky          (Component::DarkSky->new(%{$self->config->{'weather'}}));
-    $self->_set_environmentcanada(Component::EnvironmentCanada->new());
-    $self->_set_maps             (Component::Maps->new('api_key' => $self->config->{'maps'}{'api_key'}));
-    $self->_set_lastfm           (Mojo::WebService::LastFM->new('api_key' => $self->config->{'lastfm'}{'api_key'}));
-    $self->_set_cah              (Component::CAH->new('api_url' => $self->config->{'cah'}{'api_url'}));
-    $self->_set_urbandictionary  (Component::UrbanDictionary->new());
-    $self->_set_twitch           (Component::Twitch->new('api_key' => $self->config->{'twitch'}{'api_key'}));;
-
-    $self->_set_owner_id         ($self->config->{'discord'}{'owner_id'});
-    $self->_set_trigger          ($self->config->{'discord'}{'trigger'});
-    $self->_set_playing          ($self->config->{'discord'}{'playing'});
-    $self->_set_client_id        ($self->config->{'discord'}{'client_id'});
-    $self->_set_webhook_name     ($self->config->{'discord'}{'webhook_name'});
-    $self->_set_webhook_avatar   ($self->config->{'discord'}{'webhook_avatar'});
-
-    $self->logdir($self->config->{'discord'}{'log_dir'}) if defined $self->config->{'discord'}{'log_dir'};
-    $self->loglevel($self->config->{'discord'}{'log_level'}) if defined $self->config->{'discord'}{'log_level'};
-
-    $self->_set_log( Mojo::Log->new( path=> $self->logdir . '/' . $self->logfile, level => $self->loglevel ) );
-    $self->log->info('[Goose.pm] [BUILD] New session beginning ' .  localtime(time));
-}
+has loglevel            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'log_level'} } );
+has logdir              => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'log_dir'} } );
+has logfile             => ( is => 'ro', default => 'goose-bot.log' );
+has log                 => ( is => 'lazy', builder => sub { 
+                                my $self = shift; 
+                                Mojo::Log->new( 
+                                    'path' => $self->logdir . '/' . $self->logfile, 
+                                    'level' => $self->loglevel
+                                );
+                            });
 
 # Connect to discord and start running.
 sub start
@@ -146,6 +121,7 @@ sub start
     $self->discord_on_presence_update();
     $self->discord_on_webhooks_update();
 
+    $self->log->info('[Goose.pm] [BUILD] New session beginning ' .  localtime(time));
     $self->discord->init();
     
     # Start the IOLoop unless it is already running. 
@@ -161,12 +137,22 @@ sub discord_on_ready
     {
         my ($gw, $hash) = @_;
 
-        $self->add_me($hash->{'user'});
+        $self->_add_me($hash->{'user'});
+        $self->_reset_stats();
 
         say localtime(time) . " Connected to Discord.";
 
         Mojo::IOLoop->recurring(60 => sub { $self->_set_status() });
     });
+}
+
+# Any stats which should be cleared when the bot reconnects (Eg, the number of guilds joined, the "last-connected" timestamp, etc) should be done here.
+sub _reset_stats
+{
+    my $self = shift;
+
+    $self->stats->{'num_guilds'} = 0;
+    $self->stats->{'last_connected'} = time;    
 }
 
 sub _set_status
@@ -282,7 +268,7 @@ sub discord_on_presence_update
     my $self = shift;
 }
 
-sub add_me
+sub _add_me
 {
     my ($self, $user) = @_;
     say "Adding my ID as " . $user->{'id'};
