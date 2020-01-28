@@ -16,12 +16,11 @@ sub add_command
 {
     my ($self, %args) = @_;
 
-    return $self->db->query("INSERT into stats_commands VALUES ( ?, ?, ?, ?, ? );", 
+    return $self->db->query("INSERT into stats_commands VALUES ( ?, ?, ?, ? );", 
                 $args{'command'},
                 $args{'channel_id'},
                 $args{'user_id'},
-                $args{'timestamp'},
-                $args{'msg'}
+                $args{'timestamp'}
             );
 }
 

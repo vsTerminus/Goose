@@ -254,8 +254,7 @@ sub discord_on_message_create
                                 'command'       => lc $command->{'name'},
                                 'channel_id'    => $channel_id,
                                 'user_id'       => $author->{'id'},
-                                'timestamp'     => time,
-                                'msg'           => $hash->{'content'},
+                                'timestamp'     => time
                             );
 
                             $object->$function($channel_id, $author, $msg);
