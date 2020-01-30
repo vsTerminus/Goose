@@ -1,68 +1,43 @@
 package Command::Help;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_help);
 
-use Mojo::Discord;
-use Bot::Goose;
-use Data::Dumper;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
-###########################################################################################
-# Command Info
-my $command = "Help";
-my $access = 0; # Pubic
-my $description = "This command lists all commands currently available to the bot, and can display detailed information for each.";
-my $pattern = '^(help) ?(.*)$';
-my $function = \&cmd_help;
-my $usage = <<EOF;
-```!help```
-    Lists available commands
+has name                => ( is => 'ro', default => 'Help' );
+has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
+has description         => ( is => 'ro', default => 'List all commands currently available to the bot, or detailed information about a specific command' );
+has pattern             => ( is => 'ro', default => '^help ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_help } );
+has usage               => ( is => 'ro', default => <<EOF
+Basic Usage: `!help`
 
-```!help <command>```
-    Displays detailed help info for that command
-
+Advanced Usage: `!help <Command>`
+Eg: `!help uptime`
 EOF
-###########################################################################################
-
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-     
-    # Setting up this command module requires the Discord connection 
-    $self->{'bot'} = $params{'bot'};
-    $self->{'discord'} = $self->{'bot'}->discord;
-    $self->{'pattern'} = $pattern;
-
-    # Register our command with the bot
-    $self->{'bot'}->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );
-    
-    return $self;
-}
+);
 
 sub cmd_help
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    my $args = $msg;
-    my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$2/i;
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
-    my $discord = $self->{'discord'};
-    my $bot = $self->{'bot'};
+    my $pattern = $self->pattern;
+    $args =~ s/$pattern//i;
+
+    my $discord = $self->discord;
+    my $bot = $self->bot;
     my $replyto = '<@' . $author->{'id'} . '>';
 
     my $commands = $bot->get_commands;
@@ -84,6 +59,8 @@ sub cmd_help
         {
             my $help_str = "__**" . $command->{'name'} . "**__: \n\n`" . $command->{'description'} . "`\n\n";
             $help_str .= "__**Usage:**__\n\n" . $command->{'usage'};
+
+            
 
             $discord->send_message($channel, $help_str);
         }
