@@ -189,10 +189,13 @@ sub BUILD
 
 sub cmd_mlb
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
+
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
     my $discord = $self->discord;
-    my $args = $msg;
     my $pattern = $self->pattern;
     $args =~ s/$pattern/$2/i;
     my $cmd = (split ' ',$args)[0];

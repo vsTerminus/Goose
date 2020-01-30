@@ -27,7 +27,11 @@ EOF
 
 sub cmd_uptime
 {
-    my ($self, $channel) = @_;
+    my ($self, $msg) = @_;
+
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
     # Send a message back to the channel
     $self->discord->send_message($channel, ":chart_with_upwards_trend: " . $self->bot->uptime);

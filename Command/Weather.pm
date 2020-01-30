@@ -87,9 +87,12 @@ sub BUILD
 # This cuts down on unnecessary API calls, as I have a limit on both.
 async cmd_weather => sub
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
+    
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
-    my $args = $msg;
     $args =~ s/we?(ather)? ?//;
     my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';

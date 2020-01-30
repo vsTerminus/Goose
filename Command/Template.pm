@@ -28,12 +28,16 @@ EOF
 
 sub cmd_template
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    # "$msg" contains the command and the arguments the user typed.
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+
+    my $args = $msg->{'content'};
+    # "$args" contains the command and the arguments the user typed.
     # Most of the time we'll want to strip the command out of $msg and just look at the arguments.
     # You can use $self->pattern to do this.
-    my $args = $msg;
+    
     my $pattern = $self->pattern;
     $args =~ s/$pattern//;
     
