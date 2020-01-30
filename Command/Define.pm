@@ -1,25 +1,26 @@
 package Command::Define;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use Component::UrbanDictionary;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_define);
 
-use Mojo::Discord;
-use Bot::Goose;
-use Component::UrbanDictionary;
-use Data::Dumper;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
+has urbandictionary     => ( is => 'lazy', builder => sub { shift->bot->urbandictionary } );
+has cache               => ( is => 'rw', default => sub { {} } );
 
-###########################################################################################
-# Command Info
-my $command = "Define";
-my $access = 0; # Public
-my $description = "Look up the definition of a word or phrase.\nPowered by UrbanDictionary";
-my $pattern = '^(def(ine)?|urban|ud) ?(.*)$';
-my $function = \&cmd_define;
-my $usage = <<EOF;
+has name                => ( is => 'ro', default => 'Define' );
+has access              => ( is => 'ro', default => 0 );
+has description         => ( is => 'ro', default => 'Look up the definition of a word or phrase.\nPowered by UrbanDictionary' );
+has pattern             => ( is => 'ro', default => '^(?:def(?:ine)?|urban|ud) ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_define } );
+has usage               => ( is => 'ro', default => <<EOF
 Usage: `!define <word or phrase>`
 Example `!define Xyzzy`
 
@@ -29,44 +30,22 @@ Word of the Day: `!define wotd`
 
 Aliases: `!def`, `!urban`, `!ud`
 EOF
-###########################################################################################
+);
 
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-     
-    # Setting up this command module requires the Discord connection 
-    $self->{'bot'} = $params{'bot'};
-    $self->{'discord'} = $self->{'bot'}->discord;
-    $self->{'urbandictionary'} = $self->{'bot'}->urbandictionary;
-    $self->{'pattern'} = $pattern;
-
-    # Register our command with the bot
-    $self->{'bot'}->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );
-    
-    return $self;
-}
 
 sub cmd_define
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    my $args = $msg;
-    my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$3/i;
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
-    my $discord = $self->{'discord'};
-    my $urban = $self->{'urbandictionary'};
+    my $pattern = $self->pattern;
+    $args =~ s/$pattern//i;
+
+    my $discord = $self->discord;
+    my $urban = $self->urbandictionary;
     my $replyto = '<@' . $author->{'id'} . '>';
 
     # If they passed a word or phrase to search, look it up.
@@ -98,14 +77,14 @@ sub cmd_define
             });
         }
     }
-    elsif ( exists $self->{'cache'}{$channel} )
+    elsif ( exists $self->cache->{$channel} )
     {
-        my $def = shift @{$self->{'cache'}{$channel}};
-        my $num = scalar @{$self->{'cache'}{$channel}};
+        my $def = shift @{$self->cache->{$channel}};
+        my $num = scalar @{$self->cache->{$channel}};
 
         $discord->send_message($channel, to_string($def));
 
-        delete $self->{'cache'}{$channel} if $num == 0;
+        delete $self->cache->{$channel} if $num == 0;
     }
     else
     {
@@ -117,19 +96,19 @@ sub define_word
 {
     my ($self, $channel, $json) = @_;
     
-    my $discord = $self->{'discord'};
-
-    if ( $json->{'result_type'} eq 'no_results' )
+    if ( scalar @{$json->{'list'}} >= 1 )
     {
-        $discord->send_message($channel, "No Results.");
-        return;
-    }
 
-    my $def = shift @{$json->{'list'}};
-    $self->{'cache'}{$channel} = $json->{'list'};
-    my $num = scalar @{$json->{'list'}};
- 
-    $discord->send_message($channel, to_string($def));
+        my $def = shift @{$json->{'list'}};
+        $self->cache->{$channel} = $json->{'list'};
+        my $num = scalar @{$json->{'list'}};
+
+        $self->discord->send_message($channel, to_string($def));
+    }
+    else
+    {
+        $self->discord->send_message($channel, "No definitions found");
+    }
 }
 
 sub get_cached
