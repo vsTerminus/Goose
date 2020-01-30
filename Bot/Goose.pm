@@ -292,7 +292,7 @@ sub discord_on_presence_update
 sub _add_me
 {
     my ($self, $user) = @_;
-    say "Adding my ID as " . $user->{'id'};
+    $self->log->info('[Goose.pm] [_add_me] My Discord ID: ' . $user->{'id'});
     $self->_set_user_id($user->{'id'});
 }
 
@@ -340,7 +340,7 @@ sub add_moo_command
 
     $self->{'patterns'}->{$command->pattern} = $name;
 
-    say localtime(time) . " Registered new Moo Command: '$name' identified by '$command->pattern'";
+    $self->log->debug('[Goose.pm] [add_moo_command] Registered new command: "' . $name . '" identified by "' . $command->pattern . '"');
 }
 
 # Command modules can use this function to register themselves with the bot.
