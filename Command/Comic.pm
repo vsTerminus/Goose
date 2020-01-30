@@ -99,11 +99,14 @@ sub new
 
 sub cmd_comic
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
+
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
     my $ua = $self->{'ua'};
 
-    my $args = $msg;
     my $pattern = $self->{'pattern'};
     $args =~ s/$pattern/$2/i;
 
