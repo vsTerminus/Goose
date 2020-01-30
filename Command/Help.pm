@@ -71,7 +71,7 @@ sub cmd_help
     if ( defined $args and length $args > 0 )
     {
         my $command = undef;
-        foreach my $pattern ($bot->get_patterns())
+        foreach my $pattern (%{$bot->patterns})
         {
             if ( $args =~ /$pattern/i ) 
             {
