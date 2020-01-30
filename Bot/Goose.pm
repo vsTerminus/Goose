@@ -219,6 +219,7 @@ sub discord_on_message_create
         my $trigger = $self->trigger;
         my $discord_name = $self->discord->name;
         my $discord_id = $self->user_id;
+        my $message_id = $hash->{'id'};
 
         my $channels = $self->discord->channels;
 
@@ -257,7 +258,8 @@ sub discord_on_message_create
                                 'timestamp'     => time
                             );
 
-                            $object->$function($channel_id, $author, $msg);
+                            $hash->{'content'} = $msg;  # We've made some changes to the message content, let's make sure those get passed on to the command.
+                            $object->$function($hash);
                         }
                     }
                 }
@@ -301,9 +303,9 @@ sub get_commands
 
     my $cmds = {};
     
-    foreach my $key (keys %{$self->{'commands'}})
+    foreach my $key (keys %{$self->commands})
     {
-        $cmds->{$key} = $self->{'commands'}->{$key}{'description'};
+        $cmds->{$key} = $self->commands->{$key}{'description'};
     }
 
     return $cmds;
@@ -313,7 +315,7 @@ sub get_command_by_name
 {
     my ($self, $name) = @_;
 
-    return $self->{'commands'}{$name};
+    return $self->commands->{$name};
 }
 
 sub get_command_by_pattern
