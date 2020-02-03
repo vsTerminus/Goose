@@ -1,26 +1,23 @@
 package Command::Twitch;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_twitch);
 
-use Mojo::Discord;
-use Bot::Goose;
-use Component::Twitch;
-use Component::Database;
-use Data::Dumper;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
-###########################################################################################
-# Command Info
-my $command = "Twitch";
-my $access = 0; # Public
-my $description = "Search Twitch";
-my $pattern = '^(twitch|tw) ?(.*)$';
-my $function = \&cmd_twitch;
-my $usage = <<EOF;
+has name                => ( is => 'ro', default => 'Twitch' );
+has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
+has description         => ( is => 'ro', default => 'Search Twitch for channels' );
+has pattern             => ( is => 'ro', default => '^tw(?:itch)? ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_twitch } );
+has usage               => ( is => 'ro', default => <<EOF
 Search for a stream channel: `!twitch <twitch username>`
 
 Set your own twitch channel: `!twitch set <twitch username>`
@@ -30,50 +27,24 @@ Link your twitch channel: `!twitch`
 Link someone else's twitch channel: `!twitch \@username`
 
 EOF
-############################################################################################
-
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-     
-    # Setting up this command module requires the Discord connection 
-    my $bot = $params{'bot'};
-
-    $self->{'bot'}      = $bot;
-    $self->{'discord'}  = $bot->discord;
-    $self->{'twitch'}   = $bot->twitch;
-    $self->{'db'}       = $bot->db;
-    $self->{'pattern'}  = $pattern;
-
-    # Register our command with the bot
-    $self->{'bot'}->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );
-    
-    return $self;
-}
+);
 
 # This command will search Channels and Streams and return result(s) as Rich Embeds
 sub cmd_twitch
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    my $args = $msg;
-    my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$2/i;
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
-    my $discord = $self->{'discord'};
+    my $pattern = $self->pattern;
+    $args =~ s/$pattern//i;
+
+    my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';
 
-    my $twitch = $self->{'twitch'};
+    my $twitch = $self->bot->twitch;
 
     # Storing their Twitch Username and ID
     if ( defined $args and $args =~ /set (.*)$/i )
@@ -180,7 +151,7 @@ sub get_stored_id
     # Step 2 - Check DB
     else
     {
-        my $db = $self->{'db'};
+        my $db = $self->bot->db;
  
         my $sql = "SELECT twitch_id FROM twitch WHERE discord_id = ?";
         my $query = $db->query($sql, $discord_id);
@@ -204,7 +175,7 @@ sub get_twitch_info
 {
     my ($self, $channel, $twitch_id) = @_;
     
-    my $twitch = $self->{'twitch'};
+    my $twitch = $self->bot->twitch;
 
     $twitch->get_stream($twitch_id, sub
     {
@@ -308,8 +279,8 @@ sub send_message
 {
     my ($self, $channel, $embed) = @_;
 
-    my $bot = $self->{'bot'};
-    my $discord = $self->{'discord'};
+    my $bot = $self->bot;
+    my $discord = $self->discord;
 
     if ( my $hook = $bot->has_webhook($channel) )
     {
