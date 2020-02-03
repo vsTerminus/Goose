@@ -39,7 +39,7 @@ my $bot = Bot::Goose->new('config' => $config);
 $bot->add_moo_command( Command::Help->new           ('bot' => $bot) );
 Command::Say->new           ('bot' => $bot);
 $bot->add_moo_command( Command::Avatar->new         ('bot' => $bot) );
-Command::Pick->new          ('bot' => $bot);
+$bot->add_moo_command( Command::Pick->new           ('bot' => $bot) );
 $bot->add_moo_command( Command::Leave->new          ('bot' => $bot) );
 $bot->add_moo_command( Command::Info->new           ('bot' => $bot) );
 $bot->add_moo_command( Command::Hook->new           ('bot' => $bot) );

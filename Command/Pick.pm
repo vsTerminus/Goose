@@ -1,63 +1,41 @@
 package Command::Pick;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_pick);
 
-use Mojo::Discord;
-use Bot::Goose;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
-###########################################################################################
-# Command Info
-my $command = "Pick";
-my $access = 0; # Public
-my $description = "Have the bot decide your fate, you wishy washy fuck.";
-my $pattern = '^(pick) ?(.*)$';
-my $function = \&cmd_pick;
-my $usage = <<EOF;
+has name                => ( is => 'ro', default => 'Pick' );
+has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
+has description         => ( is => 'ro', default => 'Have the bot decide your fate, you wishy washy fuck.' );
+has pattern             => ( is => 'ro', default => '^pick ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_pick } );
+has usage               => ( is => 'ro', default => <<EOF
 ```!pick thing one, thing two, thing three```
     Give the bot a list of things to pick from, and separate each with a comma.
     You can have the bot pick from as many things as you want.
 EOF
-###########################################################################################
-
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-     
-    # Setting up this command module requires the Discord connection 
-    $self->{'bot'} = $params{'bot'};
-    $self->{'discord'} = $self->{'bot'}->discord;
-    $self->{'pattern'} = $pattern;
-
-    # Register our command with the bot
-    $self->{'bot'}->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );
-    
-    return $self;
-}
+);
 
 sub cmd_pick
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    my $args = $msg;
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
+
     my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$2/i;
+    $args =~ s/$pattern//i;
 
-    my $discord = $self->{'discord'};
+    my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';
 
     my $quiznos = 0;
