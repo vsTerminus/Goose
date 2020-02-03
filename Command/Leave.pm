@@ -1,72 +1,43 @@
 package Command::Leave;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_guilds);
 
-use Mojo::Discord;
-use Bot::Goose;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
-###########################################################################################
-# Command Info
-my $command = "Leave";
-my $description = "Leave a specified guild";
-my $pattern = '^(leave) ?(.*)$';
-my $function = \&cmd_leave;
-my $access = 1;   # Restricted - Bot Owner only. Should overhaul access a bit in the future, but for now this is fine.
-my $usage = <<EOF;
-Basic usage: !leave <Guild ID>
+has name                => ( is => 'ro', default => 'Leave' );
+has access              => ( is => 'ro', default => 1 ); # 0 = Public, 1 = Bot-Owner Only
+has description         => ( is => 'ro', default => 'Leave a discord guild' );
+has pattern             => ( is => 'ro', default => '^leave ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_leave } );
+has usage               => ( is => 'ro', default => <<EOF
+Basic Usage: `!leave <guild id>`
 EOF
-###########################################################################################
-
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-     
-    # Setting up this command module requires the Discord connection 
-    $self->{'bot'} = $params{'bot'};
-    $self->{'discord'} = $self->{'bot'}->discord;
-    $self->{'pattern'} = $pattern;
-    $self->{'access'} = $access;
-
-    # Register our command with the bot
-    $self->{'bot'}->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );
-    
-    return $self;
-}
+);
 
 sub cmd_leave
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    my $args = $msg;
-    my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$2/i;
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
-    my $discord = $self->{'discord'};
-    my $replyto = '<@' . $author->{'id'} . '>';
+    my $discord = $self->discord;
+    my $pattern = $self->pattern;
+    $args =~ s/$pattern//i;
 
-    my $bot = $self->{'bot'};
-
-    my $id = $msg;
-    $id =~ s/^leave (\d+)$/$1/i;
     
     my $user = '@me';
-    $discord->send_message($channel, "Attempting to Leave Guild: `$id`");
-    $discord->leave_guild($user, $id);
+    $discord->send_message($channel, "Attempting to Leave Guild: `$args`");
+    $discord->leave_guild($user, $args);
 }
 
 1;
