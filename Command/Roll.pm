@@ -187,11 +187,12 @@ sub _roll
 
 sub cmd_roll
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    #say "cmd_roll: $channel, $author, $msg";
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
-    my $args = $msg;
     my $pattern = $self->pattern;
     $args =~ s/$pattern/$2/i;
 
