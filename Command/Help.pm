@@ -60,9 +60,8 @@ sub cmd_help
             my $help_str = "__**" . $command->{'name'} . "**__: \n\n`" . $command->{'description'} . "`\n\n";
             $help_str .= "__**Usage:**__\n\n" . $command->{'usage'};
 
-            
-
-            $discord->send_message($channel, $help_str);
+            # Reply via DM, ack the message with a checkmark reaction
+            $discord->send_ack_dm($channel, $msg->{'id'}, $author->{'id'}, $help_str);
         }
         else
         {
@@ -97,8 +96,8 @@ sub cmd_help
 
         my $client_id = $bot->client_id();
     
-        # Send a message back to the channel
-        $discord->send_message($channel, $help_str);
+        # Send a message back to the user via DM
+        $discord->send_ack_dm($channel, $msg->{'id'}, $author->{'id'}, $help_str);
     }
 }
 
