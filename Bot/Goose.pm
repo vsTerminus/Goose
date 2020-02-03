@@ -326,7 +326,7 @@ sub get_command_by_pattern
     return $self->get_command_by_name($self->{'patterns'}{$pattern});
 }
 
-sub add_moo_command
+sub add_command
 {
     my ($self, $command) = @_;
 
@@ -342,38 +342,6 @@ sub add_moo_command
     $self->{'patterns'}->{$command->pattern} = $name;
 
     $self->log->debug('[Goose.pm] [add_moo_command] Registered new command: "' . $name . '" identified by "' . $command->pattern . '"');
-}
-
-# Command modules can use this function to register themselves with the bot.
-# - Command
-# - Access Level Required (Default 0 - public, 1 - Bot Owner)
-# - Description
-# - Usage
-# - Pattern
-# - Function
-sub add_command
-{
-    my ($self, %params) = @_;
-
-    my $command = lc $params{'command'};
-    my $access = $params{'access'};
-    my $description = $params{'description'};
-    my $usage = $params{'usage'};
-    my $pattern = $params{'pattern'};
-    my $function = $params{'function'};
-    my $object = $params{'object'};
-
-    $self->{'commands'}->{$command}{'name'} = ucfirst $command;
-    $self->{'commands'}->{$command}{'access'} = $access;
-    $self->{'commands'}->{$command}{'usage'} = $usage;
-    $self->{'commands'}->{$command}{'description'} = $description;
-    $self->{'commands'}->{$command}{'pattern'} = $pattern;
-    $self->{'commands'}->{$command}{'function'} = $function;
-    $self->{'commands'}->{$command}{'object'} = $object;
-
-    $self->{'patterns'}->{$pattern} = $command;
-
-    say localtime(time) . " Registered new command: '$command' identified by '$pattern'";
 }
 
 # This sub calls any of the registered commands and passes along the args
