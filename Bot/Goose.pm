@@ -7,6 +7,7 @@ use strictures 2;
 use Data::Dumper;
 use Mojo::Discord;
 use Mojo::IOLoop;
+use Mojo::WebService::LastFM;
 use Time::Duration;
 use Component::Database;
 use Component::YouTube;

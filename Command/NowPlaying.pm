@@ -1,29 +1,24 @@
 package Command::NowPlaying;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use DateTime;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_nowplaying);
 
-use Mojo::Discord;
-use Mojo::WebService::LastFM;
-use DBI;
-use Component::Database;
-use Component::YouTube;
-use Mojo::JSON qw(encode_json decode_json);
-use DateTime;
-use Data::Dumper;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
-###########################################################################################
-# Command Info
-my $command = "NowPlaying";
-my $access = 0; # Public
-my $description = "Fetches Now Playing info from Last.FM and displays it in the channel";
-my $pattern = '^(np|nowplaying|lastfm) ?(.*)$';
-my $function = \&cmd_nowplaying;
-my $usage = <<EOF;
+has name                => ( is => 'ro', default => 'NowPlaying' );
+has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
+has description         => ( is => 'ro', default => 'Fetches Now Playing info from Last.FM and displays it in the channel' );
+has pattern             => ( is => 'ro', default => '^(np|nowplaying|lastfm) ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_nowplaying } );
+has usage               => ( is => 'ro', default => <<EOF
 ```!nowplaying or !np or !lastfm```
     On first use the bot will ask you to use the set command (below) so it can associate your Discord ID to your Last.FM account.
     
@@ -46,40 +41,8 @@ my $usage = <<EOF;
 
     `Example:` !nowplaying <\@231059560977137664>
 EOF
-############################################################################################
+);
 
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-   
-    # Setting up this command module requires the Discord connection 
-    # and Database info to be passed in so it can utilize them.
-    # It also needs the last.fm api key.
-    $self->{'bot'} = $params{'bot'};
-    my $bot = $self->{'bot'}; 
-
-    $self->{'discord'}  = $bot->discord;
-    $self->{'db'}       = $bot->db;
-    $self->{'lastfm'}   = $bot->lastfm;
-    $self->{'youtube'}  = $bot->youtube;
-    $self->{'pattern'}  = $pattern;
-
-    # Now register this command with the bot.
-
-    $bot->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );    
-
-    return $self;
-}
 
 sub add_user
 {
@@ -87,7 +50,7 @@ sub add_user
 
     say localtime(time) . " Command::NowPlaying is adding a new mapping: $discord_id ($discord_name) -> $lastfm_name";
 
-    my $db = $self->{'db'};
+    my $db = $self->bot->db;
     
     my $sql = "INSERT INTO lastfm VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE discord_name = ?, lastfm_name = ?";
     $db->query($sql, $discord_id, $discord_name, $lastfm_name, $discord_name, $lastfm_name);
@@ -95,14 +58,14 @@ sub add_user
 
 sub cmd_nowplaying
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    my $user = $msg;
-    my $pattern = $self->{'pattern'};
-    $user =~ s/$pattern/$2/i;   # Strip the command out of the message, leaving just the args
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $user = $msg->{'content'};
 
-    my $discord = $self->{'discord'};
-    my $lastfm = $self->{'lastfm'};
+    my $pattern = $self->pattern;
+    $user =~ s/$pattern//i;   # Strip the command out of the message, leaving just the args
     
     # First handle the set command.
     if ( $user =~ /^set (\w+)/i )
@@ -110,7 +73,7 @@ sub cmd_nowplaying
         my $lastfm_name = $1;
         $lastfm_name =~ s/^\<(.*)\>$/$1/; # In case of stupidity, remove < > from the username.
         $self->add_user($author->{'id'}, $author->{'username'}, $lastfm_name);
-        $discord->send_message( $channel, $author->{'username'} . ": I have updated your Last.FM username to `$lastfm_name`" );
+        $self->discord->send_message( $channel, $author->{'username'} . ": I have updated your Last.FM username to `$lastfm_name`" );
 
         $self->nowplaying_by_username($channel, $author, $lastfm_name);
     }
@@ -140,10 +103,8 @@ sub nowplaying_by_id
 {
     my ($self, $channel, $author, $id) = @_;
 
-    my $discord = $self->{'discord'};
-
     # Now, do we have a database entry for this user?
-    my $db = $self->{'db'};
+    my $db = $self->bot->db;
        
     my $sql = "SELECT lastfm_name FROM lastfm WHERE discord_id = ?";
     my $query = $db->query($sql, $id);
@@ -153,7 +114,7 @@ sub nowplaying_by_id
     {
         my $lastfm_name = $row->{'lastfm_name'};
 
-        $discord->get_user($id, sub
+        $self->discord->get_user($id, sub
         {
             my $user = shift;
             $self->nowplaying_by_username($channel, $author, $row->{'lastfm_name'}, $user);
@@ -165,11 +126,11 @@ sub nowplaying_by_id
     {
         if ( $author->{'id'} == $id )   # Are they querying themselves?
         {
-            $discord->send_message( $channel, "Sorry " . $author->{'username'} . ", I don't recognize you. Please tell me your Last.FM Username with the command: `!lastfm set <username>`." );
+            $self->discord->send_message( $channel, "Sorry " . $author->{'username'} . ", I don't recognize you. Please tell me your Last.FM Username with the command: `!lastfm set <username>`." );
         }
         else # Querying someone else
         {
-            $discord->send_message( $channel, "Sorry " . $author->{'username'} . ", I don't recognize that Discord user. You can try searching their Last.FM username instead if you know it." );
+            $self->discord->send_message( $channel, "Sorry " . $author->{'username'} . ", I don't recognize that Discord user. You can try searching their Last.FM username instead if you know it." );
         }
     }
 }
@@ -178,7 +139,6 @@ sub nowplaying_by_id
 sub to_embed
 {
     my ($self, $username, $json, $youtube_url) = @_;
-    my $bot = $self->{'bot'};
 
     my $artist = length $json->{'artist'} ? $json->{'artist'} : "Unknown Artist";
     my $title  = length $json->{'title'}  ? $json->{'title'}  : "Unknown Title";
@@ -222,10 +182,9 @@ sub to_embed
 sub nowplaying_by_username
 {
     my ($self, $channel, $author, $username, $user) = @_;
-    my $discord = $self->{'discord'};
-    my $lastfm = $self->{'lastfm'};
-    my $youtube = $self->{'youtube'};
-    my $bot = $self->{'bot'};
+    my $discord = $self->discord;
+    my $lastfm = $self->bot->lastfm;
+    my $youtube = $self->bot->youtube;
 
     my $discord_name = $author->{'username'};
 
@@ -263,11 +222,10 @@ sub nowplaying_by_username
 sub send_message
 {
     my ($self, $channel, $embed) = @_;
-    
-    my $bot = $self->{'bot'};
-    my $discord = $self->{'discord'};
 
-    if ( my $hook = $bot->has_webhook($channel) )
+    my $discord = $self->discord;
+
+    if ( my $hook = $self->bot->has_webhook($channel) )
     {
         my $param = {
             'username' => 'Last.FM',
