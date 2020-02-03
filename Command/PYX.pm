@@ -1,25 +1,24 @@
 package Command::PYX;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_pyx);
 
-use Mojo::Discord;
-use Bot::Goose;
-use Component::CAH;
-use Data::Dumper;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
+has cah                 => ( is => 'lazy', builder => sub { shift->bot->cah } );
 
-###########################################################################################
-# Command Info
-my $command = "pretendyourexyzzy";
-my $access = 0; # Public
-my $description = "Play a single hand of Pretend You're Xyzzy - a Cards Against Humanity clone";
-my $pattern = '^(cardsagainsthumanity|pretendyourexyzzy|pyx|cah) ?(.*)$';
-my $function = \&cmd_pyx;
-my $usage = <<EOF;
+has name                => ( is => 'ro', default => 'PYX' );
+has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
+has description         => ( is => 'ro', default => 'Play a single hand of Pretend You\'re Xyzzy - a Cards Against Humanity clone' );
+has pattern             => ( is => 'ro', default => '^(cah|pyx) ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_pyx } );
+has usage               => ( is => 'ro', default => <<EOF
 Make the bot play a totally random hand: `!pyx`
 ... with 1 blank:  `!pyx 1`
 ... with 2 blanks: `!pyx 2`
@@ -33,46 +32,23 @@ Play white cards with `w <card text>` and the bot will select a suitable black c
 etc 
 
 EOF
-###########################################################################################
-
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-     
-    # Setting up this command module requires the Discord connection 
-    $self->{'bot'} = $params{'bot'};
-    $self->{'discord'} = $self->{'bot'}->discord;
-    $self->{'cah'} = $self->{'bot'}->cah;
-    $self->{'pattern'} = $pattern;
-
-    # Register our command with the bot
-    $self->{'bot'}->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );
-    
-    return $self;
-}
+);
 
 sub cmd_pyx
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
+
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
     $msg =~ s/[\`\*]//gs;
     $msg =~ s/_+/____/gs;
 
-    my $args = $msg;
-    my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$2/si;
+    my $pattern = $self->pattern;
+    $args =~ s/$pattern//si;
 
-    my $discord = $self->{'discord'};
+    my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';
 
     # If the user specifies a number or no args at all, go by pick
@@ -106,8 +82,8 @@ sub by_white_cards
 {
     my ($self, $channel, $author, $args) = @_;
 
-    my $cah = $self->{'cah'};
-    my $discord = $self->{'discord'};
+    my $cah = $self->cah;
+    my $discord = $self->discord;
     $args = " " . $args;
 
     my @cards = split(/ w /i, $args); shift @cards; # Remove the first element, which will be empty.
@@ -155,8 +131,8 @@ sub by_pick
 {
     my ($self, $channel, $author, $args) = @_;
 
-    my $cah = $self->{'cah'};
-    my $discord = $self->{'discord'};
+    my $cah = $self->cah;
+    my $discord = $self->discord;
 
     $args =~ /^(w ?)(\d+)$/s;
     my $pick = $2;
@@ -198,8 +174,8 @@ sub by_black_card
 {
     my ($self, $channel, $author, $args) = @_;
 
-    my $cah = $self->{'cah'};
-    my $discord = $self->{'discord'};
+    my $cah = $self->cah;
+    my $discord = $self->discord;
 
     my $count = () = $args =~ /____/sg;
     #say "Found $count blanks";

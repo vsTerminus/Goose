@@ -50,8 +50,8 @@ $bot->add_moo_command( Command::MLB->new            ('bot' => $bot) );
 $bot->add_moo_command( Command::Weather->new        ('bot' => $bot) )   if ( $config->{'weather'}{'use_weather'} );
 $bot->add_moo_command( Command::Uptime->new         ('bot' => $bot) );
 Command::YouTube->new       ('bot' => $bot) if ( $config->{'youtube'}{'use_youtube'} );
-$bot->add_moo_command( Command::NowPlaying->new     ('bot' => $bot) )   if ( $config->{'lastfm'}{'use_lastfm'}   );
-Command::PYX->new           ('bot' => $bot) if ( $config->{'cah'}{'use_cah'} );
+$bot->add_moo_command( Command::NowPlaying->new     ('bot' => $bot) )   if ( $config->{'lastfm'}{'use_lastfm'} );
+$bot->add_moo_command( Command::PYX->new            ('bot' => $bot) )   if ( $config->{'cah'}{'use_cah'} );
 
 # Start the bot
 $bot->start();
