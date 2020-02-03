@@ -1,63 +1,40 @@
 package Command::Say;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use Mojo::JSON qw(decode_json);
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_say);
 
-use Mojo::Discord;
-use Bot::Goose;
-use Mojo::JSON qw(decode_json);
-use Data::Dumper;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
-###########################################################################################
-# Command Info
-my $command = "Say";
-my $access = 2; # Restricted to Owner
-my $description = "Make the bot say something";
-my $pattern = '^(say) (.+)$';
-my $function = \&cmd_say;
-my $usage = <<EOF;
+has name                => ( is => 'ro', default => 'Say' );
+has access              => ( is => 'ro', default => 1 ); # 0 = Public, 1 = Bot-Owner Only, 2 = Server Owner (when supported)
+has description         => ( is => 'ro', default => 'Make the bot say something' );
+has pattern             => ( is => 'ro', default => '^say ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_say } );
+has usage               => ( is => 'ro', default => <<EOF
 Usage: !say something
 EOF
-###########################################################################################
-
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-     
-    # Setting up this command module requires the Discord connection 
-    $self->{'bot'} = $params{'bot'};
-    $self->{'discord'} = $self->{'bot'}->discord;
-    $self->{'pattern'} = $pattern;
-
-    # Register our command with the bot
-    $self->{'bot'}->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );
-    
-    return $self;
-}
+);
 
 sub cmd_say
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    my $args = $msg;
-    my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$2/i;
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
-    my $discord = $self->{'discord'};
+    my $pattern = $self->pattern;
+    $args =~ s/$pattern//i;
+
+    my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';
 
     eval 

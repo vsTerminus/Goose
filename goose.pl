@@ -37,7 +37,7 @@ my $bot = Bot::Goose->new('config' => $config);
 # Register the commands
 # The new() function in each command will register with the bot.
 $bot->add_moo_command( Command::Help->new           ('bot' => $bot) );
-Command::Say->new           ('bot' => $bot);
+$bot->add_moo_command( Command::Say->new            ('bot' => $bot) );
 $bot->add_moo_command( Command::Avatar->new         ('bot' => $bot) );
 $bot->add_moo_command( Command::Pick->new           ('bot' => $bot) );
 $bot->add_moo_command( Command::Leave->new          ('bot' => $bot) );
