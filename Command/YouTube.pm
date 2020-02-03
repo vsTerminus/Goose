@@ -1,72 +1,45 @@
 package Command::YouTube;
+use feature 'say';
 
-use v5.10;
-use strict;
-use warnings;
+use Moo;
+use strictures 2;
+use namespace::clean;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(cmd_youtube);
 
-use Mojo::Discord;
-use Bot::Goose;
-use Component::YouTube;
-use Data::Dumper;
+has bot                 => ( is => 'ro' );
+has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
-###########################################################################################
-# Command Info
-my $command = "YouTube";
-my $access = 0; # Public
-my $description = "Search YouTube";
-my $pattern = '^(youtube|you|yt) ?(.*)$';
-my $function = \&cmd_youtube;
-my $usage = <<EOF;
+has name                => ( is => 'ro', default => 'YouTube' );
+has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
+has description         => ( is => 'ro', default => 'Search YouTube' );
+has pattern             => ( is => 'ro', default => '^(yt|you|youtube) ?' );
+has function            => ( is => 'ro', default => sub { \&cmd_youtube } );
+has usage               => ( is => 'ro', default => <<EOF
 Search for a video: `!youtube Rick Roll`
 
 More results: `!youtube`
 EOF
-############################################################################################
-
-sub new
-{
-    my ($class, %params) = @_;
-    my $self = {};
-    bless $self, $class;
-     
-    # Setting up this command module requires the Discord connection 
-    my $bot = $params{'bot'};
-
-    $self->{'bot'}     = $bot;
-    $self->{'discord'} = $bot->discord;
-    $self->{'youtube'} = $bot->youtube;
-    $self->{'pattern'} = $pattern;
-
-    # Register our command with the bot
-    $self->{'bot'}->add_command(
-        'command'       => $command,
-        'access'        => $access,
-        'description'   => $description,
-        'usage'         => $usage,
-        'pattern'       => $pattern,
-        'function'      => $function,
-        'object'        => $self,
-    );
-    
-    return $self;
-}
+);
 
 sub cmd_youtube
 {
-    my ($self, $channel, $author, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    my $args = $msg;
-    my $pattern = $self->{'pattern'};
-    $args =~ s/$pattern/$2/i;
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
 
-    my $discord = $self->{'discord'};
+    my $pattern = $self->pattern;
+    $args =~ s/$pattern//i;
+
+    my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';
 
-    my $youtube = $self->{'youtube'};
-    my $bot = $self->{'bot'};
+    my $bot = $self->bot;
+    my $youtube = $bot->youtube;
 
     if ( defined $args and length $args )
     {
@@ -146,8 +119,8 @@ sub send_message
 {
     my ($self, $channel, $embed) = @_;
 
-    my $bot = $self->{'bot'};
-    my $discord = $self->{'discord'};
+    my $bot = $self->bot;
+    my $discord = $self->discord;
 
     if ( my $hook = $bot->has_webhook($channel) )
     {
