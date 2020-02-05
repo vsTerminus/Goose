@@ -58,6 +58,7 @@ has config              => ( is => 'ro' );
 has commands            => ( is => 'rw' );
 has patterns            => ( is => 'rw' );
 has session             => ( is => 'rw', default => sub { {} } );
+has status_timer        => ( is => 'rw' );
 
 has db                  => ( is => 'lazy', builder => sub { Component::Database->new(%{shift->config->{'db'}}) } );
 has youtube             => ( is => 'lazy', builder => sub { Component::YouTube->new(%{shift->config->{'youtube'}}) } );
@@ -146,7 +147,7 @@ sub discord_on_ready
 
         say localtime(time) . " Connected to Discord.";
 
-        Mojo::IOLoop->recurring(60 => sub { $self->_set_status() });
+        $self->status_timer( Mojo::IOLoop->recurring(120 => sub { $self->_set_status() }) ) unless defined $self->status_timer;
     });
 }
 
