@@ -154,7 +154,7 @@ async cmd_weather => sub
         {
             $discord->send_message($channel, "Sorry " . $author->{'username'} . ", I don't have a stored location for that user.");
         }
-        say "Found stored location for $1: $args";
+        $self->bot->log->debug("[Weather.pm] [cmd_weather] Found stored location for $1: $args");
     }
     else # Check to see if this is a stored location.
     {
@@ -171,13 +171,11 @@ async cmd_weather => sub
     # If we have the coordinates cached already, just use those.
     if ( defined $coords and exists $coords->{'lat'} and exists $coords->{'lon'} )
     {
-        say "Found cached coords already";
         $self->weather_by_coords($channel, $author, $coords->{'lat'}, $coords->{'lon'}, $coords->{'address'});
     }
     # If not, we'll have to geocode the query location.
     else
     {
-        say localtime(time) . " Could not find cached coords for '$args'. Geocoding...";
         my $json = await $self->geocode($args);
     
         my $lat = $json->{'geometry'}{'location'}{'lat'};
@@ -189,11 +187,9 @@ async cmd_weather => sub
         unless ( defined $lat and defined $lon and defined $formatted_address )
         {
             $discord->send_message($channel, $author->{'username'} . ": Sorry, I can't find `" . $args . "`");
-            say localtime(time) . " Could not geocode '$args'";
+            $self->bot->log->debug("[Weather.pm] [cmd_weather] Could not geocode '$args'");
             return undef;
         }
-
-        say localtime(time) . " Geocoding Results: $formatted_address ($lat,$lon)";
 
         # Store these coords.
         $self->add_coords($args, $lat, $lon, $formatted_address);
@@ -206,8 +202,6 @@ async cmd_weather => sub
 async geocode => sub
 {
     my ($self, $args) = @_;
-
-    say Data::Dumper->Dump([$args], ['args']);
 
     my $json = await $self->bot->maps->geocode($args);
 
@@ -240,7 +234,7 @@ async weather_by_coords => sub
         {
             my ($city, $province) = ($address =~ /^(?:.*, )?([^,]+), ([^,]+), Canada$/);
             $province = substr($province,0,2);
-            say localtime(time) . " Requesting weather for $city, $province from Environment Canada";
+            $self->bot->log->debug("Requesting weather for $city, $province from Environment Canada");
 
             $json = await $self->bot->environmentcanada->weather($city, $province);
 
@@ -251,7 +245,7 @@ async weather_by_coords => sub
         }
         unless ( $weather_found )
         {
-            say localtime(time) . " Requesting weather for $lat,$lon from Dark Sky";
+            $self->bot->log->debug("Requesting weather for $lat,$lon from Dark Sky");
             $json = await $self->bot->darksky->weather($lat, $lon);
         }
 
@@ -262,7 +256,6 @@ async weather_by_coords => sub
         my $formatted_weather = $self->format_weather($json);
         $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
         $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and rand(1) > 0.10;
-        #say "Formatted Weather: $formatted_weather";
 
         $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather); # This sub handles whether it's a message or webhook.
     }
@@ -287,12 +280,11 @@ sub send_weather
             'content' => "$header\n" . $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
         };
 
-        $self->discord->send_webhook($channel, $hook, $hookparam, sub { my $json = shift; say Dumper($json) if defined $json; });
+        $self->discord->send_webhook($channel, $hook, $hookparam);
     }
     else # Regular message.
     {
-        my $icon = '';
-        $icon = $json->{'icon_emote'} if exists $json->{'icon_emote'};
+        my $icon = $json->{'icon_emote'} // ":sun_with_face:";
 
         my $warning = ( exists $json->{'warning'} ? $json->{'warning'} . "\n" : "" );
             
@@ -307,32 +299,23 @@ sub format_weather
     # Accept temperature and wind speed in either units
     my $temp_f = round($json->{'temperature'});
     my $temp_c = round($json->{'temperature_c'});
-    say "Formatted Temperature";
     
     my $feel_f = round($json->{'apparentTemperature'});
     my $feel_c = round($json->{'apparentTemperature_c'});
-    say "Formatted Feels Like";
 
     my $wind_mi = round($json->{'windSpeed'});
     my $wind_km = round($json->{'windSpeed_km'});
-    say "Formatted Wind speed";
 
     my $wind_dir = $json->{'windBearing'};
-    say "Formatted Wind Bearing";
 
     # Accept percent or decimal value
     my $humidity = $json->{'humidity'};
     $humidity *= 100 if $humidity <= 1;
     $humidity = int($humidity);
-    say "Formatted Humidity";
     
     my $cond = $json->{'summary'};
-    say "Formatted Summary";
 
     my $fuckingweather = $self->content->itsfucking_comment($temp_f, $temp_c, $feel_f, $feel_c, $cond);
-    say "Got the fucking weather:";
-    say $fuckingweather;
-
 
     my $msg = "```c\n" .
         "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
@@ -340,9 +323,6 @@ sub format_weather
         "Conditions  | $cond, ${humidity}% Humidity\n" .
         "Winds       | $wind_dir ${wind_mi}mph/${wind_km}kph```\n" .
         "$fuckingweather";
-    say "Formatted entire message";
-
-    say $msg;
 
     return $msg;
 }
@@ -373,7 +353,7 @@ sub get_stored_location
         if ( my $row = $query->fetchrow_hashref )
         {
             $self->cache->{'userlocation'}{$author->{'id'}}{$name} = $row->{'location'};  # Cache this so we don't need to hit the DB all the time.
-            say localtime(time) . " Found stored DB location for " . $author->{'id'} . ": " . $row->{'location'};
+            $self->bot->log->debug("[Weather.pm] [get_stored_location] Found stored DB location for " . $author->{'id'} . ": " . $row->{'location'});
             return $row->{'location'};
         }
     }
@@ -390,7 +370,7 @@ sub get_stored_coords
     # 1 - Check Cache
     if ( exists $self->cache->{'coords'}{lc $location} )
     {
-        say localtime(time) . " Found cached coordinates for location '$location': " . $self->cache->{'coords'}{lc $location}{'address'};
+        $self->bot->log->debug("[Weather.pm] [get_stored_coords] Found cached coordinates for location '$location': " . $self->cache->{'coords'}{lc $location}{'address'});
         return $self->cache->{'coords'}{lc $location};
     }
     # 2 - Check DB
@@ -408,7 +388,7 @@ sub get_stored_coords
             $self->cache->{'coords'}{lc $location}{'lon'} = $row->{'lon'};
             $self->cache->{'coords'}{lc $location}{'address'} = $row->{'address'};
 
-            say localtime(time) . " Found stored DB coordinates for location '$location': " . $row->{'lat'} . ',' . $row->{'lon'} . " - " . $row->{'address'};
+            $self->bot->log->debug("[Weather.pm] [get_stored_coords] Found stored DB coordinates for location '$location': " . $row->{'lat'} . ',' . $row->{'lon'} . " - " . $row->{'address'});
             return $row;
         }
     }
@@ -455,7 +435,7 @@ sub add_user
 {
     my ($self, $discord_id, $discord_name, $location, $location_name) = @_;
 
-    say localtime(time) . " Command::Weather is adding a new mapping: $discord_id ($discord_name) -> $location";
+    $self->bot->log->debug("[Weather.pm] [add_user] Adding a new mapping: $discord_id ($discord_name) -> $location");
 
     my $db = $self->db;
     
@@ -473,7 +453,7 @@ sub add_coords
 {
     my ($self, $location, $lat, $lon, $address) = @_;
 
-    say localtime(time) . " Command::Weather is adding new coordinates: $location -> $lat,$lon ($address)";
+    $self->bot->log->debug("[Weather.pm] [add_coords] Adding new coordinates: $location -> $lat,$lon ($address)");
 
     my $db = $self->db;
 

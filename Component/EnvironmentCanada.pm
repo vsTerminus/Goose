@@ -44,7 +44,6 @@ async weather => sub
         my $p_code = $site->at('provinceCode')->text;
         next unless $name =~ /$city/i and lc $p_code eq lc $province;
 
-        say "FOUND: $site->{'code'}";
         $site_code = $site->{'code'};
         last;
     }
@@ -52,15 +51,12 @@ async weather => sub
     return undef unless defined $site_code;
 
     my $weather_url = $self->api_url . '/' . (uc $province) . '/' . $site_code . '_e.xml'; #_e for english
-    say "Found weather at: $weather_url";
 
     undef $tx; undef $dom;
     
     # Now get current conditions
     $tx = await $self->ua->get_p($weather_url);
-    say "Downloaded";
     $dom = Mojo::DOM->new->xml(1)->parse($tx->res->text);
-    say "Parsed";
     my $curr = $dom->at('currentConditions');
 
     # Extract values needed by weather command, put them in a hash.
@@ -70,38 +66,28 @@ async weather => sub
         'windSpeed_km'          => $curr->at('wind')->at('speed')->text,
         'humidity'              => $curr->at('relativeHumidity')->text,
     };
-    say "Base Values";
 
     # Looks like the Current Conditions and WindChill are sometimes blank with Environment Canada
     # so we need to handle that.
     $json->{'apparentTemperature_c'} = ( defined $curr->at('windChill') ? $curr->at('windChill')->text : $curr->at('temperature')->text );
 
     $json->{'summary'} = ( length $curr->at('condition')->text ? $curr->at('condition')->text : 'Unknown' );
-    say "Summary";
 
     if ( length $curr->at('iconCode')->text )
     {
-        say "Icon Code exists";
         $json->{'icon'}         = $curr->at('iconCode')->text,
         $json->{'icon_url'}     = icon_url($json->{'icon'}),
-        say "Icon URL";
         $json->{'icon_emote'}   = icon_emote($json->{'icon'}),
-        say "Icon Emote";
     }
-    say "Icon";
 
     # Tempature, Feels Like, and Wind Speed should be provided in both units.
     $json->{'temperature'}          = ctof($json->{'temperature_c'});
     $json->{'apparentTemperature'}  = ctof($json->{'apparentTemperature_c'});
     $json->{'windSpeed'}            = mph($json->{'windSpeed_km'});
-    say "Freedom Units";
-
-    say Dumper($json);
 
     # Weather Warnings
     if ( my $warn = $dom->at('warnings')->at('event') )
     {
-        say "Found a weather warning";
         $json->{'warning'} = $warn->{'description'};
     }
 
@@ -120,13 +106,13 @@ sub icon_emote
     my $code = shift;
 
     my %emotes = (
-        '0'   => ':sun_with_face:',
-        '1'   => ':sun_with_face:',
-        '2'   => ':partly_sunny:',
-        '3'   => ':partly_sunny:',
-        '6'   => ':cloud_rain:',
-        '7'   => ':cloud_rain:',
-        '8'   => ':cloud_snow:',
+        '00'   => ':sun_with_face:',
+        '01'   => ':sun_with_face:',
+        '02'   => ':partly_sunny:',
+        '03'   => ':partly_sunny:',
+        '06'   => ':cloud_rain:',
+        '07'   => ':cloud_rain:',
+        '08'   => ':cloud_snow:',
         '10'  => ':cloud:',
         '11'  => ':cloud_rain:',
         '12'  => ':cloud_rain:',
