@@ -100,17 +100,23 @@ async cmd_weather => sub
     # Handle empty args - Check to see if they have a saved location.
     if (!defined $args or length $args == 0 )
     {
-        say "Empty Args";
         $args = $self->get_stored_location($author);
 
         if ( !defined $args )
         {
-            my $msg = $author->{'username'} . ": Sorry, I don't have a default location for you on record.\n\n" .
-                "**Set your default location**\n" .
-                "- Use `!w set <location>`\n" .
-                "- Example, `!w set 10001` or `!w set Singapore`\n\n" .
-                "Your location can be a zip code, city name, postal code, or even street address.";
-            $discord->send_message($channel, $msg);
+            my $msg = 
+                "**How to set your default Weather location**\n\n" .
+                "`!w set <location>`\n\n" .
+                "Some examples:\n" .
+                "- By Zip Code: `!w set 60659`\n" .
+                "- By Postal Code: `!w set V5K 1B1`\n" .
+                "- By City Name: `!w set London, England` or `!w set London, ON`\n\n" .
+                "To update your location, just use the command again with a different location.\n" .
+                "You can set your default location here in the private message, or in any public channel.";
+
+            $discord->send_message($channel, 'Sorry ' . $author->{'username'} . ", I don't have a default location for you on record.");
+            $discord->send_dm($author->{'id'}, $msg);
+
             return;
         }
     }
@@ -134,7 +140,7 @@ async cmd_weather => sub
         {
             $self->add_user($author->{'id'}, $author->{'username'}, $location);
 
-            my $msg = $author->{'username'} . ": I have updated your default Weather location to `$location`\n";
+            my $msg = "Default weather location for " . $author->{'username'} . " is now: `$location`\n";
 
             $discord->send_message( $channel, $msg );
         
