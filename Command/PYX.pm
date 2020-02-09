@@ -42,8 +42,8 @@ sub cmd_pyx
     my $author = $msg->{'author'};
     my $args = $msg->{'content'};
 
-    $msg =~ s/[\`\*]//gs;
-    $msg =~ s/_+/____/gs;
+    $args =~ s/[\`\*]//gs;
+    $args =~ s/_+/____/gs;
 
     my $pattern = $self->pattern;
     $args =~ s/$pattern//si;
