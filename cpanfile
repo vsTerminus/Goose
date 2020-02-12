@@ -1,6 +1,6 @@
 # To use: cpanm --installdeps .
 requires 'Moo';                         # OO Framework
-requires 'strictures~2';                # Enables strict and warnings with specific settings
+requires 'strictures', '2';             # Enables strict and warnings with specific settings
 requires 'namespace::clean';            # Removes declared and imported symbols from your compiled package
 requires 'Mojo::Discord';               # Discord Library
 requires 'Mojo::WebService::LastFM';    # Last.FM Library
