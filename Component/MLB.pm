@@ -5,7 +5,6 @@ use Moo;
 use strictures 2;
 use Mojo::UserAgent;
 use Mojo::AsyncAwait;
-use Mojo::Promise;
 use Data::Dumper;
 use namespace::clean;
 
