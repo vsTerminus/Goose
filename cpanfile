@@ -1,6 +1,6 @@
 # To use: cpanm --installdeps .
 requires 'Moo';                         # OO Framework
-requires 'strictures', '2';             # Enables strict and warnings with specific settings
+requires 'strictures', '>= 2, <3';      # Enables strict and warnings with specific settings
 requires 'namespace::clean';            # Removes declared and imported symbols from your compiled package
 requires 'Mojo::Discord';               # Discord Library
 requires 'Mojo::WebService::LastFM';    # Last.FM Library
@@ -18,6 +18,8 @@ requires 'URI::Encode';                 # Used to encode any text to be URL safe
 requires 'Text::ASCIITable';            # Generate an ASCII table using data from perl structures
 requires 'Time::Duration';              # Used for uptime calculation currently
 requires 'DBI';                         # Database connection
+requires 'FindBin' => '1.51';           # For including libs in the project directory
+requires 'DateTime';                    # Used to get specifc-format unix epoch timestamps
 
 # Unit Tests
 requires 'Test::More';
