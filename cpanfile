@@ -20,8 +20,3 @@ requires 'Time::Duration';              # Used for uptime calculation currently
 requires 'DBI';                         # Database connection
 requires 'FindBin' => '1.51';           # For including libs in the project directory
 requires 'DateTime';                    # Used to get specifc-format unix epoch timestamps
-
-# Unit Tests
-requires 'Test::More';
-requires 'Mojo::Base';
-requires 'Mojolicious::Lite';
