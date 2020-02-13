@@ -192,7 +192,7 @@ sub nowplaying_by_username
     # Make sure to use the correct username in the output if that is the case.
     $discord_name = $user->{'username'} if defined $user and exists $user->{'username'};
 
-    $lastfm->nowplaying({ user => $username, callback => sub
+    $lastfm->nowplaying({ user => $username }, sub
     { 
         my $np_json = shift;
 
@@ -215,7 +215,7 @@ sub nowplaying_by_username
             my $embed = $self->to_embed($username, $np_json);
             $self->send_message($channel, $embed);
         }
-    }});
+    });
 }
 
 # Figure out whether to send via regular message or webhook, and then do so
