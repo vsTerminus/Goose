@@ -6,6 +6,9 @@ use warnings;
 
 binmode STDOUT, ":utf8";
 
+use FindBin 1.51 qw( $RealBin );
+use lib "$RealBin/lib";
+
 use Config::Tiny;
 use Bot::Goose;
 use Command::NowPlaying;
