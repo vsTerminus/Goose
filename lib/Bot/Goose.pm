@@ -18,6 +18,7 @@ use Component::CAH;
 use Component::UrbanDictionary;
 use Component::Twitch;
 use Component::Stats;
+use Component::Duolingo;
 
 use namespace::clean;
 
@@ -70,6 +71,13 @@ has cah                 => ( is => 'lazy', builder => sub { Component::CAH->new(
 has urbandictionary     => ( is => 'lazy', builder => sub { Component::UrbanDictionary->new() } );
 has twitch              => ( is => 'lazy', builder => sub { Component::Twitch->new('api_key' => shift->config->{'twitch'}{'api_key'}) } );
 has stats               => ( is => 'lazy', builder => sub { Component::Stats->new('db' => shift->db) } ); 
+has duolingo            => ( is => 'lazy', builder => sub { 
+    my $self = shift; 
+    Component::Duolingo->new(
+        'username'  => $self->config->{'duolingo'}{'username'},
+        'password'  => $self->config->{'duolingo'}{'password'},
+    ); 
+});
 
 has user_id             => ( is => 'rwp' );
 has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );

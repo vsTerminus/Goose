@@ -27,6 +27,7 @@ use Command::Twitch;
 use Command::Roll;
 use Command::MLB;
 use Command::Uptime;
+use Command::Duolingo;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -55,6 +56,7 @@ $bot->add_command( Command::Uptime->new         ('bot' => $bot) );
 $bot->add_command( Command::YouTube->new        ('bot' => $bot) )   if ( $config->{'youtube'}{'use_youtube'} );
 $bot->add_command( Command::NowPlaying->new     ('bot' => $bot) )   if ( $config->{'lastfm'}{'use_lastfm'} );
 $bot->add_command( Command::PYX->new            ('bot' => $bot) )   if ( $config->{'cah'}{'use_cah'} );
+$bot->add_command( Command::Duolingo->new       ('bot' => $bot) )   if ( $config->{'duolingo'}{'use_duolingo'} );
 
 # Start the bot
 $bot->start();
