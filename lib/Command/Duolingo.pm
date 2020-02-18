@@ -17,6 +17,7 @@ has bot                 => ( is => 'ro' );
 has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
 has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 has duo                 => ( is => 'lazy', builder => sub { shift->bot->duolingo } );
+has db                  => ( is => 'lazy', builder => sub { shift->bot->db } );
 
 has name                => ( is => 'ro', default => 'Duolingo' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
@@ -37,6 +38,14 @@ sub cmd_duolingo
 {
     my ($self, $msg) = @_;
 
+    # Check for login
+    unless ( $self->duo->jwt )
+    {
+        $self->duo->login_p()->then(sub{ $self->cmd_duolingo($msg) });
+        return undef;
+    }
+
+
     my $channel = $msg->{'channel_id'};
     my $author = $msg->{'author'};
 
@@ -45,35 +54,84 @@ sub cmd_duolingo
     my $pattern = $self->pattern;
     $args =~ s/$pattern//;
 
-    $self->duo->get_user_info_p($args)->then(sub
+    my $duo_user;
+
+    # !duo
+    if ( length $args == 0 )
     {
-        my $json = shift;
-        my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
-
-        if (my $hook = $self->bot->has_webhook($channel) )
+        # Stored ID
+        if ( my $duo_id = $self->_get_stored_id($author->{'id'}) )
         {
-            my $message = {
-                'content' => $content,
-                'embeds' => undef,
-                'username' => $json->{'fullname'},
-                'avatar_url' => $json->{'avatar'},
-            };
-
-            $self->discord->send_webhook($channel, $hook, $message);
+            $self->log->debug('[Duolingo.pm] [cmd_duolingo] Found stored Duolingo ID (' . $duo_id . ') for Discord ID ' . $author->{'id'});
+            say "Found stored ID: " . $duo_id;
+            $duo_user = $duo_id;
         }
+        # Not stored
         else
         {
-            my $message = $content;
-            $self->discord->send_message($channel, $message);
+            $self->discord->send_message($channel, "Sorry, I don't have your duolingo username on file.");
+            $self->discord->send_dm($author->{'id'}, <<EOF
+To set your Duolingo username use the following command: `!duo set <your username>`
+
+For example, `!duo set TheLegend27`
+
+You can do that here or in a public channel. Once set you'll be able to use `!duo`.
+EOF
+);
         }
-    });
+    }
+    # !duo set <username>
+    elsif ( $args =~ /^set (.+)$/ )
+    {
+        say "Setting Duolingo username: " . $1;
+        $self->duo->user_info_p($1)->then(sub
+        {
+            my $json = shift;
+            my $duo_id = $json->{'id'};
+
+            $self->db->query('INSERT INTO duolingo VALUES ( ?, ? )', $author->{'id'}, $duo_id);
+            $self->discord->send_message($channel, "Your Duolingo account info has been updated.");
+        });
+    }
+    else
+    {
+        $duo_user = $args;
+    }
+
+    # We have a username/id, whether it was stored or passed
+    if ( defined $duo_user )
+    {
+        say '$duo_user is ' . $duo_user;
+        $self->duo->user_info_p($duo_user)->then(sub
+        {
+            my $json = shift;
+            $self->log->debug(Dumper($json));
+            my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
+
+            if (my $hook = $self->bot->has_webhook($channel) )
+            {
+                my $message = {
+                    'content' => $content,
+                    'username' => $json->{'fullname'},
+                    'avatar_url' => 'http://i.imgur.com/EdGBXeW.png', # Duolingo owl
+                };
+
+                $self->discord->send_webhook($channel, $hook, $message);
+            }
+            else
+            {
+                my $message = $content;
+                $self->discord->send_message($channel, $message);
+            }
+        });
+    }
 }
 
 sub _build_message
 {
     my ($self, $json) = @_;
 
-    $self->bot->log->debug($json);
+    #    $self->log->debug($json);
 
     my $lang_abbr = $json->{'learning_language'};
     my $lang_data = $json->{'language_data'}{$lang_abbr};
@@ -84,15 +142,27 @@ sub _build_message
     say "Streak: " . $lang_data->{'streak'};
     say "Extended: " . $json->{'streak_extended_today'};
 
-    my $msg = "```\n" .
-    "Learning:       " . $json->{'learning_language_string'} . "\n" .
-    "Level:          " . $lang_data->{'level'} . "\n" .
-    "Next Lesson:    " . $lang_data->{'next_lesson'}{'skill_title'} . "\n" .
-    "Current Streak: " . $lang_data->{'streak'} . "\n```\n\n";
-
-    ( $json->{'streak_extended_today'} ) ? $msg .= "Streak extended today!" : $msg .= "Streak has not been extended yet today.";
+    my $msg = ":flag_" . $lang_abbr . ": " . $json->{'learning_language_string'} . " - " . $lang_data->{'streak'} . " day";
+    $msg .= "s" if $lang_data->{'streak'} != 1;
+    $msg .= "! :fire:" if $json->{'streak_extended_today'}; # Fire emoji if streak extended today
+    $msg .= "\nLevel " . $lang_data->{'level'} . " - " . $lang_data->{'next_lesson'}{'skill_title'};
 
     return $msg;
+}
+
+sub _get_stored_id
+{
+    my ($self, $discord_id) = @_;
+
+    say "Looking up Duo ID for Discord ID " . $discord_id;
+    my $query = $self->db->query('SELECT * from duolingo where discord_id = ?', $discord_id);
+   
+    if ( my $row = $query->fetchrow_hashref )
+    {
+        say Dumper($row);
+        return $row->{'duolingo_id'};
+    }
+    return undef;
 }
 
 

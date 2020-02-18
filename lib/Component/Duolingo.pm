@@ -11,6 +11,7 @@ use namespace::clean;
 
 has api_url         => ( is => 'ro', default => 'https://www.duolingo.com/api/1' );
 has login_url       => ( is => 'ro', default => 'https://www.duolingo.com/login' );
+has leaderboard_url => ( is => 'ro', default => 'https://www.duolingo.com/friendships/leaderboard_activity' );
 has dict_base_url   => ( is => 'lazy', builder => sub { shift->_dict_base_url_p(); } );
 has ua              => ( is => 'lazy', builder => sub 
 { 
@@ -24,7 +25,7 @@ has password        => ( is => 'ro' );
 has jwt             => ( is => 'rw' );
 has user_id         => ( is => 'rw' );
 
-sub _login_p
+sub login_p
 {
     my ($self) = @_;
 
@@ -116,37 +117,51 @@ sub version_info_p
 }
 
 
-sub get_user_info
+sub user_info
 {
     my ($self, $user, $callback) = @_;
 
-    # Be smarter... decode the token and look at the expiry time before getting a new one.
-    my $json;
-    $self->_login_p()->then(sub
+    say "user_info for '$user'";
+    return undef unless defined $user;
+
+    my $url = $self->api_url;
+
+    # Accept ID or Username.
+    $url .= ( $user =~ /^\d+$/ ? '/users/show?id=' . $user : '/users/show?username=' . $user );
+
+    say "URL: $url";
+
+    $self->ua->get($url => sub
     {
-        my $url = $self->api_url . '/users/show?username=' . $user;
+        my ($ua, $tx) = @_;
 
-        $self->ua->get($url => sub
-        {
-            my ($ua, $tx) = @_;
-
-            $callback->($tx->res->json) if defined $callback;
-        });
+        $callback->($tx->res->json) if defined $callback;
     });
 }
 
-sub get_user_info_p
+sub user_info_p
 {
     my ($self, $user) = @_;
 
     my $promise = Mojo::Promise->new;
 
-    $self->get_user_info($user, sub
+    $self->user_info($user, sub
     {
         $promise->resolve(shift);
     });
 
     return $promise;
+}
+
+sub leaderboard
+{
+    my ($self, $unit, $before) = @_;
+
+    # Unit can be week or month
+    # before is a datetime in format '2015-07-06 05:42:24'
+
+    my $url = $self->leaderboard_url . '?unit=' . $unit . '&_=time';
+
 }
 
 1;
