@@ -201,6 +201,7 @@ sub _flag
         'nn'    => 'no', # Nynorsk -> Norway
         'nb'    => 'no', # Bokmål -> Norway
         'ja'    => 'jp', # Japanese -> Japan
+        'zs'    => 'cn', # Chinese -> China
     );
 
     my $flag = ":flag_";
