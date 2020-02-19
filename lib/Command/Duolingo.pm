@@ -107,7 +107,7 @@ EOF
             my $json = shift;
             my $duo_id = $json->{'id'};
 
-            $self->db->query('INSERT INTO duolingo VALUES ( ?, ? )', $author->{'id'}, $duo_id);
+            $self->db->query('INSERT INTO duolingo VALUES ( ?, ?, ? )', $author->{'id'}, $duo_id, 0);
             $self->discord->send_message($channel, "Your Duolingo account info has been updated.");
         });
     }
