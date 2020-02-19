@@ -153,8 +153,8 @@ EOF
                 my $json = shift;
                 
                 $self->cache->{$duo_user}{'json'} = $json;
-                $self->cache->{$duo_user}{'expires'} = time + 300;    # Cache for 5 minutes
-                Mojo::IOLoop->timer(301 => sub { delete $self->cache->{$duo_user} if time > $self->cache->{$duo_user}{'expires'}; }); # Clean up cache entries after 5 minutes
+                $self->cache->{$duo_user}{'expires'} = time + 60;    # Cache for 1 minute
+                Mojo::IOLoop->timer(61 => sub { delete $self->cache->{$duo_user} if time > $self->cache->{$duo_user}{'expires'}; }); # Clean up cache entries after 5 minutes
         
                 my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
 
