@@ -6,6 +6,7 @@ use strictures 2;
 
 use Mojo::UserAgent;
 use Mojo::Promise;
+use URI::Encode;
 use Data::Dumper;
 use namespace::clean;
 
@@ -24,6 +25,7 @@ has username        => ( is => 'ro' );
 has password        => ( is => 'ro' );
 has jwt             => ( is => 'rw' );
 has user_id         => ( is => 'rw' );
+has uri             => ( is => 'lazy', builder => sub { URI::Encode->new });
 
 sub login_p
 {
@@ -155,13 +157,49 @@ sub user_info_p
 
 sub leaderboard
 {
-    my ($self, $unit, $before) = @_;
+    my ($self, $unit, $before, $callback) = @_;
 
     # Unit can be week or month
-    # before is a datetime in format '2015-07-06 05:42:24'
+    # before is a datetime in format '2015.07.06 05:42:24'
 
-    my $url = $self->leaderboard_url . '?unit=' . $unit . '&_=time';
+    my $url = $self->leaderboard_url . '?unit=' . $unit . '&_=' . $before;
+    
+    say "URL: $url";
+    say "Encoded URL: " . $self->uri->encode($url);
 
+    $self->ua->get( $self->uri->encode($url) => sub
+    {
+        my ($ua, $tx) = @_;
+
+        if ( $tx->result )
+        {
+            say "Result";
+            $callback->($tx->res->json) if defined $callback;
+        }
+        elsif ( my $err = $tx->error )
+        {
+            say "Error";
+            $callback->($err) if defined $callback;
+        }
+        else
+        {
+            say "Else?";
+        }
+    });
+}
+
+sub leaderboard_p
+{
+    my ($self, $unit, $before) = @_;
+
+    my $promise = Mojo::Promise->new;
+
+    $self->leaderboard($unit, $before, sub
+    {
+        $promise->resolve(shift);
+    });
+
+    return $promise;
 }
 
 1;

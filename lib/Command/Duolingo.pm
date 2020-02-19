@@ -6,6 +6,7 @@ use strictures 2;
 
 use Component::Duolingo;
 use Mojo::Promise;
+use DateTime;
 use Data::Dumper;
 
 use namespace::clean;
@@ -63,7 +64,6 @@ sub cmd_duolingo
         if ( my $duo_id = $self->_get_stored_id($author->{'id'}) )
         {
             $self->log->debug('[Duolingo.pm] [cmd_duolingo] Found stored Duolingo ID (' . $duo_id . ') for Discord ID ' . $author->{'id'});
-            say "Found stored ID: " . $duo_id;
             $duo_user = $duo_id;
         }
         # Not stored
@@ -80,10 +80,28 @@ EOF
 );
         }
     }
+    # !duo top##
+    elsif ( $args =~ /^top ?(\d+)$/ )
+    {
+        my $num = ( $1 > 0 and $1 <= 10 ? $1 : 10 );
+
+        say "Displaying the Top $num people on the leaderboard";
+
+        my $dt = DateTime->now;
+        #        $dt->set_timezone('America/Winnipeg');
+
+        my $timestamp = $dt->strftime("%Y.%m.%d %H:%M:%S");
+        say "Timestamp: $timestamp";
+        $self->duo->leaderboard_p('week', $timestamp)->then(sub
+        { 
+            my $json = shift;
+
+            say Data::Dumper->Dump([$json], ['json']);
+        });
+    }
     # !duo set <username>
     elsif ( $args =~ /^set (.+)$/ )
     {
-        say "Setting Duolingo username: " . $1;
         $self->duo->user_info_p($1)->then(sub
         {
             my $json = shift;
@@ -101,11 +119,9 @@ EOF
     # We have a username/id, whether it was stored or passed
     if ( defined $duo_user )
     {
-        say '$duo_user is ' . $duo_user;
         $self->duo->user_info_p($duo_user)->then(sub
         {
             my $json = shift;
-            $self->log->debug(Dumper($json));
             my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
 
             if (my $hook = $self->bot->has_webhook($channel) )
@@ -131,21 +147,45 @@ sub _build_message
 {
     my ($self, $json) = @_;
 
-    #    $self->log->debug($json);
-
     my $lang_abbr = $json->{'learning_language'};
     my $lang_data = $json->{'language_data'}{$lang_abbr};
 
-    say "Learning: " . $lang_abbr . " " . $json->{'learning_language_string'};
-    say "Level: " . $lang_data->{'level'};
-    say "Next: " . $lang_data->{'next_lesson'}{'skill_title'};
-    say "Streak: " . $lang_data->{'streak'};
-    say "Extended: " . $json->{'streak_extended_today'};
+    #    $self->log->debug(Dumper($json));
+    # say Dumper($json->{'calendar'});
 
-    my $msg = ":flag_" . $lang_abbr . ": " . $json->{'learning_language_string'} . " - " . $lang_data->{'streak'} . " day";
+    my $now = DateTime->now;
+    $now->set_time_zone('America/Winnipeg');
+
+    # Use the calendar structure to figure out how much XP the user has today
+    my $xp = 0;
+    my $calendar = $json->{'calendar'};
+    foreach my $event (@{$calendar})
+    {
+        if ( exists $event->{'datetime'} )
+        {
+            my $dt = DateTime->from_epoch(epoch => substr( $event->{'datetime'}, 0, 10 ) );
+            $dt->set_time_zone('America/Winnipeg');
+
+            if ( $dt->day == $now->day )
+            {
+                $xp += $event->{'improvement'};
+                say $event->{'event_type'} . " => " . $event->{'improvement'} . " XP";
+            }
+        }
+        else
+        {
+            say Dumper($event);
+        }
+    }
+
+    my $msg = '';
+    # Flag Language - Level
+    # Streak - Exp Today
+    $msg .= ":flag_" . $lang_abbr . ": " . $json->{'learning_language_string'} . " - " . " Level " . $lang_data->{'level'} . "\n";
+    $msg .= ":fire: " if $json->{'streak_extended_today'}; # Fire emoji if streak extended today
+    $msg .= $lang_data->{'streak'} . " day";
     $msg .= "s" if $lang_data->{'streak'} != 1;
-    $msg .= "! :fire:" if $json->{'streak_extended_today'}; # Fire emoji if streak extended today
-    $msg .= "\nLevel " . $lang_data->{'level'} . " - " . $lang_data->{'next_lesson'}{'skill_title'};
+    $msg .= " - $xp XP Today";
 
     return $msg;
 }
@@ -154,12 +194,10 @@ sub _get_stored_id
 {
     my ($self, $discord_id) = @_;
 
-    say "Looking up Duo ID for Discord ID " . $discord_id;
     my $query = $self->db->query('SELECT * from duolingo where discord_id = ?', $discord_id);
    
     if ( my $row = $query->fetchrow_hashref )
     {
-        say Dumper($row);
         return $row->{'duolingo_id'};
     }
     return undef;
