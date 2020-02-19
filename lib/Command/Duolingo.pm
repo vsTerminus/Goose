@@ -119,13 +119,15 @@ EOF
     # !duo set <username>
     elsif ( $args =~ /^set (.+)$/ )
     {
-        $self->duo->user_info_p($1)->then(sub
+        my $duo_user = $1;
+        $self->duo->user_info_p($duo_user)->then(sub
         {
             my $json = shift;
             my $duo_id = $json->{'id'};
 
+            $self->db->query('DELETE FROM duolingo WHERE discord_id = ?', $author->{'id'});
             $self->db->query('INSERT INTO duolingo VALUES ( ?, ?, ? )', $author->{'id'}, $duo_id, 0);
-            $self->discord->send_message($channel, "Your Duolingo account info has been updated.");
+            $self->discord->send_message($channel, "Your duolingo username is now: " . $duo_user);
         });
     }
     else
