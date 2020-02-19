@@ -101,3 +101,14 @@ api_url = http://0:8080
 [twitch]
 use_twitch = 1
 api_key = xxx
+
+# This section is for Duolingo integration.
+# You can pull user info / stats from that service, but it requires a login.
+# If you do this, I strongly recommend you create a new account just for your bot to use.
+# You don't want to log in with your personal account for a variety of reasons.
+#
+# If you don't want to enable the duolingo command, set "use_duolingo" to 0.
+[duolingo]
+use_duolingo = 1
+username = TheLegend27
+password = Pa55w0rd
