@@ -19,6 +19,7 @@ has discord             => ( is => 'lazy', builder => sub { shift->bot->discord 
 has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 has duo                 => ( is => 'lazy', builder => sub { shift->bot->duolingo } );
 has db                  => ( is => 'lazy', builder => sub { shift->bot->db } );
+has cache               => ( is => 'rw',   default => sub { {} });
 
 has name                => ( is => 'ro', default => 'Duolingo' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
@@ -119,28 +120,56 @@ EOF
     # We have a username/id, whether it was stored or passed
     if ( defined $duo_user )
     {
-        $self->duo->user_info_p($duo_user)->then(sub
+        if ( exists $self->cache->{$duo_user} and time <= $self->cache->{$duo_user}{'expires'} )
         {
-            my $json = shift;
-            my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
+            say "Cached!";
+            my $json = $self->cache->{$duo_user}{'json'};
 
-            if (my $hook = $self->bot->has_webhook($channel) )
-            {
-                my $message = {
-                    'content' => $content,
-                    'username' => $json->{'fullname'},
-                    'avatar_url' => 'http://i.imgur.com/EdGBXeW.png', # Duolingo owl
-                };
+            my $content = $self->_build_message($json);
 
-                $self->discord->send_webhook($channel, $hook, $message);
-            }
-            else
+            $self->_send_content($channel, $json->{'fullname'}, $content);
+        }
+        else
+        {
+            say "Not Cached";
+            $self->duo->user_info_p($duo_user)->then(sub
             {
-                my $message = $content;
-                $self->discord->send_message($channel, $message);
-            }
-        });
+                my $json = shift;
+                
+                $self->cache->{$duo_user}{'json'} = $json;
+                $self->cache->{$duo_user}{'expires'} = time + 300;    # Cache for 5 minutes
+        
+                my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
+
+                $self->_send_content($channel, $json->{'fullname'}, $content);
+            });
     }
+    }
+}
+
+# Handles choosing between a webhook or a message
+sub _send_content
+{
+    my ($self, $channel, $username, $content) = @_;
+
+
+    if (my $hook = $self->bot->has_webhook($channel) )
+    {
+        my $message = {
+            'content' => $content,
+            'username' => $username,
+            'avatar_url' => 'http://i.imgur.com/EdGBXeW.png', # Duolingo owl
+        };
+
+        $self->discord->send_webhook($channel, $hook, $message);
+    }
+    else
+    {
+        my $message = $content;
+        $self->discord->send_message($channel, $message);
+    }
+
+
 }
 
 # Takes a language code and returns a flag emoji
