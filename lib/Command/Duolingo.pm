@@ -151,6 +151,7 @@ sub _flag
     my %flags = (
         'nn'    => 'no', # Nynorsk -> Norway
         'nb'    => 'no', # Bokmål -> Norway
+        'ja'    => 'jp', # Japanese -> Japan
     );
 
     my $flag = ":flag_";
