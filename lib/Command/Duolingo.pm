@@ -120,7 +120,7 @@ EOF
     elsif ( $args =~ /^set (.+)$/i )
     {
         my $duo_user = $1;
-        $dip_user =~ s/^username //i;
+        $duo_user =~ s/^username //i;
         $self->duo->user_info_p($duo_user)->then(sub
         {
             my $json = shift;
