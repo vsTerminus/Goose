@@ -82,6 +82,21 @@ EOF
 );
         }
     }
+    # !duo @user
+    elsif ( $args =~ /\<\@\&?\!?(\d+)\>/ )
+    {
+        my $discord_id = $1;
+        
+        if ( my $duo_id = $self->_get_stored_id($discord_id) )
+        {
+            $self->log->debug('[Duolingo.pm] [cmd_duolingo] Found stored Duolingo ID (' . $duo_id . ') for Discord ID ' . $discord_id);
+            $duo_user = $duo_id;
+        }
+        else
+        {
+            $self->discord->send_message($channel, "Sorry, I don't have a duolingo username on file for that person.");
+        }
+    }
     # !duo top##
     elsif ( $args =~ /^top ?(\d+)$/ )
     {
