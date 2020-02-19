@@ -143,11 +143,29 @@ EOF
     }
 }
 
+# Takes a language code and returns a flag emoji
+sub _flag
+{
+    my ($self, $lang) = @_;
+
+    my %flags = (
+        'nn'    => 'no', # Nynorsk -> Norway
+        'nb'    => 'no', # Bokmål -> Norway
+    );
+
+    my $flag = ":flag_";
+    $flag .= ( exists $flags{$lang} ? $flags{$lang} : $lang );
+    $flag .= ":";
+
+    return $flag;
+}
+
 sub _build_message
 {
     my ($self, $json) = @_;
 
     my $lang_abbr = $json->{'learning_language'};
+    my $flag = $self->_flag($lang_abbr); # Countries with multiple languages will have multiple language codes that may not match a country flag. We can fix these as we find them.
     my $lang_data = $json->{'language_data'}{$lang_abbr};
 
     #    $self->log->debug(Dumper($json));
@@ -181,7 +199,7 @@ sub _build_message
     my $msg = '';
     # Flag Language - Level
     # Streak - Exp Today
-    $msg .= ":flag_" . $lang_abbr . ": " . $json->{'learning_language_string'} . " - " . " Level " . $lang_data->{'level'} . "\n";
+    $msg .= $flag . ' ' . $json->{'learning_language_string'} . " - " . " Level " . $lang_data->{'level'} . "\n";
     $msg .= ":fire: " if $json->{'streak_extended_today'}; # Fire emoji if streak extended today
     $msg .= $lang_data->{'streak'} . " day";
     $msg .= "s" if $lang_data->{'streak'} != 1;
