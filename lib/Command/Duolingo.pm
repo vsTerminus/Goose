@@ -6,6 +6,7 @@ use strictures 2;
 
 use Component::Duolingo;
 use Mojo::Promise;
+use Mojo::IOLoop;
 use DateTime;
 use Data::Dumper;
 
@@ -138,6 +139,7 @@ EOF
                 
                 $self->cache->{$duo_user}{'json'} = $json;
                 $self->cache->{$duo_user}{'expires'} = time + 300;    # Cache for 5 minutes
+                Mojo::IOLoop->timer(301 => sub { delete $self->cache->{$duo_user} if time > $self->cache->{$duo_user}{'expires'}; }); # Clean up cache entries after 5 minutes
         
                 my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
 
