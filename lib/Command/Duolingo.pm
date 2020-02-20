@@ -116,20 +116,49 @@ EOF
             say Data::Dumper->Dump([$json], ['json']);
         });
     }
-    # !duo set <username>
+    # !duo set <[username]|[timezone]>
     elsif ( $args =~ /^set (.+)$/i )
     {
         my $duo_user = $1;
-        $duo_user =~ s/^username //i;
-        $self->duo->user_info_p($duo_user)->then(sub
-        {
-            my $json = shift;
-            my $duo_id = $json->{'id'};
+        my $timezone;
+        
+        $duo_user =~ s/ ?username //i;
+        $duo_user =~ s/ ?timezone //i;
 
-            $self->db->query('DELETE FROM duolingo WHERE discord_id = ?', $author->{'id'});
-            $self->db->query('INSERT INTO duolingo VALUES ( ?, ?, ? )', $author->{'id'}, $duo_id, 0);
-            $self->discord->send_message($channel, "Your duolingo username is now: " . $duo_user);
-        });
+        # Look for a Timezone string, eg "America/Winnipeg" or "America/Kentucky/Louisville"
+        if ( $duo_user =~ /([a-z-_]+\/[a-z-_]+(\/[a-z-_]+)?)/i )
+        {
+           $timezone = $1;
+           say "Detected Timezone: " . Dumper($timezone);
+
+           $duo_user =~ s/ ?$timezone ?//; # Remove it, leaving just the user name (or nothing)
+        }
+
+        $duo_user =~ s/\s//g; # Remove spaces from username (if there are any)
+
+        if ( length $duo_user )
+        {
+            $self->duo->user_info_p($duo_user)->then(sub
+            {
+                my $json = shift;
+                my $duo_id = $json->{'id'};
+
+                if ( $timezone )
+                {
+                    $self->db->query('INSERT INTO duolingo (discord_id, duolingo_id, timezone) VALUES ( ?, ?, ? ) ON DUPLICATE KEY UPDATE duolingo_id = ?, timezone = ?', $author->{'id'}, $duo_id, $timezone, $duo_id, $timezone);
+                }
+                else
+                {    
+                    $self->db->query('INSERT INTO duolingo (discord_id, duolingo_id) VALUES ( ?, ? ) ON DUPLICATE KEY UPDATE duolingo_id = ?', $author->{'id'}, $duo_id, $duo_id);
+                }
+                $self->discord->send_message($channel, "Your duolingo username is now: " . $duo_user);
+            });
+        }
+        else # Just update the timezone
+        {
+            $self->db->query('UPDATE duolingo SET timezone = ? WHERE discord_id = ?', $timezone, $author->{'id'});
+            $self->discord->send_message($channel, "Your timezone is now: " . $timezone);
+        }
     }
     else
     {
@@ -221,11 +250,10 @@ sub _build_message
     my $flag = $self->_flag($lang_abbr); # Countries with multiple languages will have multiple language codes that may not match a country flag. We can fix these as we find them.
     my $lang_data = $json->{'language_data'}{$lang_abbr};
 
-    #    $self->log->debug(Dumper($json));
-    # say Dumper($json->{'calendar'});
-
-    my $now = DateTime->now;
-    $now->set_time_zone('America/Winnipeg');
+    my $query = $self->db->query('SELECT timezone FROM duolingo WHERE duolingo_id = ?', $json->{'id'});
+    my $row = $query->fetchrow_hashref;
+    my $timezone = ( $row ? $row->{'timezone'} : 'America/Winnipeg' );
+    my $now = DateTime->now(time_zone => $timezone);
 
     # Use the calendar structure to figure out how much XP the user has today
     my $xp = 0;
@@ -234,8 +262,10 @@ sub _build_message
     {
         if ( exists $event->{'datetime'} )
         {
-            my $dt = DateTime->from_epoch(epoch => substr( $event->{'datetime'}, 0, 10 ) );
-            $dt->set_time_zone('America/Winnipeg');
+            my $dt = DateTime->from_epoch(
+                epoch => substr( $event->{'datetime'}, 0, 10 ),
+                time_zone => $timezone,
+            );
 
             if ( $dt->day == $now->day )
             {
@@ -268,9 +298,7 @@ sub _build_message
     $msg .= 's' if $crowns != 1;
     $msg .= " - " . $lessons . " Lesson";
     $msg .= 's' if $lessons != 1;
-    $msg .= "\n";
-    $msg .= ":fire: " if $json->{'streak_extended_today'}; # Fire emoji if streak extended today
-    $msg .= $lang_data->{'streak'} . " day";
+    $msg .= "\n:fire: " . $lang_data->{'streak'} . " day";
     $msg .= "s" if $lang_data->{'streak'} != 1;
     $msg .= " - $xp XP Today";
 
