@@ -247,10 +247,21 @@ sub _build_message
         }
     }
 
+    # Use the language_data structure to count crowns ("levels_finished")
+    my $crowns = 0;
+    foreach my $skill (@{$lang_data->{'skills'}})
+    {
+        $crowns += $skill->{'levels_finished'};
+        #say "" . $skill->{'title'} . ' => ' . $skill->{'levels_finished'} . ' => ' . $crowns if $skill->{'levels_finished'};
+    }
+
     my $msg = '';
     # Flag Language - Level
     # Streak - Exp Today
-    $msg .= $flag . ' ' . $json->{'learning_language_string'} . " - " . " Level " . $lang_data->{'level'} . "\n";
+    $msg .= $flag . ' ' . $json->{'learning_language_string'};
+    $msg .= " - " . $lang_data->{'points'} . " XP\n";
+    $msg .= ":crown: " . $crowns . " Crown";
+    $msg .= ( $crowns != 1 ? "s\n" : "\n" );
     $msg .= ":fire: " if $json->{'streak_extended_today'}; # Fire emoji if streak extended today
     $msg .= $lang_data->{'streak'} . " day";
     $msg .= "s" if $lang_data->{'streak'} != 1;
