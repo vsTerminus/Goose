@@ -192,7 +192,7 @@ sub nowplaying_by_username
     # Make sure to use the correct username in the output if that is the case.
     $discord_name = $user->{'username'} if defined $user and exists $user->{'username'};
 
-    $lastfm->nowplaying({ user => $username }, sub
+    $lastfm->nowplaying({ username => $username }, sub
     { 
         my $np_json = shift;
 
