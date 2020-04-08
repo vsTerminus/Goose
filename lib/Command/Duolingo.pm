@@ -327,7 +327,7 @@ sub _build_message
 
     $query = $self->db->query('SELECT extra_crowns FROM duolingo_extra_crowns WHERE duolingo_id = ? and current_course = ?', $json->{'id'}, $lang_abbr);
     $row = $query->fetchrow_hashref;
-    my $extra_crowns = $row->{'extra_crowns'} // 0;
+    my $extra = $row->{'extra_crowns'} // 0;
 
     # Use the calendar structure to figure out how much XP the user has today
     my $xp = 0;
@@ -354,7 +354,7 @@ sub _build_message
     }
 
     # Use the language_data structure to count crowns ("levels_finished")
-    my $crowns = $extra_crowns;
+    my $crowns = 0;
     my $lessons = 0;
     foreach my $skill (@{$lang_data->{'skills'}})
     {
@@ -363,12 +363,13 @@ sub _build_message
         #say "" . $skill->{'title'} . ' => ' . $skill->{'levels_finished'} . ' => ' . $crowns if $skill->{'levels_finished'};
     }
 
+    my $total = $crowns + $extra;
     my $msg = '';
     # Flag Language - Level
     # Streak - Exp Today
     $msg .= $flag . ' ' . $json->{'learning_language_string'};
     $msg .= " - " . $lang_data->{'points'} . " XP\n";
-    $msg .= ":crown: " . $crowns . " Crown";
+    $msg .= ( $extra > 0 ) ? ( ":crown: " . $crowns . '+' . $extra . ' Crown' ) : ( ":crown: " . $crowns . " Crown" );
     $msg .= 's' if $crowns != 1;
     $msg .= " - " . $lessons . " Lesson";
     $msg .= 's' if $lessons != 1;
