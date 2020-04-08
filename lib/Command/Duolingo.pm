@@ -63,7 +63,7 @@ sub cmd_duolingo
     if ( length $args == 0 )
     {
         # Stored ID
-        if ( my $duo_id = $self->_get_stored_id($author->{'id'}) )
+        if ( my $duo_id = $self->_duo_id($author->{'id'}) )
         {
             $self->log->debug('[Duolingo.pm] [cmd_duolingo] Found stored Duolingo ID (' . $duo_id . ') for Discord ID ' . $author->{'id'});
             $duo_user = $duo_id;
@@ -87,7 +87,7 @@ EOF
     {
         my $discord_id = $1;
         
-        if ( my $duo_id = $self->_get_stored_id($discord_id) )
+        if ( my $duo_id = $self->_duo_id($discord_id) )
         {
             $self->log->debug('[Duolingo.pm] [cmd_duolingo] Found stored Duolingo ID (' . $duo_id . ') for Discord ID ' . $discord_id);
             $duo_user = $duo_id;
@@ -160,6 +160,48 @@ EOF
             $self->discord->send_message($channel, "Your timezone is now: " . $timezone);
         }
     }
+    # !duo extra <extra crowns amount>
+    elsif ( $args =~ /^extra (.+)/i )
+    {
+        my $extra = $1;
+        if ( $extra >=0 and $extra <= 255 )
+        {
+            # Need the Duo ID
+            my $duo_id = $self->_duo_id($author->{'id'});
+
+            unless ( defined $duo_id )
+            {
+                $self->discord->send_message($channel, "Sorry, I don't have your account on record. Please try `!duo help` for more information.");
+                return;
+            }
+
+            $self->duo->user_info_p($duo_id)->then(sub
+            {
+                my $json = shift;
+                my $current_course = $json->{'learning_language'};
+
+                $self->_cache_content($duo_id, $json);
+                $self->_store_current_course($json);
+      
+                $self->db->query('INSERT INTO duolingo_extra_crowns ( duolingo_id, current_course, extra_crowns ) VALUES ( ?, ?, ?) ON DUPLICATE KEY UPDATE extra_crowns = ?', $duo_id, $current_course, $extra, $extra);
+                $self->discord->send_message($channel, "Your Extra Crowns: " . $extra );
+            });
+
+        }
+        else
+        {
+            $self->discord->send_message($channel, "Sorry, valid range is 0-255");
+        }
+    }
+    # !duo extra
+    elsif ( $args =~ /^extra$/ )
+    {
+        my $query = 'SELECT a.current_course, a.extra_crowns FROM duolingo_extra_crowns a LEFT JOIN duolingo b ON a.current_course = b.current_course WHERE b.discord_id = ?';
+        my $dbh = $self->db->query($query, $author->{'id'});
+        my $row = $dbh->fetchrow_hashref;
+        my $extra = $row->{'extra_crowns'} // 0;
+        $self->discord->send_message($channel, "You currently have $extra extra crowns");
+    }
     else
     {
         $duo_user = $args;
@@ -170,7 +212,6 @@ EOF
     {
         if ( exists $self->cache->{$duo_user} and time <= $self->cache->{$duo_user}{'expires'} )
         {
-            say "Cached!";
             my $json = $self->cache->{$duo_user}{'json'};
 
             my $content = $self->_build_message($json);
@@ -179,21 +220,50 @@ EOF
         }
         else
         {
-            say "Not Cached";
             $self->duo->user_info_p($duo_user)->then(sub
             {
                 my $json = shift;
-                
-                $self->cache->{$duo_user}{'json'} = $json;
-                $self->cache->{$duo_user}{'expires'} = time + 60;    # Cache for 1 minute
-                Mojo::IOLoop->timer(61 => sub { delete $self->cache->{$duo_user} if time > $self->cache->{$duo_user}{'expires'}; }); # Clean up cache entries after 5 minutes
-        
+    
+                $self->_cache_content($duo_user, $json);
+                $self->_store_current_course($json);
+      
                 my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
 
                 $self->_send_content($channel, $json->{'fullname'}, $content);
             });
     }
     }
+}
+
+sub _cache_content
+{
+    my ($self, $duo_user, $json) = @_;
+
+    $self->cache->{$duo_user}{'json'} = $json;
+    $self->cache->{$duo_user}{'expires'} = time + 60;    # Cache for 1 minute
+    Mojo::IOLoop->timer(61 => sub { delete $self->cache->{$duo_user} if time > $self->cache->{$duo_user}{'expires'}; }); # Clean up cache entries after 5 minutes
+}
+
+sub _store_current_course
+{
+    my ($self, $json) = @_;
+
+    my $lang_abbr = $json->{'learning_language'};
+    my $id = $json->{'id'};
+    my $query = 'UPDATE duolingo SET current_course = ? WHERE duolingo_id = ?';
+    $self->db->query($query, $lang_abbr, $id);
+}
+
+# Get the duolingo ID from a discord ID
+sub _duo_id
+{
+    my ($self, $discord_id) = @_;
+
+    my $query = 'SELECT duolingo_id from duolingo where discord_id = ?';
+    my $dbh = $self->db->query($query, $discord_id);
+    my $row = $dbh->fetchrow_hashref;
+    my $duo_id = $row->{'duolingo_id'} // undef;
+    return $duo_id;
 }
 
 # Handles choosing between a webhook or a message
@@ -255,6 +325,10 @@ sub _build_message
     my $timezone = ( $row ? $row->{'timezone'} : 'America/Winnipeg' );
     my $now = DateTime->now(time_zone => $timezone);
 
+    $query = $self->db->query('SELECT extra_crowns FROM duolingo_extra_crowns WHERE duolingo_id = ? and current_course = ?', $json->{'id'}, $lang_abbr);
+    $row = $query->fetchrow_hashref;
+    my $extra_crowns = $row->{'extra_crowns'} // 0;
+
     # Use the calendar structure to figure out how much XP the user has today
     my $xp = 0;
     my $calendar = $json->{'calendar'};
@@ -280,7 +354,7 @@ sub _build_message
     }
 
     # Use the language_data structure to count crowns ("levels_finished")
-    my $crowns = 0;
+    my $crowns = $extra_crowns;
     my $lessons = 0;
     foreach my $skill (@{$lang_data->{'skills'}})
     {
@@ -304,20 +378,5 @@ sub _build_message
 
     return $msg;
 }
-
-sub _get_stored_id
-{
-    my ($self, $discord_id) = @_;
-
-    my $query = $self->db->query('SELECT * from duolingo where discord_id = ?', $discord_id);
-   
-    if ( my $row = $query->fetchrow_hashref )
-    {
-        return $row->{'duolingo_id'};
-    }
-    return undef;
-}
-
-
 
 1;
