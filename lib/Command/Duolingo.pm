@@ -45,7 +45,7 @@ sub cmd_duolingo
     unless ( $self->duo->jwt )
     {
         $self->duo->login_p()->then(sub{ $self->cmd_duolingo($msg) });
-        return undef;
+        return;
     }
 
 
@@ -63,7 +63,7 @@ sub cmd_duolingo
     if ( length $args == 0 )
     {
         # Stored ID
-        if ( my $duo_id = $self->_duo_id($author->{'id'}) )
+        if ( my $duo_id = $self->_cached_id($author->{'id'}) )
         {
             $self->log->debug('[Duolingo.pm] [cmd_duolingo] Found stored Duolingo ID (' . $duo_id . ') for Discord ID ' . $author->{'id'});
             $duo_user = $duo_id;
@@ -87,7 +87,7 @@ EOF
     {
         my $discord_id = $1;
         
-        if ( my $duo_id = $self->_duo_id($discord_id) )
+        if ( my $duo_id = $self->_cached_id($discord_id) )
         {
             $self->log->debug('[Duolingo.pm] [cmd_duolingo] Found stored Duolingo ID (' . $duo_id . ') for Discord ID ' . $discord_id);
             $duo_user = $duo_id;
@@ -96,25 +96,6 @@ EOF
         {
             $self->discord->send_message($channel, "Sorry, I don't have a duolingo username on file for that person.");
         }
-    }
-    # !duo top##
-    elsif ( $args =~ /^top ?(\d+)$/ )
-    {
-        my $num = ( $1 > 0 and $1 <= 10 ? $1 : 10 );
-
-        say "Displaying the Top $num people on the leaderboard";
-
-        my $dt = DateTime->now;
-        #        $dt->set_timezone('America/Winnipeg');
-
-        my $timestamp = $dt->strftime("%Y.%m.%d %H:%M:%S");
-        say "Timestamp: $timestamp";
-        $self->duo->leaderboard_p('week', $timestamp)->then(sub
-        { 
-            my $json = shift;
-
-            say Data::Dumper->Dump([$json], ['json']);
-        });
     }
     # !duo set <[username]|[timezone]>
     elsif ( $args =~ /^set (.+)$/i )
@@ -138,7 +119,7 @@ EOF
 
         if ( length $duo_user )
         {
-            $self->duo->user_info_p($duo_user)->then(sub
+            $self->duo->web_user_info_p($duo_user)->then(sub
             {
                 my $json = shift;
                 my $duo_id = $json->{'id'};
@@ -151,6 +132,10 @@ EOF
                 {    
                     $self->db->query('INSERT INTO duolingo (discord_id, duolingo_id) VALUES ( ?, ? ) ON DUPLICATE KEY UPDATE duolingo_id = ?', $author->{'id'}, $duo_id, $duo_id);
                 }
+
+                # Also follow the user
+                $self->duo->follow_p($json->{'id'});
+
                 $self->discord->send_message($channel, "Your duolingo username is now: " . $duo_user);
             });
         }
@@ -160,86 +145,69 @@ EOF
             $self->discord->send_message($channel, "Your timezone is now: " . $timezone);
         }
     }
-    # !duo extra <extra crowns amount>
-    elsif ( $args =~ /^extra (.+)/i )
-    {
-        my $extra = $1;
-        if ( $extra >=0 and $extra <= 255 )
-        {
-            # Need the Duo ID
-            my $duo_id = $self->_duo_id($author->{'id'});
-
-            unless ( defined $duo_id )
-            {
-                $self->discord->send_message($channel, "Sorry, I don't have your account on record. Please try `!duo help` for more information.");
-                return;
-            }
-
-            $self->duo->user_info_p($duo_id)->then(sub
-            {
-                my $json = shift;
-                my $current_course = $json->{'learning_language'};
-
-                $self->_cache_content($duo_id, $json);
-                $self->_store_current_course($json);
-      
-                $self->db->query('INSERT INTO duolingo_extra_crowns ( duolingo_id, current_course, extra_crowns ) VALUES ( ?, ?, ?) ON DUPLICATE KEY UPDATE extra_crowns = ?', $duo_id, $current_course, $extra, $extra);
-                $self->discord->send_message($channel, "Your Extra Crowns: " . $extra );
-            });
-
-        }
-        else
-        {
-            $self->discord->send_message($channel, "Sorry, valid range is 0-255");
-        }
-    }
-    # !duo extra
-    elsif ( $args =~ /^extra$/ )
-    {
-        my $query = 'SELECT a.current_course, a.extra_crowns FROM duolingo_extra_crowns a LEFT JOIN duolingo b ON a.current_course = b.current_course WHERE b.discord_id = ?';
-        my $dbh = $self->db->query($query, $author->{'id'});
-        my $row = $dbh->fetchrow_hashref;
-        my $extra = $row->{'extra_crowns'} // 0;
-        $self->discord->send_message($channel, "You currently have $extra extra crowns");
-    }
-    else
-    {
-        $duo_user = $args;
-    }
-
     # We have a username/id, whether it was stored or passed
     if ( defined $duo_user )
     {
         if ( exists $self->cache->{$duo_user} and time <= $self->cache->{$duo_user}{'expires'} )
         {
-            my $json = $self->cache->{$duo_user}{'json'};
+            my $web = $self->cache->{$duo_user}{'web'};
+            my $android = $self->cache->{$duo_user}{'android'};
+            my $leaderboard = $self->cache->{$duo_user}{'leaderboard'};
 
-            my $content = $self->_build_message($json);
+            my $content = $self->_build_message({
+                'web' => $web,
+                'android' => $android,
+                'leaderboard' => $leaderboard,
+            });
 
-            $self->_send_content($channel, $json->{'fullname'}, $content);
+            $self->_send_content($channel, $web->{'fullname'}, $content);
         }
         else
         {
-            $self->duo->user_info_p($duo_user)->then(sub
-            {
-                my $json = shift;
-    
-                $self->_cache_content($duo_user, $json);
-                $self->_store_current_course($json);
-      
-                my $content = $self->_build_message($json);     # Pull out certain fields and format it for Discord
+            my $web_promise         = $self->duo->web_user_info_p($duo_user);
+            my $android_promise     = $self->duo->android_user_info_p($duo_user);
+            my $leaderboard_promise = $self->duo->leaderboard_p($duo_user);
 
-                $self->_send_content($channel, $json->{'fullname'}, $content);
+            Mojo::Promise->all($web_promise, $android_promise, $leaderboard_promise)->then(sub
+            {
+                my ($web_tx, $android_tx, $leaderboard_tx) = @_;
+
+                my $web_json         = $web_tx->[0];
+                my $android_json     = $android_tx->[0];
+                my $leaderboard_json = $leaderboard_tx->[0];
+
+                my $content = $self->_build_message({
+                        'web' => $web_json,
+                        'android' => $android_json,
+                        'leaderboard' => $leaderboard_json,
+                    });
+                
+                $self->_cache_content({
+                        'user' => $duo_user, 
+                        'web' => $web_json,
+                        'android' => $android_json,
+                        'leaderboard' => $leaderboard_json
+                    });
+                $self->_store_current_course($android_json);
+      
+                $self->_send_content($channel, $web_json->{'fullname'}, $content);
+            })->catch(sub
+            {
+                my $err = shift;
+                say Dumper($err);
             });
-    }
+        }
     }
 }
 
 sub _cache_content
 {
-    my ($self, $duo_user, $json) = @_;
+    my ($self, $args) = @_;
 
-    $self->cache->{$duo_user}{'json'} = $json;
+    my $duo_user = $args->{'user'};
+    $self->cache->{$duo_user}{'web'} = $args->{'web'};
+    $self->cache->{$duo_user}{'android'} = $args->{'android'};
+    $self->cache->{$duo_user}{'leaderboard'} = $args->{'leaderboard'};
     $self->cache->{$duo_user}{'expires'} = time + 60;    # Cache for 1 minute
     Mojo::IOLoop->timer(61 => sub { delete $self->cache->{$duo_user} if time > $self->cache->{$duo_user}{'expires'}; }); # Clean up cache entries after 5 minutes
 }
@@ -255,7 +223,7 @@ sub _store_current_course
 }
 
 # Get the duolingo ID from a discord ID
-sub _duo_id
+sub _cached_id
 {
     my ($self, $discord_id) = @_;
 
@@ -298,11 +266,15 @@ sub _flag
 
     return ":alien:" if $lang eq 'kl'; # Klingon - special case.
 
+    # Gonna have to start using custom emojis for this.
     my %flags = (
         'nn'    => 'no', # Nynorsk -> Norway
+        'no-BO' => 'no', # Nynorsk -> Norway
         'nb'    => 'no', # Bokmål -> Norway
         'ja'    => 'jp', # Japanese -> Japan
         'zs'    => 'cn', # Chinese -> China
+        'en'    => 'gb', # English -> Great Britain
+        'hw'    => 'us', # Hawaiian -> USA
     );
 
     my $flag = ":flag_";
@@ -314,24 +286,48 @@ sub _flag
 
 sub _build_message
 {
-    my ($self, $json) = @_;
+    my ($self, $args) = @_;
 
-    my $lang_abbr = $json->{'learning_language'};
-    my $flag = $self->_flag($lang_abbr); # Countries with multiple languages will have multiple language codes that may not match a country flag. We can fix these as we find them.
-    my $lang_data = $json->{'language_data'}{$lang_abbr};
+    my $web = $args->{'web'};
+    my $android = $args->{'android'};
+    my $leaderboard = $args->{'leaderboard'};
 
-    my $query = $self->db->query('SELECT timezone FROM duolingo WHERE duolingo_id = ?', $json->{'id'});
+    # We get all of the courses back, so we can loop through them
+    # Limit to three courses max
+    my @courses;
+    foreach my $course (@{$android->{'courses'}})
+    {
+        my $title = $course->{'title'};
+        my $lang_abbr = $course->{'learningLanguage'};
+        my $flag = $self->_flag($lang_abbr);
+        my $crowns = $course->{'crowns'} . ' Crown';
+        $crowns .= 's' unless $course->{'crowns'} == 1;
+        my $xp = $course->{'xp'};
+   
+        my $msg = $flag . ' ' . $title . ' - ' . $xp . ' XP - ' . $crowns . ' :crown:';
+        push @courses, $msg;
+    }
+    my @top3 = splice(@courses, 0, 3);
+
+    my $total_xp = $android->{'totalXp'};
+
+    my $query = $self->db->query('SELECT timezone FROM duolingo WHERE duolingo_id = ?', $android->{'id'});
     my $row = $query->fetchrow_hashref;
     my $timezone = ( $row ? $row->{'timezone'} : 'America/Winnipeg' );
     my $now = DateTime->now(time_zone => $timezone);
 
-    $query = $self->db->query('SELECT extra_crowns FROM duolingo_extra_crowns WHERE duolingo_id = ? and current_course = ?', $json->{'id'}, $lang_abbr);
-    $row = $query->fetchrow_hashref;
-    my $extra = $row->{'extra_crowns'} // 0;
+
+    # Notes:
+    # To get today's XP I need the calendar, which only comes from the web API
+    # So I guess I have to fetch both APIs and use info from both.
+    # Fak.
+
+    # Also still need to figure out how to get the Leaderboard ID.
 
     # Use the calendar structure to figure out how much XP the user has today
     my $xp = 0;
-    my $calendar = $json->{'calendar'};
+
+    my $calendar = $web->{'calendar'};
     foreach my $event (@{$calendar})
     {
         if ( exists $event->{'datetime'} )
@@ -353,31 +349,43 @@ sub _build_message
         }
     }
 
-    # Use the language_data structure to count crowns ("levels_finished")
-    my $crowns = 0;
-    my $lessons = 0;
-    foreach my $skill (@{$lang_data->{'skills'}})
-    {
-        $crowns += $skill->{'levels_finished'};
-        $lessons++ if $skill->{'levels_finished'};
-        #say "" . $skill->{'title'} . ' => ' . $skill->{'levels_finished'} . ' => ' . $crowns if $skill->{'levels_finished'};
-    }
+    # Finally, get leaderboard league
+    my @tiers = qw(Bronze Silver Gold Sapphire Ruby Emerald Amethyst Pearl Obsidian Diamond);
+    my $tier = $leaderboard->{'tier'};
+    my $league = $tiers[$tier];
+    my $league_emoji = _league_emoji($tier);
 
-    my $total = $crowns + $extra;
+
     my $msg = '';
     # Flag Language - Level
     # Streak - Exp Today
-    $msg .= $flag . ' ' . $json->{'learning_language_string'};
-    $msg .= " - " . $lang_data->{'points'} . " XP\n";
-    $msg .= ( $extra > 0 ) ? ( ":crown: " . $crowns . '+' . $extra . ' Crown' ) : ( ":crown: " . $crowns . " Crown" );
-    $msg .= 's' if $crowns != 1;
-    $msg .= " - " . $lessons . " Lesson";
-    $msg .= 's' if $lessons != 1;
-    $msg .= "\n:fire: " . $lang_data->{'streak'} . " day";
-    $msg .= "s" if $lang_data->{'streak'} != 1;
+    $msg .= $_ . "\n" foreach (@top3);
+    $msg .= ":fire: " . $android->{'streak'} . " day";
+    $msg .= "s" if $android->{'streak'} != 1;
     $msg .= " - $xp XP Today";
+    $msg .= "\n$league_emoji $league League - $total_xp XP Total";
 
     return $msg;
+}
+
+sub _league_emoji
+{
+    my $tier = shift;
+
+    my @emojis = qw(
+        <:duo_bronze:699866744365252658>
+        <:duo_silver:699866744444944395>
+        <:duo_gold:699866744411390001>
+        <:duo_sapphire:699866744193548310> 
+        <:duo_ruby:699866744201674809> 
+        <:duo_emerald:699866744583487568>
+        <:duo_amethyst:699866744562515988>
+        <:duo_pearl:699866744415715409>
+        <:duo_obsidian:699866744478629899>
+        <:duo_diamond:699866743979376722>
+    );
+
+    return $emojis[$tier];
 }
 
 1;
