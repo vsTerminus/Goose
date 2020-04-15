@@ -1,0 +1,13 @@
+[login]
+username = YourDuoName
+password = YourPassword
+
+[users]
+my_id = 123456789
+my_name = YourDuoName
+info_id = 9999999
+info_name = SomeOtherUser
+leader_id = 888888888
+leader_name = AThirdUser
+follow_id = 7777777777
+follow_name = UserToFollow
