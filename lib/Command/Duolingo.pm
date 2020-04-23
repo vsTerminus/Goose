@@ -264,22 +264,19 @@ sub _flag
 {
     my ($self, $lang) = @_;
 
-    return ":alien:" if $lang eq 'kl'; # Klingon - special case.
-
     # Gonna have to start using custom emojis for this.
     my %flags = (
-        'nn'    => 'no', # Nynorsk -> Norway
-        'no-BO' => 'no', # Nynorsk -> Norway
-        'nb'    => 'no', # Bokmål -> Norway
-        'ja'    => 'jp', # Japanese -> Japan
-        'zs'    => 'cn', # Chinese -> China
-        'en'    => 'gb', # English -> Great Britain
-        'hw'    => 'us', # Hawaiian -> USA
+        'nn'    => ':flag_no:', # Nynorsk -> Norway
+        'no-BO' => ':flag_no:', # Nynorsk -> Norway
+        'nb'    => ':flag_no:', # Bokmål -> Norway
+        'ja'    => ':flag_jp:', # Japanese -> Japan
+        'zs'    => ':flag_cn:', # Chinese -> China
+        'en'    => ':flag_gb:', # English -> Great Britain
+        'hw'    => ':flag_us:', # Hawaiian -> USA
+        'tlh'   => '<:flag_tlh:702749901813186664>', # Klingon -> Custom Klingon Flag Emoji
     );
 
-    my $flag = ":flag_";
-    $flag .= ( exists $flags{$lang} ? $flags{$lang} : $lang );
-    $flag .= ":";
+    my $flag = ( exists $flags{$lang} ? $flags{$lang} : ":flag_$lang:" );
 
     return $flag;
 }
