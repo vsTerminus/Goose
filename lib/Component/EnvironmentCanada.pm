@@ -59,6 +59,8 @@ async weather => sub
     $dom = Mojo::DOM->new->xml(1)->parse($tx->res->text);
     my $curr = $dom->at('currentConditions');
 
+    say "Weather URL: " . $weather_url;
+
     # Extract values needed by weather command, put them in a hash.
     $json = {
         'temperature_c'         => $curr->at('temperature')->text,
@@ -67,9 +69,13 @@ async weather => sub
         'humidity'              => $curr->at('relativeHumidity')->text,
     };
 
-    # Looks like the Current Conditions and WindChill are sometimes blank with Environment Canada
+    # Looks like the Current Conditions and WindChill and Humidex are sometimes blank with Environment Canada
     # so we need to handle that.
-    $json->{'apparentTemperature_c'} = ( defined $curr->at('windChill') ? $curr->at('windChill')->text : $curr->at('temperature')->text );
+    $json->{'apparentTemperature_c'} = $curr->at('temperature')->text; # Default to just the temperature.
+
+    # Look for WindChill (Winter) or Humidex (Summer)
+    $json->{'apparentTemperature_c'} = $curr->at('windChill')->text if ( defined $curr->at('windChill') );
+    $json->{'apparentTemperature_c'} = $curr->at('humidex')->text if ( defined $curr->at('humidex') );
 
     $json->{'summary'} = ( length $curr->at('condition')->text ? $curr->at('condition')->text : 'Unknown' );
 
