@@ -19,6 +19,7 @@ use Component::UrbanDictionary;
 use Component::Twitch;
 use Component::Stats;
 use Component::Duolingo;
+use Component::Hoggit;
 
 use namespace::clean;
 
@@ -78,6 +79,7 @@ has duolingo            => ( is => 'lazy', builder => sub {
         'password'  => $self->config->{'duolingo'}{'password'},
     ); 
 });
+has hoggit              => ( is => 'lazy', builder => sub { Component::Hoggit->new() } );
 
 has user_id             => ( is => 'rwp' );
 has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );
