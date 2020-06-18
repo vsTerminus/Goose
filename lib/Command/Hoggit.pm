@@ -21,7 +21,7 @@ has log                 => ( is => 'lazy',  builder => sub { shift->bot->log } )
 has name                => ( is => 'ro', default => 'Hoggit' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
 has description         => ( is => 'ro', default => 'View Hoggit DCS MP Server Status' );
-has pattern             => ( is => 'ro', default => '^(hoggit|dcs)? ?' );
+has pattern             => ( is => 'ro', default => '^(hoggit|dcs) ?' );
 has function            => ( is => 'ro', default => sub { \&cmd_hoggit } );
 has usage               => ( is => 'ro', default => <<EOF
 View Hoggit server status for GAW and PGAW
