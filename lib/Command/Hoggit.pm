@@ -165,10 +165,25 @@ sub _monitor_poll
 
             if ( length $message > 0 )
             {
-                foreach my $channel (@channels)
+                foreach (@channels)
                 {
-                    say "Channel: " . $channel->[0];
-                    $self->discord->send_message($channel->[0], $message);
+                    my $channel = $_->[0];
+                    say "Channel: " . $channel;
+
+                    if ( my $hook = $self->bot->has_webhook($channel) )
+                    {
+                        my $hookparam = {
+                            'content' => $message,
+                            'username' => 'Persion Gulf At War',
+                            'avatar_url' => 'https://i.imgur.com/emGf71B.png', # Hoggit Coat of Arms
+                        };
+
+                        $self->discord->send_webhook($channel, $hook, $hookparam);
+                    }
+                    else
+                    {
+                        $self->discord->send_message($channel, $message);
+                    }
                 }
             }
         }
