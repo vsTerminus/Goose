@@ -60,4 +60,11 @@ sub query
     return $query;
 }
 
+# Just an alias for 'query' because I always forget which one I named it. lol.
+sub do
+{
+    my $self = shift;
+    $self->query(@_);
+}
+
 1;
