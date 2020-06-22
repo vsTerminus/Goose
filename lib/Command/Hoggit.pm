@@ -19,6 +19,7 @@ has hoggit              => ( is => 'lazy',  builder => sub { shift->bot->hoggit 
 has log                 => ( is => 'lazy',  builder => sub { shift->bot->log } );
 has db                  => ( is => 'lazy',  builder => sub { shift->bot->db } );
 
+has last_uptime         => ( is => 'rw',    default => 0 );
 has timer_seconds       => ( is => 'ro',    default => 60 );
 has timer_sub           => ( is => 'ro',    default => sub 
     { 
@@ -159,9 +160,22 @@ sub _monitor_poll
                     $self->_set_airport($id, $name, $coalition);
 
                     $message .= ':airplane: ' . $name . ' has been captured' . "\n" if lc $coalition eq 'blue';     
-                    #say $message;
+ 
+                    # Bandar goes back to red? Mission has been reset.
+                    $message .= ':map: Mission has been reset to a fresh state' . "\n" if lc $airports->{$id}{'coalition'} eq 'blue' and lc $coalition eq 'red' and $id eq '5000004';
                 }
             }
+
+            if ( $json->{'uptime'} < $self->last_uptime )
+            {
+                my $tod = $json->{'missionName'};
+                $tod =~ s/^.*(morning|afternoon|evening).*$/$1/i;
+                my $clock = ':clock11:'; # Morning default;
+                $clock = ':clock1:' if lc $tod eq 'afternoon';
+                $clock = ':clock6:' if lc $tod eq 'evening';
+                $message .= $clock . ' Server restarted. It is now ' . ucfirst $tod . "\n";
+            }
+            $self->last_uptime($json->{'uptime'}); # Note: This will need to track GAW as well if you add that...
 
             if ( length $message > 0 )
             {
