@@ -197,7 +197,7 @@ sub _monitor_poll
                         if ( my $closest = _closest_logi_pilot( $airport, @logis ) )
                         {
                             my $platform = lc $closest->{'Platform'};
-                            $message .= ' by **' . $closest->{'Pilot'} . '** in ' . $self->{'logi_platforms'}{$platform};
+                            $message .= ' by **' . $closest->{'Pilot'} . '** in ' . $self->{'logi_platforms'}{$platform} if $closest->distance < 5;
                         }
                         $message .= "\n";
                     }
