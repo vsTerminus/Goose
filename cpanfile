@@ -22,6 +22,7 @@ requires 'DBI';                         # Database connection
 requires 'FindBin' => '1.51';           # For including libs in the project directory
 requires 'DateTime';                    # Used to get specifc-format unix epoch timestamps
 requires 'Data::Dumper';                # Used for debugging
+requires 'Geo::Distance';               # Calculate the distance pilots are from airfields in Hoggit.pm
 
 
 # Testing
