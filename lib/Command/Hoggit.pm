@@ -21,7 +21,7 @@ has log                 => ( is => 'lazy',  builder => sub { shift->bot->log } )
 has db                  => ( is => 'lazy',  builder => sub { shift->bot->db } );
 
 has last_uptime         => ( is => 'rw',    default => 0 );
-has timer_seconds       => ( is => 'ro',    default => 5 );
+has timer_seconds       => ( is => 'ro',    default => 60 );
 has timer_sub           => ( is => 'ro',    default => sub 
     { 
         my $self = shift;
