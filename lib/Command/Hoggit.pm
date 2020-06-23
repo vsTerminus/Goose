@@ -6,6 +6,7 @@ use strictures 2;
 
 use Mojo::Promise;
 use Time::Duration;
+use Geo::Distance;
 use Data::Dumper;
 
 use namespace::clean;
@@ -20,7 +21,7 @@ has log                 => ( is => 'lazy',  builder => sub { shift->bot->log } )
 has db                  => ( is => 'lazy',  builder => sub { shift->bot->db } );
 
 has last_uptime         => ( is => 'rw',    default => 0 );
-has timer_seconds       => ( is => 'ro',    default => 60 );
+has timer_seconds       => ( is => 'ro',    default => 5 );
 has timer_sub           => ( is => 'ro',    default => sub 
     { 
         my $self = shift;
@@ -29,13 +30,25 @@ has timer_sub           => ( is => 'ro',    default => sub
         ) 
     }
 );
+# Type is "Air+FixedWing" or "Air+Rotorcraft"
+has logi_platforms      => ( is => 'ro',    default => sub {
+        {
+            'mi-8mt'    => 'Mi-8MTV2 Hip',
+            'SA342'     => 'SA342 Gazelle',
+            'uh-1h'     => 'UH-1H Huey',
+            'c-101eb'   => 'C-101EB Aviojet',
+            'yak-52'    => 'Yak-52',
+            'tf-51d'    => 'TF-51D Mustang',
+        }
+    }
+);
 
-has name                => ( is => 'ro', default => 'Hoggit' );
-has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
-has description         => ( is => 'ro', default => 'View Hoggit DCS MP Server Status' );
-has pattern             => ( is => 'ro', default => '^(hoggit|dcs) ?' );
-has function            => ( is => 'ro', default => sub { \&cmd_hoggit } );
-has usage               => ( is => 'ro', default => <<EOF
+has name                => ( is => 'ro',    default => 'Hoggit' );
+has access              => ( is => 'ro',    default => 0 ); # 0 = Public, 1 = Bot-Owner Only
+has description         => ( is => 'ro',    default => 'View Hoggit DCS MP Server Status' );
+has pattern             => ( is => 'ro',    default => '^(hoggit|dcs) ?' );
+has function            => ( is => 'ro',    default => sub { \&cmd_hoggit } );
+has usage               => ( is => 'ro',    default => <<EOF
 View Hoggit server status for GAW and PGAW
 
 Basic Usage: !hoggit [GAW|PGAW]
@@ -148,18 +161,46 @@ sub _monitor_poll
         {
             my $json = shift;
 
+            # Iterate through the objects structure and capture all logistics-enabled airframes
+            # This will reduce the size of the list we need to iterate through later.
+            my @logis;
+            foreach my $object ( @{$json->{'objects'}} )
+            {
+                my $platform = lc $object->{'Platform'};
+                push @logis, $object if exists $self->{'logi_platforms'}{$platform};
+            }
+            say "Found " . scalar @logis . " Logistics Pilots";
+
+
+            # Iterate through airports and look at their current coalition
+            # Look for coalitions which differ from what is stored in the DB currently (ie, they have been captured)
+            # If they are blue, add them to $message for sending once we've looked at all airfields.
+            #
+            # While we're there, we can also look at the position of the airfield and the position of units on the map.
+            # If a logistics unit is close by we can assume they are the ones who captured the field and add that info to $message.
             foreach my $airport ( @{$json->{'airports'}} )
             {
                 my $name = $airport->{'Name'};
                 my $id = $airport->{'Id'};
                 my $coalition = _coalitions($airport->{'CoalitionID'});
-
-
+                
+                # If this is a tracked airport and the coalition has changed...
                 if ( exists $airports->{$id} and lc $coalition ne lc $airports->{$id}{'coalition'} )
                 {
+                    # Update the DB with the new info
                     $self->_set_airport($id, $name, $coalition);
 
-                    $message .= ':airplane: ' . $name . ' has been captured' . "\n" if lc $coalition eq 'blue';     
+                    # Append $message with this info
+                    if ( lc $coalition eq 'blue' )
+                    {
+                        $message .= ':airplane: **' . $name . '** has been captured';
+                        if ( my $closest = _closest_logi_pilot( $airport, @logis ) )
+                        {
+                            my $platform = lc $closest->{'Platform'};
+                            $message .= ' by **' . $closest->{'Pilot'} . '** in ' . $self->{'logi_platforms'}{$platform};
+                        }
+                        $message .= "\n";
+                    }
  
                     # Bandar goes back to red? Mission has been reset.
                     $message .= ':map: Mission has been reset to a fresh state' . "\n" if lc $airports->{$id}{'coalition'} eq 'blue' and lc $coalition eq 'red' and $id eq '5000004';
@@ -260,6 +301,29 @@ sub _airports
     my $query = "SELECT * FROM hoggit_airports";
     my $dbh = $self->db->do($query);
     return $dbh->fetchall_hashref('id');
+}
+
+sub _closest_logi_pilot
+{
+    my ($airport, @objects) = @_;
+
+    my $min_distance = 9999;
+    my $min_pilot;
+
+    foreach my $object (@objects)
+    {
+        my $geo = Geo::Distance->new;
+        my $distance = $geo->distance('nautical mile', $airport->{'LatLongAlt'}{'Long'}, $airport->{'LatLongAlt'}{'Lat'} => $object->{'LatLongAlt'}{'Long'}, $object->{'LatLongAlt'}{'Lat'});
+
+        if ( $distance < $min_distance )
+        {
+            $min_distance = $distance;
+            $object->{'distance'} = $distance;
+            $min_pilot = $object;
+        }
+    }
+
+    return $min_pilot;    
 }
 
 1;
