@@ -39,6 +39,8 @@ has logi_platforms      => ( is => 'ro',    default => sub {
             'c-101eb'   => 'C-101EB Aviojet',
             'yak-52'    => 'Yak-52',
             'tf-51d'    => 'TF-51D Mustang',
+            'c-130'     => 'C-130 Hercules', # Airfield Security
+            'ch-47d'    => 'CH-47D Chinook', # FARP Security
         }
     }
 );
@@ -190,16 +192,15 @@ sub _monitor_poll
                     # Update the DB with the new info
                     $self->_set_airport($id, $name, $coalition);
 
-                    # Append $message with this info
-                    if ( lc $coalition eq 'blue' )
+                    # Find the closest logistics pilot
+                    my $closest = _closest_logi_pilot( $airport, @logis );
+
+                    # If the airfield has turned blue and there is a logistics pilot within 5nm
+                    # Then send a message. Otherwise do not.
+                    if ( lc $coalition eq 'blue' and defined $closest and $closest->{'distance'} <= 5 )
                     {
-                        $message .= ':airplane: **' . $name . '** has been captured';
-                        if ( my $closest = _closest_logi_pilot( $airport, @logis ) )
-                        {
-                            my $platform = lc $closest->{'Platform'};
-                            $message .= ' by **' . $closest->{'Pilot'} . '** in ' . $self->{'logi_platforms'}{$platform} if $closest->distance < 5;
-                        }
-                        $message .= "\n";
+                        my $platform = lc $closest->{'Platform'};
+                        $message .= ':airplane: **' . $name . '** has been captured by **' . $closest->{'Pilot'} . '** in ' . $self->{'logi_platforms'}{$platform} . "\n";
                     }
  
                     # Bandar goes back to red? Mission has been reset.
