@@ -240,7 +240,7 @@ sub _monitor_poll
                     {
                         my $hookparam = {
                             'content' => $message,
-                            'username' => 'Persion Gulf At War',
+                            'username' => 'Persian Gulf At War',
                             'avatar_url' => 'https://i.imgur.com/emGf71B.png', # Hoggit Coat of Arms
                         };
 
