@@ -21,6 +21,7 @@ has log                 => ( is => 'lazy',  builder => sub { shift->bot->log } )
 has db                  => ( is => 'lazy',  builder => sub { shift->bot->db } );
 
 has last_uptime         => ( is => 'rw',    default => 0 );
+has server_restarted    => ( is => 'rw',    default => 0 );
 has timer_seconds       => ( is => 'ro',    default => 60 );
 has timer_sub           => ( is => 'ro',    default => sub 
     { 
@@ -44,6 +45,7 @@ has logi_platforms      => ( is => 'ro',    default => sub {
         }
     }
 );
+has pilot_radius        => ( is => 'ro',    default => 4 ); # Radius in nautical miles to look for a pilot during a capture event. Airfield sphere of incluence is about 2.3nm
 
 has name                => ( is => 'ro',    default => 'Hoggit' );
 has access              => ( is => 'ro',    default => 0 ); # 0 = Public, 1 = Bot-Owner Only
@@ -197,10 +199,12 @@ sub _monitor_poll
 
                     # If the airfield has turned blue and there is a logistics pilot within 5nm
                     # Then send a message. Otherwise do not.
-                    if ( lc $coalition eq 'blue' and defined $closest and $closest->{'distance'} <= 5 )
+                    if ( lc $coalition eq 'blue' and defined $closest and $closest->{'distance'} <= $self->pilot_radius )
                     {
                         my $platform = lc $closest->{'Platform'};
-                        $message .= ':airplane: **' . $name . '** has been captured by **' . $closest->{'Pilot'} . '** in ' . $self->{'logi_platforms'}{$platform} . "\n";
+                        my $type = lc $closest->{'Type'};
+                        my $icon = ( $type eq 'air+rotorcraft' ) ? ':helicopter:' : ':airplane_small:';
+                        $message .= $icon . ' **' . $name . '** has been captured by **' . $closest->{'Pilot'} . '** in a ' . $self->{'logi_platforms'}{$platform} . "\n";
                     }
  
                     # Bandar goes back to red? Mission has been reset.
@@ -208,16 +212,25 @@ sub _monitor_poll
                 }
             }
 
-            if ( $json->{'uptime'} < $self->last_uptime )
+            # Track the uptime.
+            # Two things to note here:
+            # 1. This will need to be changed to accomodate multiple servers if you want to do GAW too.
+            # 2. There seems to be an issue when the server restarts where it can't detect the time of day - probably because the mission hasn't lodaded yet.
+            #    To deal with that, if we detect a restart we'll wait until the next time we poll (at least 60 seconds later) to parse the payload and send the update.
+            #    To accomplish this, when we detect a restart (new uptime is less than old uptime) we'll set a flag. Next time we poll we'll check for that flag, print the update, and un-set the flag.
+            if ( $self->server_restarted ) # Send update
             {
                 my $tod = $json->{'missionName'};
                 $tod =~ s/^.*(morning|afternoon|evening).*$/$1/i;
-                my $clock = ':clock11:'; # Morning default;
-                $clock = ':clock1:' if lc $tod eq 'afternoon';
-                $clock = ':clock6:' if lc $tod eq 'evening';
-                $message .= $clock . ' Server restarted. It is now ' . ucfirst $tod . "\n";
+                my $clock = ':sunrise:'; # Morning default;
+                $clock = ':sun_with_face:' if lc $tod eq 'afternoon';
+                $clock = ':last_quarter_moon_with_face' if lc $tod eq 'evening';
+                $message .= $clock . ' Server restarted, time of day is ' . $tod . "\n";
+                $self->server_restarted(0); # Unset our flag.
             }
-            $self->last_uptime($json->{'uptime'}); # Note: This will need to track GAW as well if you add that...
+            $self->server_restarted(1) if $json->{'uptime'} < $self->last_uptime; # Set flag
+            $self->last_uptime($json->{'uptime'});
+
 
             if ( length $message > 0 )
             {
