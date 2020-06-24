@@ -173,8 +173,6 @@ sub _monitor_poll
                 my $platform = lc $object->{'Platform'};
                 push @logis, $object if exists $self->{'logi_platforms'}{$platform};
             }
-            say "Found " . scalar @logis . " Logistics Pilots";
-
 
             # Iterate through airports and look at their current coalition
             # Look for coalitions which differ from what is stored in the DB currently (ie, they have been captured)
@@ -237,7 +235,6 @@ sub _monitor_poll
                 foreach (@channels)
                 {
                     my $channel = $_->[0];
-                    say "Channel: " . $channel;
 
                     if ( my $hook = $self->bot->has_webhook($channel) )
                     {
