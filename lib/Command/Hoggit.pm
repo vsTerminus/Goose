@@ -67,13 +67,13 @@ sub cmd_hoggit
     my $author = $msg->{'author'};
     my $args = $msg->{'content'};
     my $pattern = $self->pattern;
-    $args =~ s/$pattern//;
+    $args =~ s/$pattern//i;
 
     my $json;
 
     if ( length $args )
     {
-        if ( lc $args eq 'gaw' or lc $args eq 'pgaw' )
+        if ( $args =~ /^p?gaw$/i )
         {
             $self->_get_summary_p($args)->then(sub {
                     $self->discord->send_message($channel, shift);
