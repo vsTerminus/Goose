@@ -221,7 +221,7 @@ async weather_by_coords => sub
 
         my $formatted_weather = $self->format_weather($json);
         $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
-        $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and rand(1) > 0.10;
+        $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and $json->{'temperature'} > 0 and rand(1) > 0.75;
     
         $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather);
     }
@@ -255,7 +255,7 @@ async weather_by_coords => sub
 
         my $formatted_weather = $self->format_weather($json);
         $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
-        $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and rand(1) > 0.10;
+        $formatted_weather =~ s/IT'S FUCKING.*$/**nice.** :smirk:/ if $formatted_weather =~ /SEXYTIME/ and $json->{'temperature'} > 0 and rand(1) > 0.75;
 
         $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather); # This sub handles whether it's a message or webhook.
     }
