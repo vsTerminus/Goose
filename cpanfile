@@ -2,7 +2,7 @@
 requires 'Moo';                         # OO Framework
 requires 'strictures' => '2';           # Enables strict and warnings with specific settings
 requires 'namespace::clean';            # Removes declared and imported symbols from your compiled package
-requires 'Mojo::Discord';               # Discord Library
+#requires 'Mojo::Discord';               # Discord Library
 requires 'Mojo::WebService::LastFM';    # Last.FM Library
 requires 'Mojo::IOLoop';                # Required for persistent websocket connection (Discord)
 requires 'Mojo::JSON';                  # Used to translate to and from JSON for talking to APIs
