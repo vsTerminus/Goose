@@ -69,6 +69,8 @@ async weather => sub
         'humidity'              => $curr->at('relativeHumidity')->text,
     };
 
+    $json->{'windSpeed_km'} = 0 if $json->{'windSpeed_km'} eq '';
+
     # Looks like the Current Conditions and WindChill and Humidex are sometimes blank with Environment Canada
     # so we need to handle that.
     $json->{'apparentTemperature_c'} = $curr->at('temperature')->text; # Default to just the temperature.
@@ -182,7 +184,7 @@ sub wind_direction
         'NNW'   => 'North-Northwest'
     );
 
-    return $table{uc $in};
+    return $table{uc $in} // 'None';
 }
 
 sub ctof

@@ -317,11 +317,14 @@ sub format_weather
 
     my $fuckingweather = $self->content->itsfucking_comment($temp_f, $temp_c, $feel_f, $feel_c, $cond);
 
+    my $winds = "None";
+    $winds = "$wind_dir ${wind_mi}mph/${wind_km}kph" unless $wind_dir eq 'None';
+
     my $msg = "```c\n" .
         "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
         "Feels Like  | ${feel_f}\N{DEGREE SIGN}F/${feel_c}\N{DEGREE SIGN}C\n" .
         "Conditions  | $cond, ${humidity}% Humidity\n" .
-        "Winds       | $wind_dir ${wind_mi}mph/${wind_km}kph```\n" .
+        "Winds       | $winds```\n" .
         "$fuckingweather";
 
     return $msg;
