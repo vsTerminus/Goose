@@ -39,7 +39,7 @@ sub cmd_template
     # You can use $self->pattern to do this.
     
     my $pattern = $self->pattern;
-    $args =~ s/$pattern//;
+    $args =~ s/$pattern//i;
     
     # Data::Dumper is an easy way to dump any variable, including complex structures, to debug your command. 
     # You can send its output to the screen or to log files or both.
