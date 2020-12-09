@@ -58,13 +58,15 @@ sub random_black
 # Returns 1 or more random white cards
 sub random_white
 {
-    my ($self, $count, $callback) = @_;
+    my ($self, $count, $max_words, $callback) = @_;
 
     my $ua = $self->{'ua'};
     my $api_url = $self->{'api_url'};
-    my $url = $api_url . '/cards/white/rand';
+    my $url = $api_url . '/cards/white/rand?max_words=' . $max_words;
     $count = 1 if $count < 1;
-    $url .= "?count=$count" if defined $count and $count > 1;
+    $url .= "&count=$count" if defined $count and $count > 1;
+    
+
 
     if ( defined $callback )
     {

@@ -16,7 +16,7 @@ has cah                 => ( is => 'lazy', builder => sub { shift->bot->cah } );
 has name                => ( is => 'ro', default => 'PYX' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
 has description         => ( is => 'ro', default => 'Play a single hand of Pretend You\'re Xyzzy - a Cards Against Humanity clone' );
-has pattern             => ( is => 'ro', default => '^(cah|pyx) ?' );
+has pattern             => ( is => 'ro', default => '^(cah|pyx)(\d+)? ' );
 has function            => ( is => 'ro', default => sub { \&cmd_pyx } );
 has usage               => ( is => 'ro', default => <<EOF
 Make the bot play a totally random hand: `!pyx`
@@ -34,6 +34,8 @@ etc
 EOF
 );
 
+has default_max_words   => ( is => 'ro', default => 8 ); # By default, restrict random white cards to at most this many words
+
 sub cmd_pyx
 {
     my ($self, $msg) = @_;
@@ -46,6 +48,10 @@ sub cmd_pyx
     $args =~ s/_+/____/gs;
 
     my $pattern = $self->pattern;
+    my ($cmd, $max_words) = ( $args =~ /$pattern/is );
+    $max_words = $self->default_max_words unless $max_words and $max_words > 0 and $max_words < 100;
+    say "Max Words: " . $max_words;
+
     $args =~ s/$pattern//si;
 
     my $discord = $self->discord;
@@ -63,14 +69,14 @@ sub cmd_pyx
     elsif ( $args =~ /^w (.+)$/si )
     {
         #say "PYX by White Cards";
-        $self->by_white_cards($channel, $author, $args);
+        $self->by_white_cards($channel, $author, $args, $max_words);
     }
     # Anything else should be treated like the user gave us a black card
     # and the bot just needs to fill in the blanks.
     else
     {
         #say "PYX by Black Card";
-        $self->by_black_card($channel, $author, $args);
+        $self->by_black_card($channel, $author, $args, $max_words);
 
     }
 }
@@ -80,7 +86,7 @@ sub cmd_pyx
 # We need to select a suitable black card with the correct number of blanks
 sub by_white_cards
 {
-    my ($self, $channel, $author, $args) = @_;
+    my ($self, $channel, $author, $args, $max_words) = @_;
 
     my $cah = $self->cah;
     my $discord = $self->discord;
@@ -114,7 +120,7 @@ sub by_white_cards
             if ( $card =~ /^\?+$/s )
             {
                 # "w ?" should be replaced by a random card.
-                my $new = $cah->random_white(1); # Blocking request - no callback.
+                my $new = $cah->random_white(1, $max_words); # Blocking request - no callback.
                 $card = $new->{'cards'}[0]{'text'};
                 $card =~ s/\. *$//s; # Remove the . at the end of the card.
             }
@@ -172,7 +178,7 @@ sub by_pick
 # We need to fill in the blank(s) or answer the question if there are no blanks.
 sub by_black_card
 {
-    my ($self, $channel, $author, $args) = @_;
+    my ($self, $channel, $author, $args, $max_words) = @_;
 
     my $cah = $self->cah;
     my $discord = $self->discord;
@@ -182,7 +188,7 @@ sub by_black_card
     
     if ( $count > 0 )
     {
-        $cah->random_white($count, sub {
+        $cah->random_white($count, $max_words, sub {
             my $json = shift;
 
             #say Dumper($json);
@@ -200,7 +206,7 @@ sub by_black_card
     }
     else
     {
-        $cah->random_white($count, sub {
+        $cah->random_white($count, $max_words, sub {
             my $json = shift;
 
             #say Dumper($json);
