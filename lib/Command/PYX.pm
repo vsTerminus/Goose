@@ -16,7 +16,7 @@ has cah                 => ( is => 'lazy', builder => sub { shift->bot->cah } );
 has name                => ( is => 'ro', default => 'PYX' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
 has description         => ( is => 'ro', default => 'Play a single hand of Pretend You\'re Xyzzy - a Cards Against Humanity clone' );
-has pattern             => ( is => 'ro', default => '^(cah|pyx)(\d+)? ' );
+has pattern             => ( is => 'ro', default => '^(cah|pyx)(\d+)? ?' );
 has function            => ( is => 'ro', default => sub { \&cmd_pyx } );
 has usage               => ( is => 'ro', default => <<EOF
 Make the bot play a totally random hand: `!pyx`
@@ -50,7 +50,6 @@ sub cmd_pyx
     my $pattern = $self->pattern;
     my ($cmd, $max_words) = ( $args =~ /$pattern/is );
     $max_words = $self->default_max_words unless $max_words and $max_words > 0 and $max_words < 100;
-    say "Max Words: " . $max_words;
 
     $args =~ s/$pattern//si;
 
@@ -62,7 +61,7 @@ sub cmd_pyx
     if ( !defined $args or $args =~ /^(w )?(\d+)$/si or $args =~ /^\s*$/s )
     {
         #say "PYX By Pick";
-        $self->by_pick($channel, $author, $args);
+        $self->by_pick($channel, $author, $args, $max_words);
     }
     # If the user specifies w <card 1>... 
     # then the bot just has to pick a suitable black card
@@ -135,7 +134,7 @@ sub by_white_cards
 # We have to pick a black card and then a suitable number of white cards to go in it.
 sub by_pick
 {
-    my ($self, $channel, $author, $args) = @_;
+    my ($self, $channel, $author, $args, $max_words) = @_;
 
     my $cah = $self->cah;
     my $discord = $self->discord;
@@ -169,7 +168,7 @@ sub by_pick
 
         # So now we have our black card. Let's fill it in with white cards.
         # We can use the by_black_card sub for this.
-        $self->by_black_card($channel, $author, $text);
+        $self->by_black_card($channel, $author, $text, $max_words);
 
     });
 }
