@@ -46,7 +46,7 @@ sub cmd_info
             "**Links**\n".
             "`[1]` <https://github.com/vsTerminus/Net-Discord>\n".
             "`[2]` <https://github.com/vsTerminus/Goose>\n".
-            "`[3]` <https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=536890368>\n" .
+            "`[3]` <https://discordapp.com/oauth2/authorize?client_id=231059560977137664&scope=bot&permissions=805686336>\n" .
             "`[4]` <https://discord.gg/FuKTcHF>\n";
 
     $self->discord->send_ack_dm($channel, $msg->{'id'}, $author->{'id'}, $info);
