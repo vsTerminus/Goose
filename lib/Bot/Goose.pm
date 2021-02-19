@@ -135,6 +135,8 @@ sub start
     $self->discord_on_message_update();
     $self->discord_on_presence_update();
     $self->discord_on_webhooks_update();
+    #$self->discord_on_message_reaction_add();
+    #$self->discord_on_message_reaction_remove();
 
     $self->log->info('[Goose.pm] [BUILD] New session beginning ' .  localtime(time));
     $self->discord->init();
@@ -190,7 +192,8 @@ sub _set_status
 
 sub discord_on_guild_create
 {
-    my $self = shift;
+    my ($self) = @_;
+
 
     $self->discord->gw->on('GUILD_CREATE' => sub {
         $self->session->{'num_guilds'}++;
@@ -227,13 +230,12 @@ sub discord_on_message_create
         my $author = $hash->{'author'};
         my $msg = $hash->{'content'};
         my $channel_id = $hash->{'channel_id'};
+        my $guild_id = $hash->{'guild_id'};
         my @mentions = @{$hash->{'mentions'}};
         my $trigger = $self->trigger;
         my $discord_name = $self->discord->name;
         my $discord_id = $self->user_id;
         my $message_id = $hash->{'id'};
-
-        my $channels = $self->discord->channels;
 
         # Look for messages starting with a mention or a trigger, but not coming from a bot.
         if ( !(exists $author->{'bot'} and $author->{'bot'}) and $msg =~ /^(\<\@\!?$discord_id\>|\Q$trigger\E)/i )
@@ -263,12 +265,16 @@ sub discord_on_message_create
                             my $function = $command->{'function'};
 
                             # Track command usage in the DB
-                            $self->stats->add_command(
-                                'command'       => lc $command->{'name'},
-                                'channel_id'    => $channel_id,
-                                'user_id'       => $author->{'id'},
-                                'timestamp'     => time
-                            );
+                            # Need to re-think this. I want to have insight into bot usage for troubleshooting but this doesn't really accomplish it.
+                            #$self->stats->add_command(
+                            #    'command'       => lc $command->{'name'},
+                            #    'channel_id'    => $channel_id,
+                            #    'user_id'       => $author->{'id'},
+                            #    'timestamp'     => time
+                            #);
+
+                            # Testing... Get user's permissions every time they talk.
+                            # my $user_permissions = $self->discord->gw->user_permissions($guild_id, $author->{'id'});
 
                             $hash->{'content'} = $msg;  # We've made some changes to the message content, let's make sure those get passed on to the command.
                             $object->$function($hash);
