@@ -138,38 +138,35 @@ sub cmd_role
 
     #### LIST
     my $reply = "Configured Self Serve Roles:\n";
-    say "Args: '" . $args . "'";
     if ( $args =~ /^(list|info|status)?$/i )
     {
-        if ( my $roles_hash = $self->_get_configured_roles($guild_id) )
+        my $roles_hash = $self->_get_configured_roles($guild_id);
+        my @emojis = keys %$roles_hash;
+        if ( scalar @emojis > 0 )
         {
-            my @emojis = keys %$roles_hash;
-            
-            if ( scalar @emojis )
+            my $reply = "Configured Self Serve Roles:\n";
+            my $i = 0;
+            foreach my $octet (@emojis)
             {
-                my $reply = "Configured Self Serve Roles:\n";
-                my $i = 0;
-                foreach my $octet (@emojis)
+                $i++;
+                my $emoji = _decode_emoji($octet);
+                $reply .= $emoji . ' => <@&' . $roles_hash->{$octet}{'role_id'} . ">\n";
+                
+                if ( $i >= 25 )
                 {
-                    $i++;
-                    my $emoji = _decode_emoji($octet);
-                    $reply .= $emoji . ' => <@&' . $roles_hash->{$octet}{'role_id'} . ">\n";
-                    
-                    if ( $i >= 25 )
-                    {
-                        # John is going to add 400 roles to his server just to see what happens if it hits max message length...
-                        # So every 25 lines we'll send whatever we have and keep going.
-                        $self->discord->send_message($channel_id, $reply);
-                        $i = 0;
-                        $reply = "";
-                    }              
-                }
-                $self->discord->send_message($channel_id, $reply);
+                    # John is going to add 400 roles to his server just to see what happens if it hits max message length...
+                    # So every 25 lines we'll send whatever we have and keep going.
+                    $self->discord->send_message($channel_id, $reply);
+                    $i = 0;
+                    $reply = "";
+                }              
             }
+            $self->discord->send_message($channel_id, $reply);
         }
         else
         {
-            $reply = "No self-serve roles configured for this server. Try `!help role` to learn how."
+            $reply = "No self-serve roles configured for this server. Try `!help role` to learn how.";
+            $self->discord->send_message($channel_id, $reply);
         }
     }
 
