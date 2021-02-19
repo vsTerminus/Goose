@@ -231,6 +231,8 @@ sub discord_on_message_create
         my $msg = $hash->{'content'};
         my $channel_id = $hash->{'channel_id'};
         my $guild_id = $hash->{'guild_id'};
+        my $guild = $self->discord->get_guild($guild_id);
+        my $guild_owner_id = $guild->{'owner_id'};
         my @mentions = @{$hash->{'mentions'}};
         my $trigger = $self->trigger;
         my $discord_name = $self->discord->name;
@@ -254,12 +256,10 @@ sub discord_on_message_create
                         my $access = $command->{'access'};
                         my $owner = $self->owner_id;
 
-                        if ( defined $access and $access > 0 and defined $owner and $owner != $author->{'id'} )
-                        {
-                            # Sorry, no access to this command.
-                            say localtime(time) . ": '" . $author->{'username'} . "' (" . $author->{'id'} . ") tried to use a restricted command and is not the bot owner.";
-                        }
-                        elsif ( ( defined $access and $access == 0 ) or ( defined $owner and $owner == $author->{'id'} ) )
+                        $access = 0 unless defined $access;
+                        if ( $access == 0 # Public commands
+                                or ( $access == 1 and defined $owner and $owner == $author->{'id'} )  # Owner of the bot
+                                or ( $access == 2 and defined $guild_owner_id and $guild_owner_id == $author->{'id'} ) ) # Owner of the server
                         {
                             my $object = $command->{'object'};
                             my $function = $command->{'function'};
@@ -272,9 +272,6 @@ sub discord_on_message_create
                             #    'user_id'       => $author->{'id'},
                             #    'timestamp'     => time
                             #);
-
-                            # Testing... Get user's permissions every time they talk.
-                            # my $user_permissions = $self->discord->gw->user_permissions($guild_id, $author->{'id'});
 
                             $hash->{'content'} = $msg;  # We've made some changes to the message content, let's make sure those get passed on to the command.
                             $object->$function($hash);
