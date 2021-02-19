@@ -73,10 +73,10 @@ has on_message_reaction_add => ( is => 'ro', default => sub
         my $user_id = $hash->{'user_id'};
         my $emoji_str = _create_emoji_str($hash);
 
-        if ( $self->_is_actionable($guild_id, $message_id, $user_id, $emoji_str) )
+        if ( $self->_is_actionable($guild_id, $channel_id, $message_id, $user_id, $emoji_str) )
         {
             $self->_add_role($guild_id, $emoji_str, $user_id);
-            $self->log->debug('[on_message_reaction_add] Added role <details here>');
+            #$self->log->debug('[on_message_reaction_add] Added role <details here>');
         }
         
     })
@@ -90,13 +90,34 @@ has on_message_reaction_remove => ( is => 'ro', default => sub
         my ($gw, $hash) = @_;
         my $guild_id = $hash->{'guild_id'};
         my $channel_id = $hash->{'channel_id'};
+        my $message_id = $hash->{'message_id'};
         my $emoji_str = _create_emoji_str($hash);
         my $user_id = $hash->{'user_id'};
         
-        if ( $self->_is_actionable($guild_id, $channel_id, $user_id, $emoji_str) )
+        if ( $self->_is_actionable($guild_id, $channel_id, $message_id, $user_id, $emoji_str) )
         {
             $self->_remove_role($guild_id, $emoji_str, $user_id);
-            $self->log->debug('[on_message_reaction_remove] Removed role <details here>');
+            #$self->log->debug('[Role.pm] [on_message_reaction_remove] Removed role from user... to-do: add details');
+        }
+    })
+});
+
+has on_message_delete => ( is => 'ro', default => sub
+{
+    my $self = shift;
+    $self->discord->gw->on('MESSAGE_DELETE' => sub
+    {
+        # If this is a watched message we should remove it from the db.
+        my ($gw, $hash) = @_;
+        my $guild_id = $hash->{'guild_id'};
+        my $channel_id = $hash->{'channel_id'};
+        my $message_id = $hash->{'id'};
+
+        if ( $self->_is_watched_message($guild_id, $channel_id, $message_id) )
+        {
+            $self->log->debug('[Role.pm] [on_message_delete] Deleted a Role Post: Guild ' . $guild_id . ', Channel ' . $channel_id . ', Message ' . $message_id);
+            my $query = "DELETE FROM role_posts WHERE guild_id = ? AND channel_id = ? AND message_id = ?";
+            $self->db->do($query, $guild_id, $channel_id, $message_id);
         }
     })
 });
@@ -204,12 +225,16 @@ sub cmd_role
     {
         $args =~ s/^post //i;
 
-        my $query = "INSERT INTO role_posts VALUES ( ?, ?, ? )";
-        $self->db->do($query, $guild_id, $channel_id, $message_id);
-
         $self->discord->delete_message($channel_id, $message_id);
 
-        $self->discord->send_message($channel_id, $args);
+        $self->discord->send_message($channel_id, $args, sub{ 
+            my $hash = shift;
+            my $post_id = $hash->{'id'};
+            say "Role Post Message ID: $post_id";
+            my $query = "INSERT INTO role_posts VALUES ( ?, ?, ? )";
+            $self->db->do($query, $guild_id, $channel_id, $post_id);
+        });
+
 
         # Find emojis in the message :|
         # Just loop through the defined emojis and match for them?
@@ -264,22 +289,22 @@ sub _create_emoji_str
 
 sub _is_actionable
 {
-    my ($self, $guild_id, $message_id, $user_id, $emoji_str) = @_;
+    my ($self, $guild_id, $channel_id, $message_id, $user_id, $emoji_str) = @_;
 
     return ( 
         $self->bot->user_id != $user_id                         # Ignore our own reactions
         and $self->_bot_can_manage_roles($guild_id)             # Do we have the MANAGE_ROLES permission?
-        and $self->_is_watched_message($guild_id, $message_id)  # Is this a channel we are watching on this server?
+        and $self->_is_watched_message($guild_id, $channel_id, $message_id)  # Is this a channel we are watching on this server?
         and $self->_is_watched_emoji($guild_id, $emoji_str)     # Is this an emoji configured with a role on this server?
     );
 }
 
 sub _is_watched_message
 {
-    my ($self, $guild_id, $message_id) = @_;
+    my ($self, $guild_id, $channel_id, $message_id) = @_;
 
-    my $query = "SELECT * from role_posts where guild_id = ? and message_id = ?";
-    my $dbh = $self->db->do($query, $guild_id, $message_id);
+    my $query = "SELECT * from role_posts where guild_id = ? and channel_id = ? and message_id = ?";
+    my $dbh = $self->db->do($query, $guild_id, $channel_id, $message_id);
     my $rows = $dbh->fetchall_arrayref();
     return scalar @$rows;
 }
