@@ -135,44 +135,37 @@ sub cmd_role
     my $args = $msg->{'content'};
     my $pattern = $self->pattern;
     $args =~ s/$pattern//i;
-    
-    #$self->bot->log->debug('[Template.pm] [cmd_template] ' . Data::Dumper->Dump([$msg], ['msg']));
-    #say Data::Dumper->Dump([$args], ['args']);
-
-    # The if / else blocks make this function too long and ugly, but I really didn't feel like breaking it out. Sorry.
-
 
     #### LIST
     my $reply = "Configured Self Serve Roles:\n";
     say "Args: '" . $args . "'";
     if ( $args =~ /^(list|info|status)?$/i )
     {
-        say "List roles!";
-        my $query = 'select * from roles where guild_id = ?';
-        my $dbh = $self->db->do($query, $guild_id);
-
-        my $rows = $dbh->fetchall_arrayref();
-
-        if ( scalar @$rows )
+        if ( my $roles_hash = $self->_get_configured_roles($guild_id) )
         {
-            foreach my $row (@$rows)
+            my @emojis = keys %$roles_hash;
+            
+            if ( scalar @emojis )
             {
-                say Dumper($row);
-                my $emoji = _decode_emoji($row->[1]);
-
-
-                say $emoji . '=> <@&' . $row->[2] . ">";
-                $reply .= $emoji . ' => <@&' . $row->[2] . ">\n";
-
-                # John is going to add 400 roles to his server just to see what happens if it hits max message length...
-                # So every 500 characters we'll send whatever we have and keep going.
-                if ( length $reply > 500 )
+                my $reply = "Configured Self Serve Roles:\n";
+                my $i = 0;
+                foreach my $octet (@emojis)
                 {
-                    $self->discord->send_message($channel_id, $reply);
-                    $reply = "";
+                    $i++;
+                    my $emoji = _decode_emoji($octet);
+                    $reply .= $emoji . ' => <@&' . $roles_hash->{$octet}{'role_id'} . ">\n";
+                    
+                    if ( $i >= 25 )
+                    {
+                        # John is going to add 400 roles to his server just to see what happens if it hits max message length...
+                        # So every 25 lines we'll send whatever we have and keep going.
+                        $self->discord->send_message($channel_id, $reply);
+                        $i = 0;
+                        $reply = "";
+                    }              
                 }
+                $self->discord->send_message($channel_id, $reply);
             }
-            $self->discord->send_message($channel_id, $reply) if length $reply > 0; # Don't send an empty reply in case we hit 500 characters on the final linked role.
         }
         else
         {
@@ -227,18 +220,30 @@ sub cmd_role
 
         $self->discord->delete_message($channel_id, $message_id);
 
-        $self->discord->send_message($channel_id, $args, sub{ 
+        $self->discord->send_message($channel_id, $args, sub
+        { 
             my $hash = shift;
             my $post_id = $hash->{'id'};
             say "Role Post Message ID: $post_id";
             my $query = "INSERT INTO role_posts VALUES ( ?, ?, ? )";
             $self->db->do($query, $guild_id, $channel_id, $post_id);
+
+            # Now react to the message
+            my $roles = $self->_get_configured_roles($guild_id);
+
+            my $i = 0; # count reacts, max at 10 per message
+            foreach my $key (keys %$roles)
+            {
+                my $emoji_str = _decode_emoji($key);
+                if ( $hash->{'content'} =~ /$emoji_str/i )
+                {
+                    $i++;
+                    my $snowflake = $emoji_str; $snowflake =~ s/^\<\:(.*\:.*)\>/$1/;
+                    $self->discord->create_reaction($channel_id, $post_id, $snowflake);
+                }
+                last if $i >= 10;
+            }
         });
-
-
-        # Find emojis in the message :|
-        # Just loop through the defined emojis and match for them?
-        # Add each one as a reaction
     }
 }
 
@@ -353,6 +358,17 @@ sub _remove_role
     my $role_id = $self->_linked_role($guild_id, $emoji_str);
 
     $self->discord->remove_guild_member_role($guild_id, $user_id, $role_id);
+}
+
+sub _get_configured_roles
+{
+    my ($self, $guild_id) = @_;
+
+    my $query = 'select * from roles where guild_id = ?';
+    my $dbh = $self->db->do($query, $guild_id);
+    my $hash = $dbh->fetchall_hashref('emoji_str');
+
+    return $hash;
 }
 
 1;
