@@ -28,7 +28,6 @@ use Command::Roll;
 use Command::MLB;
 use Command::Uptime;
 use Command::Duolingo;
-use Command::Hoggit;
 use Command::Goal;
 use Command::Role;
 use Data::Dumper;
@@ -60,7 +59,6 @@ $bot->add_command( Command::YouTube->new        ('bot' => $bot) )   if ( $config
 $bot->add_command( Command::NowPlaying->new     ('bot' => $bot) )   if ( $config->{'lastfm'}{'use_lastfm'} );
 $bot->add_command( Command::PYX->new            ('bot' => $bot) )   if ( $config->{'cah'}{'use_cah'} );
 $bot->add_command( Command::Duolingo->new       ('bot' => $bot) )   if ( $config->{'duolingo'}{'use_duolingo'} );
-$bot->add_command( Command::Hoggit->new         ('bot' => $bot) );
 $bot->add_command( Command::Goal->new           ('bot' => $bot) );
 $bot->add_command( Command::Role->new           ('bot' => $bot) );
 
