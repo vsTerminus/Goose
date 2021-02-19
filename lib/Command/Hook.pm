@@ -13,7 +13,7 @@ has discord             => ( is => 'lazy', builder => sub { shift->bot->discord 
 has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
 has name                => ( is => 'ro', default => 'Hook' );
-has access              => ( is => 'ro', default => 2 ); # 0 = Public, 1 = Bot-Owner Only, 2 = Bot-Owner or Server-Owner Only
+has access              => ( is => 'ro', default => 1 ); # 0 = Public, 1 = Bot-Owner Only, 2 = Server-Owner Only
 has description         => ( is => 'ro', default => 'Create a webhook in the current channel for the bot to use.' );
 has pattern             => ( is => 'ro', default => '^hook ?' );
 has function            => ( is => 'ro', default => sub { \&cmd_webhook } );
