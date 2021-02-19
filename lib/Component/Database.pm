@@ -35,8 +35,11 @@ sub db_connect
     my $dsn = 'DBI:' . $self->{'type'} . ':' . $self->{'name'};
     my $user = $self->{'user'};
     my $pass = $self->{'pass'};
+    my $flags = {
+        mysql_enable_utf8mb4 => 1, # Required for storing unicode, specifically emoji
+    };
 
-    my $dbh = DBI->connect_cached($dsn, $user, $pass) or die "Could not connect to database\n$@";
+    my $dbh = DBI->connect_cached($dsn, $user, $pass, $flags) or die "Could not connect to database\n$@";
  
     return $dbh;
 }
