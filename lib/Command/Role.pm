@@ -75,7 +75,7 @@ has on_message_reaction_add => ( is => 'ro', default => sub
 
         if ( $self->_is_actionable($guild_id, $channel_id, $message_id, $user_id, $emoji_str) )
         {
-            $self->_add_role($guild_id, $emoji_str, $user_id);
+            $self->_add_role($guild_id, $channel_id, $emoji_str, $user_id);
             #$self->log->debug('[on_message_reaction_add] Added role <details here>');
         }
         
@@ -348,11 +348,18 @@ sub _linked_role
 
 sub _add_role
 {
-    my ($self, $guild_id, $emoji_str, $user_id) = @_;
+    my ($self, $guild_id, $channel_id, $emoji_str, $user_id) = @_;
 
     my $role_id = $self->_linked_role($guild_id, $emoji_str);
 
-    $self->discord->add_guild_member_role($guild_id, $user_id, $role_id);
+    $self->discord->add_guild_member_role($guild_id, $user_id, $role_id, sub 
+    { 
+        my $hash = shift; 
+        if ( exists $hash->{'code'} and $hash->{'code'} == 50013 )
+        {
+            $self->discord->send_message($channel_id, ':x: I cannot manage the <@&' . $role_id . '> role. Please drag the "dfopsajff" role above it in Server Settings -> Roles.');
+        }
+    });
 }
 
 sub _remove_role
