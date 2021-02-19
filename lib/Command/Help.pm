@@ -13,7 +13,7 @@ has discord             => ( is => 'lazy', builder => sub { shift->bot->discord 
 has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 
 has name                => ( is => 'ro', default => 'Help' );
-has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
+has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only, 2 = Server-Owner Only
 has description         => ( is => 'ro', default => 'List all commands currently available to the bot, or detailed information about a specific command' );
 has pattern             => ( is => 'ro', default => '^help ?' );
 has function            => ( is => 'ro', default => sub { \&cmd_help } );
@@ -73,12 +73,18 @@ sub cmd_help
         my $help_str = "This bot has the following commands available: \n\n";
 
         my @public;
-        my @restricted;
+        my @botowner;
+        my @serverowner;
         foreach my $key (sort keys %{$commands})
         {
             my $command = $bot->get_command_by_name($key);
             my $access = $command->{'access'};
-            ( defined $access and $access > 0 ) ? push @restricted, $key : push @public, $key;
+            if ( defined $access )
+            {
+                push @public, $key if $access == 0;
+                push @botowner, $key if $access == 1;
+                push @serverowner, $key if $access == 2;
+            }
         }
 
         $help_str .= "**Public**:```\n";
@@ -87,11 +93,18 @@ sub cmd_help
             $help_str .= "- $key\n";
         }
 
-        $help_str .= "```\n\n**Restricted to Owner:**```\n";
-        foreach my $key (@restricted)
+        $help_str .= "```\n\n**Restricted to Bot Owner:**```\n";
+        foreach my $key (@botowner)
         {
             $help_str .= "- $key\n";
         }
+
+        $help_str .= "```\n\n**Restricted to Server Owner:**\n```";
+        foreach my $key (@serverowner)
+        {
+            $help_str .= "- $key\n";
+        }
+
         $help_str .= "```\nUse `" . $trigger . "help <command>` to see more about a specific command.";
 
         my $client_id = $bot->client_id();
