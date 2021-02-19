@@ -25,8 +25,8 @@ has channels            => ( is => 'lazy', builder => sub {
     return $dbh
 });
 
-has name                => ( is => 'ro', default => 'Role Manager' );
-has access              => ( is => 'ro', default => 1 ); # 0 = Public, 1 = Bot Owner Only, 2 = Server Owner Only
+has name                => ( is => 'ro', default => 'Role' );
+has access              => ( is => 'ro', default => 2 ); # 0 = Public, 1 = Bot Owner Only, 2 = Server Owner Only
 has description         => ( is => 'ro', default => 'Manage user self-serve roles' );
 has pattern             => ( is => 'ro', default => '^roles? ?' );
 has function            => ( is => 'ro', default => sub { \&cmd_role } );
