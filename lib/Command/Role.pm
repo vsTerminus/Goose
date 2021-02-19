@@ -136,12 +136,19 @@ sub cmd_role
     my $pattern = $self->pattern;
     $args =~ s/$pattern//i;
 
+    if ( !$self->_bot_can_manage_roles($guild_id) )
+    {
+        $self->discord->send_message($channel_id, ":x: I am missing the MANAGE ROLES permission. I cannot perform this action without it.");
+        return undef;
+    }
+
     #### LIST
     my $reply = "Configured Self Serve Roles:\n";
     if ( $args =~ /^(list|info|status)?$/i )
     {
         my $roles_hash = $self->_get_configured_roles($guild_id);
         my @emojis = keys %$roles_hash;
+
         if ( scalar @emojis > 0 )
         {
             my $reply = "Configured Self Serve Roles:\n";
@@ -295,7 +302,7 @@ sub _is_actionable
 
     return ( 
         $self->bot->user_id != $user_id                         # Ignore our own reactions
-        and $self->_bot_can_manage_roles($guild_id)             # Do we have the MANAGE_ROLES permission?
+        and $self->_bot_can_manage_roles($guild_id) # We have MANAGE ROLES permission
         and $self->_is_watched_message($guild_id, $channel_id, $message_id)  # Is this a channel we are watching on this server?
         and $self->_is_watched_emoji($guild_id, $emoji_str)     # Is this an emoji configured with a role on this server?
     );
