@@ -191,7 +191,7 @@ sub cmd_role
         unless ( exists $guild->roles->{$role_id} ) { $self->discord->send_message($channel_id, ':x: That role does not exist on this server.'); return undef }
 
         # Check the emoji exists on this server
-        unless ( $self->_emoji_is_local($guild, $emoji_str) ) { $self->discord->send_message($channel_id, ':x: `' . $emoji_str . '` must be available on this server for me to use it.'); return undef }
+        #unless ( $self->_emoji_is_local($guild, $emoji_str) ) { $self->discord->send_message($channel_id, ':x: `' . $emoji_str . '` must be available on this server for me to use it.'); return undef }
 
         # Assuming we made it this far, the data should be OK.
         my $query = "INSERT INTO roles VALUES ( ?, ?, ? ) ON DUPLICATE KEY UPDATE role_id = ?";
