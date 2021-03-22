@@ -112,3 +112,20 @@ api_key = xxx
 use_duolingo = 1
 username = TheLegend27
 password = Pa55w0rd
+
+# Peeled API by Grinnz
+# The API does not have a key, which is why I am putting it in a config variable only.
+# The expected return looks like (in case you want to implement your own):
+#
+# {
+#   "dex_no": 269,
+#   "image_url": "https://pbs.twimg.com/media/Em_kPTmWEAg7BgF.png",
+#   "tweet_url": "https://twitter.com/i/status/1328531387691970560"
+# }
+#
+# 404 if not found.
+#
+# Leave use_peeled = 0 if you don't have an API or don't want to use it.
+[peeled]
+use_peeled = 0
+api_url = https://yoursite.com/peeled

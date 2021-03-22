@@ -20,6 +20,7 @@ use Component::Twitch;
 use Component::Stats;
 use Component::Duolingo;
 use Component::Hoggit;
+use Component::Peeled;
 
 use namespace::clean;
 
@@ -80,6 +81,11 @@ has duolingo            => ( is => 'lazy', builder => sub {
     ); 
 });
 has hoggit              => ( is => 'lazy', builder => sub { Component::Hoggit->new() } );
+has peeled              => ( is => 'lazy', builder => sub { 
+        my $self = shift;
+        my $api_url = $self->config->{'peeled'}{'api_url'};
+        Component::Peeled->new('api_url' => $api_url);
+});
 
 has user_id             => ( is => 'rwp' );
 has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );
