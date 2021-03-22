@@ -13,7 +13,7 @@ use Data::Dumper;
 use namespace::clean;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(cmd_template);
+our @EXPORT_OK = qw(cmd_duolingo);
 
 has bot                 => ( is => 'ro' );
 has discord             => ( is => 'lazy', builder => sub { shift->bot->discord } );
