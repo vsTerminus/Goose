@@ -81,6 +81,14 @@ sub fetch
                 $promise->reject($error);
                 return $promise;
             }
+            if ( $tx->res->code == 200 and !defined $tx->res->json->{'image_url'} )
+            {
+                # If the pokemon is recognized but doesn't have a peeled image yet it returns 200 with undef URLs.
+                # We will throw a 404 because as far as we are concerned this means not found, but we'll use a more specific error message.
+                my $error = { 'code' => 404, 'error' => 'Pokemon exists but has not yet been peeled' };
+                $promise->reject($error);
+                return $promise;
+            }
             
             my $json = $tx->res->json;
 
