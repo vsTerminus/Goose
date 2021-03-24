@@ -60,13 +60,13 @@ sub cmd_peel
             else
             {
                 $self->log->debug("Peeling pokemon '" . $args . "' failed: Pokemon not found" );
-                $self->discord->send_message($channel_id, "Pokemon not found");
+                $self->discord->send_message($channel_id, ":x: Pokemon not found");
             }
         })->catch(sub
         {
             my $error = shift;
             $self->log->debug("Peeling pokemon '" . $args . "' failed. Error: " . $error->{'error'} );
-            $self->discord->send_message($channel_id, "Error retrieving peeled pokemon ($error->{'error'})");
+            $self->discord->send_message($channel_id, ":x: $error->{'error'}");
         });
     }
     else
