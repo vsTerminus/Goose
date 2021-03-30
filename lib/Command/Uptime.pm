@@ -34,13 +34,19 @@ has 'created'           => ( is => 'ro', default => time );
 has on_ready => ( is => 'ro', default => sub 
 { 
     my $self = shift;
-    $self->discord->gw->on('READY' => sub { $self->last_ready(time) });
+    $self->discord->gw->on('READY' => sub { 
+            $self->last_ready(time);
+            $self->num_ready($self->num_ready+1);
+        });
 });
 
 has on_resumed => ( is => 'ro', default => sub
 {
     my $self = shift;
-    $self->discord->gw->on('RESUMED' => sub { $self->last_resumed(time) });
+    $self->discord->gw->on('RESUMED' => sub { 
+            $self->last_resumed(time);
+            $self->num_resumed($self->num_resumed+1);
+        });
 });
 
 
@@ -55,6 +61,8 @@ sub cmd_uptime
     my $bot_uptime = duration( time - $self->created );
     my $session_uptime = duration( time - $self->last_ready );
     my $connection_uptime = ( $self->last_resumed and $self->last_resumed > $self->last_ready ) ? duration( time - $self->last_resumed ) : duration( time - $self->last_ready );
+    my $num_sessions = ( $self->num_ready != 1 ) ? $self->num_ready . " New Sessions" : $self->num_ready . " Session";
+    my $num_resumes = ( $self->num_resumed != 1 ) ? $self->num_resumed . " Resumes" : $self->num_resumed . " Resume";
 
     # To-Do: Verbose version which also shows READY and RESUMED packet counts, current Sequence Number, and other info?
 
@@ -62,7 +70,8 @@ sub cmd_uptime
     # Send a message back to the channel
     my $uptime = ":chart_with_upwards_trend: `Bot           $bot_uptime`\n" .
                ":chart_with_downwards_trend: `Session       $session_uptime`\n" .
-                 ":chart_with_upwards_trend: `Connection    $connection_uptime`\n";
+                 ":chart_with_upwards_trend: `Connection    $connection_uptime`\n" .
+               ":chart_with_downwards_trend: `$num_sessions, $num_resumes`";
 
     $self->discord->send_message($channel, $uptime);
 }
