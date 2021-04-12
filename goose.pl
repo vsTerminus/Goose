@@ -31,6 +31,7 @@ use Command::Duolingo;
 use Command::Goal;
 use Command::Role;
 use Command::Peel;
+use Command::Card;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -63,6 +64,7 @@ $bot->add_command( Command::Duolingo->new       ('bot' => $bot) )   if ( $config
 $bot->add_command( Command::Goal->new           ('bot' => $bot) );
 $bot->add_command( Command::Role->new           ('bot' => $bot) );
 $bot->add_command( Command::Peel->new           ('bot' => $bot) )   if ( $config->{'peeled'}{'use_peeled'} );
+$bot->add_command( Command::Card->new           ('bot' => $bot) );
 
 # Start the bot
 $bot->start();
