@@ -38,13 +38,13 @@ sub random
             unless ( $tx->res->code == 200 )
             {
                 my $error = { 'code' => $tx->res->code, 'error' => 'Could not retrieve a random cat from the Cat API' };
-                $promise->reject($error);
+                $promise->resolve($error);
                 return $promise;
             }
             if ( $tx->res->code == 200 and !defined $tx->res->json->[0]->{'url'} )
             {
                 my $error = { 'code' => 404, 'error' => 'The Cat API returned OK but did not provide a valid URL' };
-                $promise->reject($error);
+                $promise->resolve($error);
                 return $promise;
             }
             

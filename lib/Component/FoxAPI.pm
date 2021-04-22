@@ -35,13 +35,13 @@ sub random
             unless ( $tx->res->code == 200 )
             {
                 my $error = { 'code' => $tx->res->code, 'error' => 'Could not retrieve a random fox from the Fox API' };
-                $promise->reject($error);
+                $promise->resolve($error);
                 return $promise;
             }
             if ( $tx->res->code == 200 and !defined $tx->res->json->{'image'} )
             {
                 my $error = { 'code' => 404, 'error' => 'Fox API returned OK but did not include an image URL' };
-                $promise->reject($error);
+                $promise->resolve($error);
                 return $promise;
             }
             
