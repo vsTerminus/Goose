@@ -11,10 +11,10 @@ use Data::Dumper;
 use namespace::clean;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(random);
+our @EXPORT_OK = qw(random breed);
 
 # The API does not have a key but is public so I have no qualms about including the URL here.
-has api_url => ( is => 'ro', default => 'https://dog.ceo/api/breeds/image/random' );
+has api_url => ( is => 'ro', default => 'https://dog.ceo/api/' );
 has ua      => ( is => 'rw', builder => sub { 
         my $ua = Mojo::UserAgent->new;
         $ua->connect_timeout(5);
@@ -26,8 +26,25 @@ sub random
 {
     my $self = shift;
 
+    my $url = Mojo::URL->new($self->api_url)->path('breeds/image/random');
+    return $self->_fetch($url);
+}
+
+sub breed
+{
+    my ($self, $breed) = @_;
+
+    $breed = lc $breed;
+    my $url = Mojo::URL->new($self->api_url)->path("breed/$breed/images/random");
+    return $self->_fetch($url);
+}
+
+
+sub _fetch
+{
+    my ($self, $url) = @_;
+
     my $promise = Mojo::Promise->new();
-    my $url = Mojo::URL->new($self->api_url);
 
     $self->ua->get_p($url)->then(sub
         {
@@ -35,13 +52,13 @@ sub random
             unless ( $tx->res->code == 200 )
             {
                 my $error = { 'code' => $tx->res->code, 'error' => 'Could not retrieve a random dog from the Dog API' };
-                $promise->reject($error);
+                $promise->resolve($error);
                 return $promise;
             }
             if ( $tx->res->code == 200 and !defined $tx->res->json->{'message'} )
             {
                 my $error = { 'code' => 404, 'error' => $tx->res->json->{'status'} };
-                $promise->reject($error);
+                $promise->resolve($error);
                 return $promise;
             }
             

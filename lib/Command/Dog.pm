@@ -32,15 +32,28 @@ sub cmd_dog
     my ($self, $msg) = @_;
 
     my $channel_id = $msg->{'channel_id'};
-    $self->dog->random()->then(sub
-        {
-            my $json = shift;
-            my $dog = $json->{'message'};
-            $self->discord->send_message($channel_id, $dog);
-        })->catch(sub{
-            $self->discord->send_message($channel_id, ":x: Sorry, couldn't find any dogs. Try again later!");
-        }
-    );
+    my $pattern = $self->pattern;
+    my $discord = $self->discord;
+    my $breed = $msg->{'content'};
+    $breed =~ s/$pattern//;
+
+    $breed 
+    ?   $self->_breed($breed)->then(sub{ $discord->send_message($channel_id, shift) }) 
+    :   $self->_random()->then(sub{ $discord->send_message($channel_id, shift) });
+}
+
+sub _breed
+{
+    my ($self, $breed) = @_;
+
+    return $self->dog->breed($breed)->then(sub{ shift->{'message'} // $self->_random() });
+}
+
+sub _random
+{
+    my $self = shift;
+
+    return $self->dog->random()->then(sub{ shift->{'message'} })->catch(sub{ ":x: Sorry, couldn't find any dogs. Try again later!" });
 }
 
 1;
