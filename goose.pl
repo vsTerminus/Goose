@@ -36,6 +36,7 @@ use Command::Dio;
 use Command::Dog;
 use Command::Cat;
 use Command::Fox;
+use Command::Bunny;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -73,6 +74,7 @@ $bot->add_command( Command::Dio->new            ('bot' => $bot) );
 $bot->add_command( Command::Dog->new            ('bot' => $bot) );
 $bot->add_command( Command::Cat->new            ('bot' => $bot) );
 $bot->add_command( Command::Fox->new            ('bot' => $bot) );
+$bot->add_command( Command::Bunny->new          ('bot' => $bot) );
 
 # Start the bot
 $bot->start();

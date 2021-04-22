@@ -24,6 +24,7 @@ use Component::Peeled;
 use Component::DogAPI;
 use Component::CatAPI;
 use Component::FoxAPI;
+use Component::BunniesAPI;
 
 use namespace::clean;
 
@@ -89,9 +90,12 @@ has peeled              => ( is => 'lazy', builder => sub {
         my $api_url = $self->config->{'peeled'}{'api_url'};
         Component::Peeled->new('api_url' => $api_url);
 });
+
+# Animal Pictures
 has dog                 => ( is => 'lazy', builder => sub { Component::DogAPI->new() } );
 has cat                 => ( is => 'lazy', builder => sub { Component::CatAPI->new() } );
 has fox                 => ( is => 'lazy', builder => sub { Component::FoxAPI->new() } );
+has bunnies             => ( is => 'lazy', builder => sub { Component::BunniesAPI->new() } );
 
 has user_id             => ( is => 'rwp' );
 has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );
