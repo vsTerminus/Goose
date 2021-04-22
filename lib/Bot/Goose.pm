@@ -22,6 +22,7 @@ use Component::Duolingo;
 use Component::Hoggit;
 use Component::Peeled;
 use Component::DogAPI;
+use Component::CatAPI;
 
 use namespace::clean;
 
@@ -88,6 +89,7 @@ has peeled              => ( is => 'lazy', builder => sub {
         Component::Peeled->new('api_url' => $api_url);
 });
 has dog                 => ( is => 'lazy', builder => sub { Component::DogAPI->new() } );
+has cat                 => ( is => 'lazy', builder => sub { Component::CatAPI->new() } );
 
 has user_id             => ( is => 'rwp' );
 has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );
