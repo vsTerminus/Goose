@@ -20,7 +20,6 @@ has ua          => ( is => 'rw', builder => sub {
         $ua->inactivity_timeout(120);
         return $ua;
     });
-has cache       => ( is => 'rw', default => sub { {} } );
 
 # The API does not have a key, which is why I am putting it in a config variable only.
 # The expected return looks like (in case you want to implement your own):
@@ -52,15 +51,8 @@ sub peel
         return $promise;
     }
 
-    $promise->resolve( $self->cached($pokestr) // $self->fetch($pokestr) );
+    $promise->resolve( $self->fetch($pokestr) );
     return $promise;
-}
-
-sub cached
-{
-    my ($self, $pokestr) = @_;
-
-    return $self->cache->{lc $pokestr} // undef;
 }
 
 sub fetch
@@ -91,10 +83,6 @@ sub fetch
             }
             
             my $json = $tx->res->json;
-
-            # Cache the results indefinitely
-            $self->cache->{lc $pokestr} = $json;
-
             $promise->resolve($json);
         }
     )->catch(sub
