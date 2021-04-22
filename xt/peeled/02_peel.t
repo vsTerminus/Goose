@@ -22,11 +22,6 @@ my $expected_json = {
     'image_url' => 'https://pbs.twimg.com/media/EmguSqyXcAM6rcq.png',
     'tweet_url' => 'https://twitter.com/i/status/1326361032848257024',
 };
-my $cached_json = {
-    'dex_no' => 999,
-    'image_url' => 'abcdefg',
-    'tweet_url' => 'tuvwxyz',
-};
 
 my $fail_name = 'mewthree';
 my $expected_error = { 
@@ -36,28 +31,11 @@ my $expected_error = {
 
 sub main
 {
-    # Test empty cache
-    is_deeply( $peeled->cached($pass_name), undef, "Pokemon '$pass_name' is not cached yet");
-
     # Test pass
     $peeled->peel($pass_name)->then(sub
     {
         my $got_json = shift;
         is_deeply( $got_json, $expected_json, "Pokemon '$pass_name' returned expected fetched results" );
-    })->catch(sub
-    {
-        fail(shift->{'error'});
-    })->wait();
-
-    # Test cache presense
-    is_deeply( $peeled->cached($pass_name), $expected_json, "Pokemon '$pass_name' is cached");
-
-    # Modify the cache and test it again
-    $peeled->{'cache'}{$pass_name} = $cached_json;
-    $peeled->peel($pass_name)->then(sub
-    {
-        my $got_json = shift;
-        is_deeply( $got_json, $cached_json, "Modified cache data for Pokemon '$pass_name' was returned" );
     })->catch(sub
     {
         fail(shift->{'error'});
