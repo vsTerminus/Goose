@@ -33,6 +33,7 @@ use Command::Role;
 use Command::Peel;
 use Command::Card;
 use Command::Dio;
+use Command::Dog;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -67,6 +68,7 @@ $bot->add_command( Command::Role->new           ('bot' => $bot) );
 $bot->add_command( Command::Peel->new           ('bot' => $bot) )   if ( $config->{'peeled'}{'use_peeled'} );
 $bot->add_command( Command::Card->new           ('bot' => $bot) );
 $bot->add_command( Command::Dio->new            ('bot' => $bot) );
+$bot->add_command( Command::Dog->new            ('bot' => $bot) );
 
 # Start the bot
 $bot->start();
