@@ -25,6 +25,7 @@ use Component::DogAPI;
 use Component::CatAPI;
 use Component::FoxAPI;
 use Component::BunniesAPI;
+use Component::DuckAPI;
 
 use namespace::clean;
 
@@ -96,6 +97,7 @@ has dog                 => ( is => 'lazy', builder => sub { Component::DogAPI->n
 has cat                 => ( is => 'lazy', builder => sub { Component::CatAPI->new() } );
 has fox                 => ( is => 'lazy', builder => sub { Component::FoxAPI->new() } );
 has bunnies             => ( is => 'lazy', builder => sub { Component::BunniesAPI->new() } );
+has duck                => ( is => 'lazy', builder => sub { Component::DuckAPI->new() } );
 
 has user_id             => ( is => 'rwp' );
 has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );
