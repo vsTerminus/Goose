@@ -27,6 +27,7 @@ use Component::FoxAPI;
 use Component::BunniesAPI;
 use Component::DuckAPI;
 use Component::LizardAPI;
+use Component::AVWX;
 
 use namespace::clean;
 
@@ -73,6 +74,7 @@ has db                  => ( is => 'lazy', builder => sub { Component::Database-
 has youtube             => ( is => 'lazy', builder => sub { Component::YouTube->new(%{shift->config->{'youtube'}}) } );
 has darksky             => ( is => 'lazy', builder => sub { Component::DarkSky->new(%{shift->config->{'weather'}}) } );
 has environmentcanada   => ( is => 'lazy', builder => sub { Component::EnvironmentCanada->new() } );
+has avwx                => ( is => 'lazy', builder => sub { Component::AVWX->new('token' => shift->config->{'avwx'}{'api_key'}) } );
 has maps                => ( is => 'lazy', builder => sub { Component::Maps->new('api_key' => shift->config->{'maps'}{'api_key'}) } );
 has lastfm              => ( is => 'lazy', builder => sub { Mojo::WebService::LastFM->new('api_key' => shift->config->{'lastfm'}{'api_key'}) } );
 has cah                 => ( is => 'lazy', builder => sub { Component::CAH->new('api_url' => shift->config->{'cah'}{'api_url'}) } );

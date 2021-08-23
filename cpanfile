@@ -24,6 +24,7 @@ requires 'DateTime';                    # Used to get specifc-format unix epoch 
 requires 'Data::Dumper';                # Used for debugging
 requires 'Geo::Distance';               # Calculate the distance pilots are from airfields in Hoggit.pm
 requires 'Games::Cards';                # For picking random playing cards
+requires 'Unicode::UTF8';
 
 
 # Testing

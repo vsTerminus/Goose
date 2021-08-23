@@ -39,6 +39,7 @@ use Command::Fox;
 use Command::Bunny;
 use Command::Duck;
 use Command::Lizard;
+use Command::Metar;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -79,6 +80,7 @@ $bot->add_command( Command::Fox->new            ('bot' => $bot) );
 $bot->add_command( Command::Bunny->new          ('bot' => $bot) );
 $bot->add_command( Command::Duck->new           ('bot' => $bot) );
 $bot->add_command( Command::Lizard->new         ('bot' => $bot) );
+$bot->add_command( Command::Metar->new          ('bot' => $bot) );
 
 # Start the bot
 $bot->start();

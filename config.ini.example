@@ -129,3 +129,9 @@ password = Pa55w0rd
 [peeled]
 use_peeled = 0
 api_url = https://yoursite.com/peeled
+
+# AVWX provides METAR information via REST API
+# http://avwx.rest/
+[avwx]
+use_avwx = 1
+api_key = abcd1234
