@@ -336,8 +336,18 @@ sub _build_message
 
             if ( $dt->day == $now->day )
             {
-                $xp += $event->{'improvement'};
-                say $event->{'event_type'} . " => " . $event->{'improvement'} . " XP";
+                if ( exists $event->{'improvement'} and defined $event->{'improvement'} )
+                {
+                    $xp += $event->{'improvement'};
+                    if ( exists $event->{'event_type'} and defined $event->{'event_type'} )
+                    {
+                        say $event->{'event_type'} . " => " . $event->{'improvement'} . " XP";
+                    }
+                    else
+                    {
+                        say "Unknown Lesson Type => " . $event->{'improvement'} . " XP";
+                    }
+                }
             }
         }
         else
@@ -356,7 +366,8 @@ sub _build_message
     my $msg = '';
     # Flag Language - Level
     # Streak - Exp Today
-    $msg .= $_ . "\n" foreach (@top3);
+    #$msg .= $_ . "\n" foreach (@top3); # Display the most recent three languages
+    $msg .= $top3[0] . "\n"; # Just the first line.
     $msg .= ":fire: " . $android->{'streak'} . " day";
     $msg .= "s" if $android->{'streak'} != 1;
     $msg .= " - $xp XP Today";
