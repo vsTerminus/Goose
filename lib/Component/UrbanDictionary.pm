@@ -19,7 +19,7 @@ sub new
     my ($class, %params) = @_;
     my $self = {};
    
-    my $api_url = 'http://api.urbandictionary.com/v0';
+    my $api_url = 'https://api.urbandictionary.com/v0';
     my $ua = Mojo::UserAgent->new;
     $ua->connect_timeout(5);
 
@@ -39,7 +39,7 @@ sub define
     my $ua      = $self->{'ua'};
     my $api_url = $self->{'api_url'};
     my $url     = $api_url . '/define?term=' . uri_encode($word);
-#    say "URL: $url";
+    #say "URL: $url";
 
     # Non-blocking if they provided a callback function
     if ( defined $callback )

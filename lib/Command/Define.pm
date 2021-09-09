@@ -95,8 +95,8 @@ sub cmd_define
 sub define_word
 {
     my ($self, $channel, $json) = @_;
-    
-    if ( scalar @{$json->{'list'}} >= 1 )
+
+    if ( defined $json and exists $json->{'list'} and scalar @{$json->{'list'}} >= 1 )
     {
 
         my $def = shift @{$json->{'list'}};
