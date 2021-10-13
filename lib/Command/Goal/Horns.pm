@@ -31,6 +31,7 @@ has horns   => ( is => 'ro', default => sub {
         'OTT' => 'https://www.youtube.com/watch?v=fHlWxPRNVBc',
         'PHI' => 'https://www.youtube.com/watch?v=0LsXpMiVD1E',
         'PIT' => 'https://www.youtube.com/watch?v=_asNhzXq72w',
+        'SEA' => 'https://www.youtube.com/watch?v=-Qm-HE2OQUQ',
         'SJS' => 'https://www.youtube.com/watch?v=NZqSBkmpbLw',
         'STL' => 'https://www.youtube.com/watch?v=Q23TDOJsY1s',
         'TBL' => 'https://www.youtube.com/watch?v=bdhDXxM20iM',
