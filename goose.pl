@@ -42,6 +42,7 @@ use Command::Lizard;
 use Command::Panda;
 use Command::RedPanda;
 use Command::Birb;
+use Command::Raccoon;
 use Command::Metar;
 use Data::Dumper;
 
@@ -84,8 +85,9 @@ $bot->add_command( Command::Bunny->new          ('bot' => $bot) );
 $bot->add_command( Command::Duck->new           ('bot' => $bot) );
 $bot->add_command( Command::Lizard->new         ('bot' => $bot) );
 $bot->add_command( Command::Panda->new          ('bot' => $bot) );
-$bot->add_command( Command::RedPanda->new          ('bot' => $bot) );
-$bot->add_command( Command::Birb->new          ('bot' => $bot) );
+$bot->add_command( Command::RedPanda->new       ('bot' => $bot) );
+$bot->add_command( Command::Birb->new           ('bot' => $bot) );
+$bot->add_command( Command::Raccoon->new        ('bot' => $bot) );
 $bot->add_command( Command::Metar->new          ('bot' => $bot) );
 
 # Start the bot
