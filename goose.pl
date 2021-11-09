@@ -44,6 +44,7 @@ use Command::RedPanda;
 use Command::Birb;
 use Command::Raccoon;
 use Command::Metar;
+use Command::Wink;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -89,6 +90,7 @@ $bot->add_command( Command::RedPanda->new       ('bot' => $bot) );
 $bot->add_command( Command::Birb->new           ('bot' => $bot) );
 $bot->add_command( Command::Raccoon->new        ('bot' => $bot) );
 $bot->add_command( Command::Metar->new          ('bot' => $bot) );
+$bot->add_command( Command::Wink->new           ('bot' => $bot) );
 
 # Start the bot
 $bot->start();

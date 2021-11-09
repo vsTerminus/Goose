@@ -24,31 +24,56 @@ has ua      => ( is => 'rw', builder => sub {
 sub animal
 {
     my ($self, $animal) = @_;
+    
+    return $self->random('animal', $animal);
+}
 
-    say "Getting a random '$animal'";
+sub animu
+{
+    my ($self, $animu) = @_;
+
+    return $self->random('animu', $animu);
+}
+
+sub random
+{
+    my ($self, $category, $thing) = @_;
+
     my $promise = Mojo::Promise->new();
     my $url = Mojo::URL->new($self->api_url);
-    $url->path("/animal/$animal");
+    $url->path("/$category/$thing");
 
     $self->ua->get_p($url)->then(sub
         {
             my $tx = shift;
             unless ( $tx->res->code == 200 )
             {
-                my $error = { 'code' => $tx->res->code, 'error' => 'Could not retrieve a random "' . $animal . '" from the Some-Random API' };
+                my $error = { 'code' => $tx->res->code, 'error' => 'Could not retrieve a random "' . $thing . '" from the Some-Random API' };
                 $promise->resolve($error);
                 return $promise;
             }
-            if ( $tx->res->code == 200 and !defined $tx->res->json->{'image'} )
+
+            my $json;
+            if ( $tx->res->code == 200 )
+            {
+                $json->{'code'} = $tx->res->code;
+                if ( defined $tx->res->json->{'image'} )
+                {
+                    $json->{'image'} = $tx->res->json->{'image'};
+                }
+                elsif ( defined $tx->res->json->{'link'} )
+                {
+                    $json->{'image'} = $tx->res->json->{'link'};
+                }
+                
+                $promise->resolve($json);
+            }
+            else
             {
                 my $error = { 'code' => 404, 'error' => 'Some-Random API returned OK but did not include an image URL' };
                 $promise->resolve($error);
                 return $promise;
             }
-            
-            my $json = $tx->res->json;
-            $json->{'code'} = $tx->res->code;
-            $promise->resolve($json);
         })->catch(sub
         {
             my $error = shift;

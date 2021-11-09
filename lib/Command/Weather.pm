@@ -28,7 +28,7 @@ has darksky     => ( is => 'rw' );
 has name        => ( is => 'ro', default => 'Weather' );
 has access      => ( is => 'ro', default => 0 ); # Public
 has description => ( is => 'ro', default => 'Current Weather Conditions. Powered by Google Maps, Dark Sky, and Environment Canada' );
-has pattern     => ( is => 'ro', default => '^(?:we?(?:ather)?) ?([^\s].*)?$' );
+has pattern     => ( is => 'ro', default => '^(?:w(?!ink)e?(?:ather)?) ?([^\s].*)?$' );
 has function    => ( is => 'ro', default => sub { return \&cmd_weather } );
 
 has content     => ( is => 'ro', default => sub { Command::Weather::Content->new() });
