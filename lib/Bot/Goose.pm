@@ -28,6 +28,7 @@ use Component::BunniesAPI;
 use Component::DuckAPI;
 use Component::LizardAPI;
 use Component::AVWX;
+use Component::SomeRandomAPI;
 
 use namespace::clean;
 
@@ -102,6 +103,7 @@ has fox                 => ( is => 'lazy', builder => sub { Component::FoxAPI->n
 has bunnies             => ( is => 'lazy', builder => sub { Component::BunniesAPI->new() } );
 has duck                => ( is => 'lazy', builder => sub { Component::DuckAPI->new() } );
 has lizard              => ( is => 'lazy', builder => sub { Component::LizardAPI->new() } );
+has some_random         => ( is => 'lazy', builder => sub { Component::SomeRandomAPI->new() } );
 
 has user_id             => ( is => 'rwp' );
 has owner_id            => ( is => 'lazy', builder => sub { shift->config->{'discord'}{'owner_id'} } );
