@@ -18,11 +18,11 @@ use Data::Dumper;
 use namespace::clean;
 
 # The bot can provide us with some of our objects
-has bot         => ( is => 'rw', required => 1 );
-has discord     => ( is => 'rw' );
-has db          => ( is => 'rw' );
-has maps        => ( is => 'rw' );
-has darksky     => ( is => 'rw' );
+has bot         => ( is => 'ro' );
+has discord     => ( is => 'lazy', builder => sub { shift->bot->discord } );
+has db          => ( is => 'lazy', builder => sub { shift->bot->db } );
+has maps        => ( is => 'lazy', builder => sub { shift->bot->maps } );
+has openweather => ( is => 'lazy', builder => sub { shift->bot->openweather } );
 
 # The rest are specific to this command
 has name        => ( is => 'ro', default => 'Weather' );
@@ -63,18 +63,6 @@ has usage       => ( is => 'ro', default => sub { return <<EOF;
 
 EOF
 });
-
-sub BUILD
-{
-    my ($self) = @_;
-
-    $self->discord($self->bot->discord);
-    $self->db($self->bot->db);
-    $self->maps($self->bot->maps);
-    $self->darksky($self->bot->darksky);
-    
-    return $self;
-}
 
 ###########################################################################################
 # There are two parts to this command:
@@ -176,6 +164,7 @@ async cmd_weather => sub
     # If not, we'll have to geocode the query location.
     else
     {
+        say "-> Geocoding args: $args";
         my $json = await $self->geocode($args);
     
         my $lat = $json->{'geometry'}{'location'}{'lat'};
@@ -225,7 +214,7 @@ async weather_by_coords => sub
     
         $self->send_weather($channel, $lat, $lon, $address, $json, $formatted_weather);
     }
-    # If we don't have cached weather (or it is expired), ask Dark Sky or Environment Canada for it
+    # If we don't have cached weather (or it is expired), ask OpenWeather or Environment Canada for it
     else
     {
 
@@ -246,7 +235,7 @@ async weather_by_coords => sub
         unless ( $weather_found )
         {
             $self->bot->log->debug("Requesting weather for $lat,$lon from Dark Sky");
-            $json = await $self->bot->darksky->weather($lat, $lon);
+            $json = await $self->bot->openweather->weather($lat, $lon);
         }
 
         # Cache the results;
@@ -274,10 +263,13 @@ sub send_weather
         
         my $header = ( exists $json->{'warning'} ? "**$address - " . $json->{'warning'} . "**" : "**$address**" );
 
+        my $forecast_url = Mojo::URL->new('https://openweathermap.org/find');
+        $forecast_url->query(q => $address);
+
         my $hookparam = {
             'username' => "Current Weather",
             'avatar_url' => $avatar,
-            'content' => "$header\n" . $formatted_weather . "\n[View Radar and Forecast](<https://darksky.net/forecast/$lat,$lon>)",
+            'content' => "$header\n" . $formatted_weather . "\n[View Forecast](<$forecast_url>)",
         };
 
         $self->discord->send_webhook($channel, $hook, $hookparam);
@@ -296,7 +288,6 @@ sub format_weather
 {
     my ($self, $json) = @_;
 
-    # Accept temperature and wind speed in either units
     my $temp_f = round($json->{'temperature'});
     my $temp_c = round($json->{'temperature_c'});
     
@@ -305,6 +296,9 @@ sub format_weather
 
     my $wind_mi = round($json->{'windSpeed'});
     my $wind_km = round($json->{'windSpeed_km'});
+
+    my $gust_mi = round($json->{'windGust'});
+    my $gust_km = round($json->{'windGust_km'});
 
     my $wind_dir = $json->{'windBearing'};
 
@@ -317,8 +311,9 @@ sub format_weather
 
     my $fuckingweather = $self->content->itsfucking_comment($temp_f, $temp_c, $feel_f, $feel_c, $cond);
 
-    my $winds = "None";
-    $winds = "$wind_dir ${wind_mi}mph/${wind_km}kph" unless $wind_dir eq 'None';
+    my $winds = "Calm";
+    $winds = "$wind_dir ${wind_mi}mph/${wind_km}kph" unless $wind_mi == 0 or $wind_km == 0;
+    $winds .= " Gust ${gust_mi}mph/${gust_km}kph" unless $gust_mi == 0 or $gust_km == 0;
 
     my $msg = "```c\n" .
         "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
@@ -402,7 +397,7 @@ sub get_stored_coords
 
 sub round
 {
-    my $n = shift;
+    my $n = shift // 0;
 
     # Add .5 for positive numbers
     # Subtract .5 for negative numbers

@@ -11,7 +11,8 @@ use Mojo::WebService::LastFM;
 use Time::Duration;
 use Component::Database;
 use Component::YouTube;
-use Component::DarkSky;
+#use Component::DarkSky;
+use Component::OpenWeather;
 use Component::EnvironmentCanada;
 use Component::Maps;
 use Component::CAH;
@@ -73,7 +74,7 @@ has status_timer        => ( is => 'rw' );
 
 has db                  => ( is => 'lazy', builder => sub { Component::Database->new(%{shift->config->{'db'}}) } );
 has youtube             => ( is => 'lazy', builder => sub { Component::YouTube->new(%{shift->config->{'youtube'}}) } );
-has darksky             => ( is => 'lazy', builder => sub { Component::DarkSky->new(%{shift->config->{'weather'}}) } );
+has openweather         => ( is => 'lazy', builder => sub { Component::OpenWeather->new(%{shift->config->{'weather'}}) } );
 has environmentcanada   => ( is => 'lazy', builder => sub { Component::EnvironmentCanada->new() } );
 has avwx                => ( is => 'lazy', builder => sub { Component::AVWX->new('token' => shift->config->{'avwx'}{'api_key'}) } );
 has maps                => ( is => 'lazy', builder => sub { Component::Maps->new('api_key' => shift->config->{'maps'}{'api_key'}) } );
