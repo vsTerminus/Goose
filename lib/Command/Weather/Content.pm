@@ -50,7 +50,6 @@ has comment => ( is => 'ro', default => sub
         ],
         'freezing' => [
             "I HOPE YOU PLUGGED YOUR CAR IN.",
-            "ARE YOU AN ESKIMO?",
             "MAJOR SHRINKAGE!",
             "WHY DO YOU LIVE HERE?",
             "THIS IS A JOKE, RIGHT?",
