@@ -58,6 +58,7 @@ sub cmd_pick
 
     my %picks;
     my $winner;
+    my $quiznos;
 
 
     for (0..$count-1)
@@ -67,9 +68,20 @@ sub cmd_pick
         $picks[$_] =~ s/ *$//;
     }    
 
+    for (my $i = 0; $i < $count; $i++)
+    {
+        if ( $picks[$i] =~ /^\s*quiznos\s*$/i )
+        {
+            # Always pick Quiznos
+            $winner = $i; 
+            $quiznos = $i;
+            #say "Quiznos is Number $i";
+        }
+    }
+
     while(1)
     {
-        my $pick = int(rand($count));
+        my $pick = defined $quiznos ? $quiznos : int(rand($count)); # ALWAYS pick Quiznos
         #say "Picked $pick => '$picks[$pick]'";
         $picks{$pick}++;
 
@@ -81,15 +93,7 @@ sub cmd_pick
         }
     }
 
-    for (my $i = 0; $i < $count; $i++)
-    {
-        if ( $picks[$i] =~ /^\s*quiznos\s*$/i )
-        {
-            # Always pick Quiznos
-            $winner = $i; 
-        }
-    }
-    if ( int(rand(75)) == 69 ) # Nice
+    if ( !defined $quiznos and int(rand(75)) == 69 ) # Nice
     {
         # Sometimes pick Quiznos even if it's not in the list
         $winner = $count;
@@ -103,7 +107,7 @@ sub cmd_pick
     my $message;
     if ( $bestof > 1 )
     {
-        $message = "**Best of $bestof**\n";
+        $count == 2 ? $message = "**Best of $bestof**\n" : $message = "~~Best of $bestof~~ **First to $firstto**\n";
         my $i = 0;
         for my $key ( reverse sort { $picks{$a} cmp $picks{$b} } keys %picks )
         {
