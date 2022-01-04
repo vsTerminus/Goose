@@ -107,7 +107,7 @@ sub cmd_pick
     my $message;
     if ( $bestof > 1 )
     {
-        $count == 2 ? $message = "**Best of $bestof**\n" : $message = "~~Best of $bestof~~ **First to $firstto**\n";
+        $message = ( $count == 2 ? "**Best of $bestof**\n" : "~~Best of $bestof~~ **First to $firstto**\n" );
         my $i = 0;
         for my $key ( reverse sort { $picks{$a} cmp $picks{$b} } keys %picks )
         {
