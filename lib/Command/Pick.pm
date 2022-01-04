@@ -15,7 +15,7 @@ has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 has name                => ( is => 'ro', default => 'Pick' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
 has description         => ( is => 'ro', default => 'Have the bot decide your fate, you wishy washy fuck.' );
-has pattern             => ( is => 'ro', default => '^pick ?' );
+has pattern             => ( is => 'ro', default => '^pick\d* ' );
 has function            => ( is => 'ro', default => sub { \&cmd_pick } );
 has usage               => ( is => 'ro', default => <<EOF
 ```!pick thing one, thing two, thing three```
@@ -32,33 +32,93 @@ sub cmd_pick
     my $author = $msg->{'author'};
     my $args = $msg->{'content'};
 
+    my $bestof = $args =~ /^pick(\d+)/i ? $1 : 1;
+    if ( $bestof > 99 )
+    {
+        #say "Reducing requested \"best of $bestof\" to \"best of 99\"";
+        $bestof = 99;
+    }
+    elsif ( $bestof == 2 )
+    {
+        #say "That's silly. You can't have a best of 2. Turning it into a best of 3.";
+        $bestof = 3;
+    }
+    my $firstto = int( $bestof / 2 ) + 1;
+    #say "Best of $bestof is first to $firstto";
+
     my $pattern = $self->{'pattern'};
     $args =~ s/$pattern//i;
 
     my $discord = $self->discord;
     my $replyto = '<@' . $author->{'id'} . '>';
 
-    my $quiznos = 0;
-
     my @picks = split (/,+/, $args);
 
     my $count = scalar @picks;
-    my $pick = int(rand($count));
 
-    $pick =~ s/^ *//;
-    
+    my %picks;
+    my $winner;
+
+
+    for (0..$count-1)
+    {
+        $picks{$_} = 0;
+        $picks[$_] =~ s/^ *//;
+        $picks[$_] =~ s/ *$//;
+    }    
+
+    while(1)
+    {
+        my $pick = int(rand($count));
+        #say "Picked $pick => '$picks[$pick]'";
+        $picks{$pick}++;
+
+        if ( $picks{$pick} >= $firstto )
+        {
+            $winner = $pick;
+            #say "Winner is $winner => '$picks[$winner]'";
+            last;
+        }
+    }
+
     for (my $i = 0; $i < $count; $i++)
     {
         if ( $picks[$i] =~ /^\s*quiznos\s*$/i )
         {
             # Always pick Quiznos
-            $pick = $i; 
-            $quiznos = 1;
+            $winner = $i; 
         }
+    }
+    if ( int(rand(75)) == 69 ) # Nice
+    {
+        # Sometimes pick Quiznos even if it's not in the list
+        $winner = $count;
+        $picks[$winner] = 'Quiznos';
+        $picks{$winner} = '69';
+        say "QUIZNOS!";
+    }
+
+    my @emotes = qw[<:duo_gold:699866744411390001> <:duo_silver:699866744444944395> <:duo_bronze:699866744365252658>];
+
+    my $message;
+    if ( $bestof > 1 )
+    {
+        $message = "**Best of $bestof**\n";
+        my $i = 0;
+        for my $key ( reverse sort { $picks{$a} cmp $picks{$b} } keys %picks )
+        {
+            $message .= $emotes[$i] . ' ' . $picks[$key] . ' (' . $picks{$key} . ')' . "\n";
+            $i++;
+            last if $i == 3;
+        }
+    }
+    else
+    {
+        $message = ":point_right: $picks[$winner]";
     }
 
     # Send a message back to the channel
-    $discord->send_message($channel, ":point_right: $picks[$pick]");
+    $discord->send_message($channel, $message);
 }
 
 1;
