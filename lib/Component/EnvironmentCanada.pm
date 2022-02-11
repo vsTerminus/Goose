@@ -66,10 +66,12 @@ async weather => sub
         'temperature_c'         => $curr->at('temperature')->text,
         'windBearing'           => wind_direction($curr->at('wind')->at('direction')->text),
         'windSpeed_km'          => $curr->at('wind')->at('speed')->text,
+        'windGust_km'           => $curr->at('wind')->at('gust')->text,
         'humidity'              => $curr->at('relativeHumidity')->text,
     };
 
     $json->{'windSpeed_km'} = 0 if $json->{'windSpeed_km'} eq '';
+    $json->{'windGust_km'} = 0 if $json->{'windGust_km'} eq '';
 
     # Looks like the Current Conditions and WindChill and Humidex are sometimes blank with Environment Canada
     # so we need to handle that.
@@ -92,6 +94,7 @@ async weather => sub
     $json->{'temperature'}          = ctof($json->{'temperature_c'});
     $json->{'apparentTemperature'}  = ctof($json->{'apparentTemperature_c'});
     $json->{'windSpeed'}            = mph($json->{'windSpeed_km'});
+    $json->{'windGust'}             = mph($json->{'windGust_km'});
 
     # Weather Warnings
     if ( my $warn = $dom->at('warnings')->at('event') )
