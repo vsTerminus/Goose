@@ -18,7 +18,7 @@ has bunnies             => ( is => 'lazy', builder => sub { shift->bot->bunnies 
 has name                => ( is => 'ro', default => 'Bunny' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
 has description         => ( is => 'ro', default => 'Pick a bunny, any bunny' );
-has pattern             => ( is => 'ro', default => '^bunny ?' );
+has pattern             => ( is => 'ro', default => '^(bunny|bnuuy|rabbit) ?' );
 has function            => ( is => 'ro', default => sub { \&cmd_bunny } );
 has usage               => ( is => 'ro', default => <<EOF
 Look at this bunny!
