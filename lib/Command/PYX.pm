@@ -29,7 +29,17 @@ Make the bot fill in the blanks: `!pyx ____ is the name of my ____ coverband`
 Play white cards with `w <card text>` and the bot will select a suitable black card at random.
 ... one card:  `!pyx w A Big Black Dick`
 ... two cards: `!pyx w Utilikilt w Paul and Storm`
-etc 
+
+White cards can also be random by using `w ?`.
+... One random white card on a random black card: `!pyx w ?` (This is functionally equivalent to `!pyx 1`)
+... One random white card with a custom white card: `!pyx w ? w This is my best card`
+
+You can also limit the number of words found on any white card the bot picks by adding a number to the end of the pyx command:
+... Limit all white cards to 5 words or fewer: `!pyx5`
+... Limit all white cards to 3 words or fewer: `!pyx3 The bot is horny for ____ again.`
+... Limit all white cards to a single word: `!pyx1 I AM ____ I LIKE ____`
+
+Finally, if you write an all-caps black card the bot will fill in the blanks in all-caps as well.
 
 EOF
 );

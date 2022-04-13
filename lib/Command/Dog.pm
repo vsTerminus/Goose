@@ -24,6 +24,11 @@ has usage               => ( is => 'ro', default => <<EOF
 Look at this dog!
 
 !dog
+
+Want a specific breed? Try `!dog <breed>`, eg `!dog corgi` or `!dog golden retriever`
+
+For a full list of recognized breeds, see the list here: https://dog.ceo/dog-api/breeds-list
+
 EOF
 );
 
@@ -45,6 +50,14 @@ sub cmd_dog
 sub _breed
 {
     my ($self, $breed) = @_;
+
+    # Sub breeds are submitted as "breed/subtype" in the API which is backwards for how people type them
+    # So dogs like "Golden Retriever" have to be updated to "Retriever/Golden"
+    if ( $breed =~ / / )
+    {
+        $breed =~ s/^(\w+) (\w+)$/$2\/$1/;
+        #say "Updated breed to $breed";
+    }
 
     return $self->dog->breed($breed)->then(sub{ shift->{'message'} // $self->_random() });
 }

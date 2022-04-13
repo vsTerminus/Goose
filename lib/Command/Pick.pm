@@ -21,6 +21,17 @@ has usage               => ( is => 'ro', default => <<EOF
 ```!pick thing one, thing two, thing three```
     Give the bot a list of things to pick from, and separate each with a comma.
     You can have the bot pick from as many things as you want.
+
+    You can also do "best of" brackets by adding a number:
+    `!pick7 My team, Your team` will run a "Best of 7" and keep picking between these choices until one of them has won 4 times.
+
+    You can also do "best of" brackets with 3 or more choices, but since technically that's not a best-of it will run a first-to instead.
+    `!pick7 Team 1, Team 2, Team 3, Team 4` will run a "First to 4", keeping the behavior consistent with Best-of.
+
+    The number can range from 3 to 99, allowing for a "best of" 99 or "first to" 50.
+
+    Best-of and First-to brackets will also display the results for the podium positions with gold, silver, and bronze rankings.
+
 EOF
 );
 
