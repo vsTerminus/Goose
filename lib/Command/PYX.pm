@@ -30,7 +30,7 @@ Play white cards with `w <card text>` and the bot will select a suitable black c
 ... one card:  `!pyx w A Big Black Dick`
 ... two cards: `!pyx w Utilikilt w Paul and Storm`
 
-White cards can also be random by using `w ?`.
+White cards can also be random by using `w ?`
 ... One random white card on a random black card: `!pyx w ?` (This is functionally equivalent to `!pyx 1`)
 ... One random white card with a custom white card: `!pyx w ? w This is my best card`
 

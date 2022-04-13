@@ -15,7 +15,7 @@ has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 has name                => ( is => 'ro', default => 'Pick' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
 has description         => ( is => 'ro', default => 'Have the bot decide your fate, you wishy washy fuck.' );
-has pattern             => ( is => 'ro', default => '^pick\d* ' );
+has pattern             => ( is => 'ro', default => '^pick\d* ?' );
 has function            => ( is => 'ro', default => sub { \&cmd_pick } );
 has usage               => ( is => 'ro', default => <<EOF
 ```!pick thing one, thing two, thing three```
@@ -42,6 +42,12 @@ sub cmd_pick
     my $channel = $msg->{'channel_id'};
     my $author = $msg->{'author'};
     my $args = $msg->{'content'};
+
+    if ( $args eq 'pick' )
+    {
+        $self->discord->send_message($channel, ":point_right: Quiznos");
+        return;
+    }
 
     my $bestof = $args =~ /^pick(\d+)/i ? $1 : 1;
     if ( $bestof > 99 )
