@@ -274,6 +274,7 @@ sub _flag
         'en'    => ':flag_gb:', # English -> Great Britain
         'hw'    => ':flag_us:', # Hawaiian -> USA
         'tlh'   => '<:flag_tlh:702749901813186664>', # Klingon -> Custom Klingon Flag Emoji
+        'ko'    => ':flag_kr:', # Korean -> South Korea
     );
 
     my $flag = ( exists $flags{$lang} ? $flags{$lang} : ":flag_$lang:" );
