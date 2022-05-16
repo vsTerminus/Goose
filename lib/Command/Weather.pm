@@ -309,7 +309,7 @@ sub format_weather
     
     my $cond = $json->{'summary'};
 
-    my $fuckingweather = $self->content->itsfucking_comment($temp_f, $temp_c, $feel_f, $feel_c, $cond);
+    my $fuckingweather = $self->content->itsfucking_comment($temp_f, $temp_c, $feel_f, $feel_c, $cond, $humidity);
 
     my $winds = "Calm";
     $winds = "$wind_dir ${wind_mi}mph/${wind_km}kph" unless $wind_mi == 0 or $wind_km == 0;

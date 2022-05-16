@@ -86,6 +86,43 @@ has comment => ( is => 'ro', default => sub
             "DOES ANYONE KNOW HOW TO START A FIRE WITH A TWIG AND SOME STRING?",
             "BEING ON FIRE SOUNDS NICE RIGHT ABOUT NOW.",
         ],
+        'wet' => [
+            "MY UMBRELLA IS TOO SMALL",
+            "MY UMBRELLA IS TOO BIG",
+            "MY CLOTHES ARE SOAKED",
+            "I'M SOAKED!",
+            "STAY INSIDE!",
+            "I'M GONNA MAKE IT SO WET FOR YOU",
+            "I'M SO WET RIGHT NOW",
+            "STOP, YOU'RE MAKING ME WET",
+            ":musical_note: RAIN RAIN GO AWAY, DON'T COME BACK ANOTHER DAY",
+            ":musical_note: RAIN RAIN GO AWAY",
+            ":musical_note: RAIN RAIN.... FUCK OFF",
+            "SINGING IN THE RAIN",
+            "DANCING IN THE RAIN",
+            "EWWWWWW",
+            "HOORAY!",
+        ],
+        'humid' => [
+            "I FEEL LIKE I'M STANDING IN A SWIMMING POOL... BUT IT'S EVERYWHERE",
+            "SO FUCKING GROSS RIGHT NOW",
+            "I'M SWEATING ENOUGH FOR THE BOTH OF US",
+            "MY CLOTHES ARE SOAKED",
+            "GROSS",
+            "EW",
+            "YUCK!",
+            "WHYYY",
+            "IT'S NOT THE HEAT, IT'S THE HUMIDITY",
+            "FUUUUUUUCK",
+            "I'M DROWNING IN MY OWN SWEAT",
+        ],
+        'cloudy' => [
+            "WHO TURNED OFF THE SUN?",
+            "WHERE'D THE FUCKING SUN GO?",
+            "BRING BACK THE SUN!",
+            "I MISS THE SUN",
+            "REQUEST IFR CLEARANCE TO STAY THE FUCK INSIDE",
+        ],
         'alright' => [
             "I CAN DEAL WITH THIS, I SUPPOSE.",
             "I MEAN, IT COULD BE WORSE.",
@@ -96,6 +133,8 @@ has comment => ( is => 'ro', default => sub
             "FINE. I GUESS.",
             "ALL SIGNS POINT TO 'MEH'",
             "TODAY'S WEATHER WILL BE 'MEH' WITH A CHANCE OF DOOM!",
+            "WARP ME TO HALIFAX",
+            "I HAVE A BUSINESS INSTALLING STYROFOAM NUNS."
         ],
         'nice' => [
             "GO OUTSIDE!",
@@ -103,10 +142,17 @@ has comment => ( is => 'ro', default => sub
             "GET OFF THE COMPUTER AND GO OUTSIDE!",
             "GET OFF YOUR ASS AND GO OUTSIDE.",
             "WHY CAN'T IT BE LIKE THIS ALL YEAR?",
-            "IF YOU'RE CANADIAN.",
-            "UNLESS YOU'RE AN AMERICAN.",
-            "UNLESS YOU'RE A WIMP.",
             "WEAR A SWEATER IF YOU DON'T LIKE IT.",
+            "I LOVE IT",
+            "BEST WEATHER",
+            "FUCK YEAH!",
+            "TOUCH GRASS!",
+            "OUTDOOR NAP TIME!",
+            "NO FURNACE, NO A/C, JUST OPEN WINDOWS",
+            "OPEN THE WINDOWS!",
+            "NOT TOO HOT, NOT TOO COLD",
+            "GIVE ME FOUR GLASSES OF APPLE JUICE.",
+            "YOU AND ME IN JAPAN. WATCH ME DANCE.",
         ],
         'warm' => [
             "THAT'S MORE LIKE IT!",
@@ -120,11 +166,18 @@ has comment => ( is => 'ro', default => sub
             "THIS CALLS FOR A ~~BUD~~ CAN OF FLOWERY GRAIN WATER!",
             "THIS CALLS FOR A BEER!",
             "TRACK DAY BRO!",
+            "MORE OF THIS PLEASE",
+            "FUCK WINTER",
+            "LET'S RUN THROUGH THE SPRINKLER!",
+            "LET'S SET UP THE SLIP'N'SLIDE!",
+            "APPLE JUICE! FOR HALF PRICE?!",
+            "JESUS IS A RAISIN.",
         ],
         'hot' => [
             "THIS SUCKS.",
             "PERFECT WEATHER TO STAY INSIDE.",
             "HOPE YOU'VE GOT AIR CONDITIONING!",
+            "HOPE YOU'VE GOT A HEAT PUMP!",
             "PERFECT WEATHER TO DO NOTHING.",
             "STOP, I CAN ONLY TAKE SO MUCH OFF!",
             "I MISS WINTER.",
@@ -137,6 +190,8 @@ has comment => ( is => 'ro', default => sub
             "BRB, GONNA GO STAND IN THE FREEZER.",
             "BRB, FILLING THE BATHTUB WITH ICE CUBES.",
             "BRB, FILLING MY POCKETS WITH ICE CUBES.",
+            "WHAT DO YOU SAY WE MAKE APPLE JUICE AND FAX IT TO EACH OTHER?",
+            "DID YOU WATER YOUR AIRPORT, JIM?"
         ],
         'boiling' => [
             "WHAT THE FUCK?!?!?!",
@@ -202,6 +257,14 @@ has comment => ( is => 'ro', default => sub
             "UHN TISS UHN TISS UHN TISS BABY",
             "BROWN CHICKEN BROWN COW",
             "BOW CHICKA WOW WOW",
+            "THIS WEATHER MAKES ME HORNY",
+            "I'M SO HARD RIGHT NOW",
+            "37 DICKS! MY GIRLFRIEND SUCKED 37 DICKS! ...IN A ROW?",
+            "THEY CALL IT A SLOPPY AARDVARK",
+            "GIVE ME AN ALABAMA JACKHAMMER",
+            "THEY CALL IT A SHORT STACK MOTOR BOAT RACK ATTACK",
+            "GIMME THE NEW JERSEY JACKHAMMER",
+            "WANT TO TRY THE AMISH JACKHAMMER?",
         ],
         'minussixtynine' => [
             "PUT THE FROZEN PENIS IN THE FROZEN VAGINA. NEVER MIND, NO, DON'T DO THAT.",
@@ -257,7 +320,11 @@ has itsfucking => ( is => 'ro', default => sub
             'OKAY.'
         ],
         'nice' => [
-            'NICE'
+            'NICE',
+            'PRETTY OK',
+            'PRETTY NICE',
+            'AWESOME',
+
         ],
         'warm' => [
             'WARM!'
@@ -282,6 +349,21 @@ has itsfucking => ( is => 'ro', default => sub
         'minussixtynine' => [
             'SEXYTIME!'
         ],
+        'wet' => [
+            'WET!',
+            'RAINING!',
+        ],
+        'humid' => [
+            'GROSS!',
+            'HUMID!',
+        ],
+        'cloudy' => [
+            'CLOUDY!',
+            'OVERCAST!',
+            'DARK AND GLOOMY!',
+            'GLOOMY!',
+            'NOT VERY NICE!',
+        ],
     }
 });
 
@@ -289,7 +371,7 @@ has itsfucking => ( is => 'ro', default => sub
 # Takes both real and feel temperatures in c and f.
 sub itsfucking_comment
 {
-    my ($self, $temp_f, $temp_c, $feel_f, $feel_c, $cond) = @_;
+    my ($self, $temp_f, $temp_c, $feel_f, $feel_c, $cond, $humidity) = @_;
 
     my $ret = "IT'S FUCKING ";
 
@@ -316,10 +398,22 @@ sub itsfucking_comment
         @arr = @{$self->itsfucking->{'cold'}};
         @com = @{$self->comment->{'cold'}};
     }
+    # Above zero we can look at conditions for signs of rain
+    elsif ( $cond =~ /rain/i )
+    {
+        @arr = @{$self->itsfucking->{'wet'}};
+        @com = @{$self->comment->{'wet'}};
+    }
     elsif ( $feel_c < 9 ) # 0 to 8 
     {
         @arr = @{$self->itsfucking->{'cool'}};
         @com = @{$self->comment->{'cool'}};
+    }
+    # When it's not too hot but it's cloudy, it's not "nice" or "warm", it's cloudy.
+    elsif ( $feel_c < 30 and ( $cond =~ /Overcast/i ))
+    {
+        @arr = @{$self->itsfucking->{'cloudy'}};
+        @com = @{$self->comment->{'cloudy'}};
     }
     elsif ( $feel_c < 18 ) # 9 to 17
     {
@@ -331,10 +425,22 @@ sub itsfucking_comment
         @arr = @{$self->itsfucking->{'nice'}};
         @com = @{$self->comment->{'nice'}};
     }
+    # Above 25C, anything >= 90% humidity
+    elsif ( $humidity >= 90 )
+    {
+        @arr = @{$self->itsfucking->{'humid'}};
+        @com = @{$self->comment->{'humid'}};
+    }
     elsif ( $feel_c < 31 ) # 25 - 30
     {
         @arr = @{$self->itsfucking->{'warm'}};
         @com = @{$self->comment->{'warm'}};
+    }
+    # Above 30C, anything >= 75% humidity
+    elsif ( $humidity >= 75 )
+    {
+        @arr = @{$self->itsfucking->{'humid'}};
+        @com = @{$self->comment->{'humid'}};
     }
     elsif ( $feel_c < 35 ) # 30-34
     {
