@@ -292,7 +292,8 @@ sub _build_message
 
     # Some custom emoji used here
     my $duo_crown = "<:duo_crown:975971308355592252>";
-    my $duo_xp = "<:duo_xp:975965671479459870>";
+    my $duo_xp_silver = "<:duo_xp_silver:975965671479459870>";
+    my $duo_xp_gold = "<:duo_xp_gold:975986422941114378>";
     my $duo_fire_lit = "<:duo_fire_lit:975968995796725790>";
     my $duo_fire_unlit = "<:duo_fire_unlit:975968995893215302>";
     my $duo_egg = "<:duo_egg:975980206202425414>";
@@ -310,9 +311,8 @@ sub _build_message
         $crowns .= 's' unless $course->{'crowns'} == 1;
         my $course_xp = $course->{'xp'};
    
-        #my $msg = $flag . ' ' . $title . ' - ' . $course_xp . ' XP - ' . $crowns . ' :crown:';
-        #my $msg = "$flag $title $duo_xp $course_xp Course XP $duo_crown $crowns";
-        my $msg = "$flag $title $duo_crown $crowns";
+        my $msg = "$flag $title $duo_xp_silver $course_xp Course XP $duo_crown $crowns";
+        #my $msg = "$flag $title $duo_crown $crowns";
         push @courses, $msg;
     }
     my @top3 = splice(@courses, 0, 3);
@@ -390,7 +390,7 @@ sub _build_message
     $msg .= $xp > 0 ? "$duo_egg $xp XP Today ($num_lessons)" : "$duo_egg_cracked No lessons yet today";
     $msg .= "\n$league_emoji $league League";
     $msg .= " x$streak" if $streak > 1;
-    $msg .= " $duo_xp $total_xp Total XP";
+    $msg .= " $duo_xp_gold $total_xp Total XP";
 
     return $msg;
 }
