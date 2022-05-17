@@ -239,13 +239,15 @@ sub _send_content
 {
     my ($self, $channel, $username, $content) = @_;
 
+    # Angry owl if they haven't done a lesson yet. Happy owl if they have.
+    my $duo_owl = $content =~ /duo_fire_unlit/ ? 'https://i.imgur.com/tGFScKd.png' : 'http://i.imgur.com/EdGBXeW.png';
 
     if (my $hook = $self->bot->has_webhook($channel) )
     {
         my $message = {
             'content' => $content,
             'username' => $username,
-            'avatar_url' => 'http://i.imgur.com/EdGBXeW.png', # Duolingo owl
+            'avatar_url' => $duo_owl,
         };
 
         $self->discord->send_webhook($channel, $hook, $message);
