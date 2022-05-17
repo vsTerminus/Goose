@@ -290,6 +290,14 @@ sub _build_message
     my $android = $args->{'android'};
     my $leaderboard = $args->{'leaderboard'};
 
+    # Some custom emoji used here
+    my $duo_crown = "<:duo_crown:975971308355592252>";
+    my $duo_xp = "<:duo_xp:975965671479459870>";
+    my $duo_fire_lit = "<:duo_fire_lit:975968995796725790>";
+    my $duo_fire_unlit = "<:duo_fire_unlit:975968995893215302>";
+    my $duo_egg = "<:duo_egg:975980206202425414>";
+    my $duo_egg_cracked = "<:duo_egg_cracked:975980206164680794>";
+    
     # We get all of the courses back, so we can loop through them
     # Limit to three courses max
     my @courses;
@@ -300,9 +308,11 @@ sub _build_message
         my $flag = $self->_flag($lang_abbr);
         my $crowns = $course->{'crowns'} . ' Crown';
         $crowns .= 's' unless $course->{'crowns'} == 1;
-        my $xp = $course->{'xp'};
+        my $course_xp = $course->{'xp'};
    
-        my $msg = $flag . ' ' . $title . ' - ' . $xp . ' XP - ' . $crowns . ' :crown:';
+        #my $msg = $flag . ' ' . $title . ' - ' . $course_xp . ' XP - ' . $crowns . ' :crown:';
+        #my $msg = "$flag $title $duo_xp $course_xp Course XP $duo_crown $crowns";
+        my $msg = "$flag $title $duo_crown $crowns";
         push @courses, $msg;
     }
     my @top3 = splice(@courses, 0, 3);
@@ -326,6 +336,7 @@ sub _build_message
     my $xp = 0;
 
     my $calendar = $web->{'calendar'};
+    my $num_lessons = 0;
     foreach my $event (@{$calendar})
     {
         if ( exists $event->{'datetime'} )
@@ -340,6 +351,7 @@ sub _build_message
                 if ( exists $event->{'improvement'} and defined $event->{'improvement'} )
                 {
                     $xp += $event->{'improvement'};
+                    $num_lessons++;
                     if ( exists $event->{'event_type'} and defined $event->{'event_type'} )
                     {
                         say $event->{'event_type'} . " => " . $event->{'improvement'} . " XP";
@@ -356,10 +368,12 @@ sub _build_message
             say Dumper($event);
         }
     }
+    $num_lessons .= $num_lessons == 1 ? " lesson" : " lessons";
 
     # Finally, get leaderboard league
     my @tiers = qw(Bronze Silver Gold Sapphire Ruby Emerald Amethyst Pearl Obsidian Diamond);
     my $tier = $leaderboard->{'tier'};
+    my $streak = $leaderboard->{'streak_in_tier'};
     my $league = $tiers[$tier];
     my $league_emoji = _league_emoji($tier);
 
@@ -368,11 +382,15 @@ sub _build_message
     # Flag Language - Level
     # Streak - Exp Today
     #$msg .= $_ . "\n" foreach (@top3); # Display the most recent three languages
-    $msg .= $top3[0] . "\n"; # Just the first line.
-    $msg .= ":fire: " . $android->{'streak'} . " day";
+    $msg .= $top3[0]; # Just the first line.
+    $msg .= $xp > 0 ? "\n$duo_fire_lit " : "\n$duo_fire_unlit ";
+    $msg .= $android->{'streak'} . " day";
     $msg .= "s" if $android->{'streak'} != 1;
-    $msg .= " - $xp XP Today";
-    $msg .= "\n$league_emoji $league League - $total_xp XP Total";
+    $msg .= " ";
+    $msg .= $xp > 0 ? "$duo_egg $xp XP Today ($num_lessons)" : "$duo_egg_cracked No lessons yet today";
+    $msg .= "\n$league_emoji $league League";
+    $msg .= " x$streak" if $streak > 1;
+    $msg .= " $duo_xp $total_xp Total XP";
 
     return $msg;
 }
