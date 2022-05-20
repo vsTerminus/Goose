@@ -118,7 +118,12 @@ sub cmd_metar
                 {
                     my @parts = split(' ',$sanitized);
 
-                    # We can rely on Airport, Datetime, Wind, and Visibility always being present and in this order
+                    my $padding = 0;
+                    $padding = length $_ > $padding ? length $_ : $padding foreach (@parts);
+                    say "Longest word in METAR is $padding characters long";
+                    $padding+=2; # Add a little extra space beyond the longest word in the METAR
+
+                    # We can rely on Airport, Datetime, and Wind always being present and in this order
                     # After that we have to start iterating and looking for patterns.
                     my $airport = code2airport($parts[0]);
                     my $datetime = _decode_time($parts[1]);
@@ -129,11 +134,10 @@ sub cmd_metar
                         splice @parts,3,1;
                     }
 
-
                     $decoded = "\n\n```\n" .
-                    $parts[0] . " => $airport\n" .
-                    $parts[1] . " => $datetime\n" .
-                    $parts[2] . " => $wind\n";
+                    sprintf("%-${padding}s", $parts[0]) . " => $airport\n" .
+                    sprintf("%-${padding}s", $parts[1]) . " => $datetime\n" .
+                    sprintf("%-${padding}s", $parts[2]) . " => $wind\n";
 
                     # This is as far as we can go without iterating, because stuff starts getting optional
                     for ( my $i = 3; $i < scalar @parts; $i++ )
@@ -141,17 +145,22 @@ sub cmd_metar
                         # Horizontal Visibility in Statute Miles or in Meters
                         if ( $parts[$i] =~ /^[0-9\/]+SM$/ or $parts[$i] =~ /^\d{4,}$/ )
                         {
-                            $decoded .= $parts[$i] . " => " . _decode_visibility($parts[$i]) . "\n";
+                            $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . _decode_visibility($parts[$i]) . "\n";
                         }
                         # Runway Visual Range (RVR)
                         elsif ( $parts[$i] =~ /^R[0-9LRC]+\/([MP]?\d+(V[MP]?\d+)?FT)\/?([DUN])?$/ )
                         {
-                            $decoded .= $parts[$i] . " => " . _decode_rvr($parts[$i]) . "\n";
+                            $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . _decode_rvr($parts[$i]) . "\n";
                         }
                         # Temperature and Dewpoint
                         elsif ( $parts[$i] =~ /^M?\d+\/M?\d+$/ )
                         {
-                            $decoded .= $parts[$i] . " => " . _decode_temperature($parts[$i]);
+                            $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . _decode_temperature($parts[$i]) . "\n";
+                        }
+                        # Present Weather
+                        elsif ( $parts[$i] =~ /^([+-])?(MI|BC|PR|DR|BL|SH|TS|FZ)?(DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PO|SQ|FC|SS|DS)+$/ )
+                        {
+                            $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . _decode_present_weather($parts[$i]) . "\n";
                         }
                     }
 
@@ -168,6 +177,72 @@ sub cmd_metar
             $self->discord->send_message($channel_id, ":x: Could not retrieve METAR for $icao");
         }
     );
+}
+
+sub _decode_present_weather
+{
+    my ($weatherpart) = @_;
+
+    my $weathers = {
+        # Descriptors
+        'MI' => 'Shallow',
+        'BC' => 'Patches of ',
+        'PR' => 'Partial',
+        'DR' => 'Drifting',
+        'BL' => 'Blowing',
+        'SH' => 'Showers of ',
+        'TS' => 'Thunderstorm',
+        # Precipitation
+        'DZ' => 'Drizzle',
+        'RA' => 'Rain',
+        'SN' => 'Snow',
+        'SG' => 'Snow grains',
+        'IC' => 'Ice crystals',
+        'PL' => 'Ice pellets',
+        'GR' => 'Hail',
+        'GS' => 'Snow pellets',
+        'UP' => 'Unknown precipitation',
+        # Obscuration
+        'BR' => 'Mist',
+        'FG' => 'Fog',
+        'FU' => 'Smoke',
+        'VA' => 'Volcanic ash',
+        'DU' => 'Dust',
+        'SA' => 'Sand',
+        'HZ' => 'Haze',
+        # Other
+        'PO' => 'Dust devils',
+        'SQ' => 'Squalls',
+        'FC' => 'Funnel cloud', # Note: +FC is a Tornado or Waterspout
+        'SS' => 'Sandstorm', # darude
+        'DS' => 'Duststorm',
+    };
+    say "Present weather";
+    say $weatherpart;
+
+    my $to_return = "";
+    if ( $weatherpart =~ /^[+-]/ )
+    {
+        $to_return = substr($weatherpart, 0, 1);
+        $weatherpart = substr $weatherpart, 1;
+        $to_return eq '+' ? $to_return = 'Heavy ' : $to_return = 'Light ';
+    }
+    say $to_return;
+    my $parts_counter = 0;
+    while ( length $weatherpart >= 2 and $parts_counter < 10 )
+    {
+        my $next = substr $weatherpart, 0, 2;
+        $weatherpart = substr $weatherpart, 2;
+        say "Looking at: $next";
+        say "Remaining weathers: $weatherpart";
+        say $to_return;
+        $to_return .= " and " if $parts_counter > 0;
+        $to_return .= $weathers->{$next} if exists $weathers->{$next};
+        $parts_counter++;
+    }
+    say ucfirst $to_return;
+
+    return $to_return;
 }
 
 sub _decode_rvr
