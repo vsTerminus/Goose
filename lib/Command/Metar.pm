@@ -162,6 +162,16 @@ sub cmd_metar
                         {
                             $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . _decode_present_weather($parts[$i]) . "\n";
                         }
+                        # Cloud layers aloft
+                        elsif ( $parts[$i] =~ /^(SKC|FEW|SCT|BKN|OVC|CLR|VV)/ )
+                        {
+                            $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . _decode_layers_aloft($parts[$i]) . "\n";
+                        }
+                        # Altimeter / QNH
+                        elsif ( $parts[$i] =~ /^(A|Q)\d{4}/ )
+                        {
+                            $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . _decode_altimeter($parts[$i]) . "\n";
+                        }
                     }
 
                     # Close the formatting block
@@ -177,6 +187,65 @@ sub cmd_metar
             $self->discord->send_message($channel_id, ":x: Could not retrieve METAR for $icao");
         }
     );
+}
+
+sub _decode_altimeter
+{
+    my ($altpart) = @_;
+
+    my $to_return = "";
+    say "Altimeter / QNH";
+    say $altpart;
+    my $first = substr $altpart,0,1;
+    $altpart = substr $altpart,1;
+
+    if ( $first eq 'A' )
+    {
+        $to_return .= "Altimeter ";
+        $to_return .= substr $altpart,0,2;
+        $to_return .= ".";
+        $to_return .= substr $altpart,2,2;
+        $to_return .= " inches of mercury";
+    }
+    elsif ( $first eq 'Q' )
+    {
+        $to_return .= "QNH $altpart millibars";
+    }
+
+    return $to_return;
+}
+
+sub _decode_layers_aloft
+{
+    my ($cloudpart) = @_;
+
+    my $to_return = "";
+
+    my $clouds = {
+        'SKC' => 'Sky Clear, no clouds',
+        'FEW' => 'Few Clouds',
+        'SCT' => 'Scattered Clouds',
+        'BKN' => 'Broken Clouds',
+        'OVC' => 'Overcast',
+        'CLR' => 'Clear Below 10,000ft',
+        'VV' => 'Vertical Visibility',
+        'CB' => 'Cumulonimbus',
+        'TCU' => 'Towering Cumulus',
+        'CAVOK' => 'Cloud And Visibility OK'
+    };
+
+    my ($type, $height, $cv) = $cloudpart =~ /^(SKC|FEW|SCT|BKN|OVC|CLR|VV|CB|TCU|CAVOK)(\d{3})?(CB|TCU)?$/;
+
+    $to_return .= $clouds->{$type} if exists $clouds->{$type};
+    $height *= 100;
+    $to_return .= " above ${height}ft";
+
+    if ( defined $cv )
+    {
+        $to_return .= ", " . $clouds->{$cv} if exists $clouds->{$cv};
+    }
+
+    return ucfirst $to_return;
 }
 
 sub _decode_present_weather
