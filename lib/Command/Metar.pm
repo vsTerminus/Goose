@@ -140,7 +140,8 @@ sub cmd_metar
                     sprintf("%-${padding}s", $parts[2]) . " => $wind\n";
 
                     # This is as far as we can go without iterating, because stuff starts getting optional
-                    for ( my $i = 3; $i < scalar @parts; $i++ )
+                    my $remarks = 0;
+                    for ( my $i = 3; $i < scalar @parts and $remarks == 0; $i++ )
                     {
                         # Horizontal Visibility in Statute Miles or in Meters
                         if ( $parts[$i] =~ /^[0-9\/]+SM$/ or $parts[$i] =~ /^\d{4,}$/ )
@@ -171,6 +172,13 @@ sub cmd_metar
                         elsif ( $parts[$i] =~ /^(A|Q)\d{4}/ )
                         {
                             $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . _decode_altimeter($parts[$i]) . "\n";
+                        }
+                        elsif ( $parts[$i] eq 'RMK' )
+                        {
+                            $remarks = 1;
+                            my $remarkpart = $sanitized;
+                            $remarkpart =~ s/^.* RMK //;
+                            $decoded .= sprintf("%-${padding}s", $parts[$i]) . " => " . "Remarks $remarkpart";
                         }
                     }
 
