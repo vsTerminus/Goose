@@ -314,16 +314,10 @@ has itsfucking => ( is => 'ro', default => sub
             "COOL!",
         ],
         'alright' => [
-            'ALRIGHT.',
-            'OKAY, I GUESS.',
-            'NOT BAD.',
             'OKAY.'
         ],
         'nice' => [
-            'NICE',
-            'PRETTY OK',
-            'PRETTY NICE',
-            'AWESOME',
+            'NICE!',
 
         ],
         'warm' => [
@@ -354,15 +348,10 @@ has itsfucking => ( is => 'ro', default => sub
             'RAINING!',
         ],
         'humid' => [
-            'GROSS!',
             'HUMID!',
         ],
         'cloudy' => [
             'CLOUDY!',
-            'OVERCAST!',
-            'DARK AND GLOOMY!',
-            'GLOOMY!',
-            'NOT VERY NICE!',
         ],
     }
 });
@@ -399,7 +388,7 @@ sub itsfucking_comment
         @com = @{$self->comment->{'cold'}};
     }
     # Above zero we can look at conditions for signs of rain
-    elsif ( $cond =~ /rain/i )
+    elsif ( $cond =~ /rain|thunder/i )
     {
         @arr = @{$self->itsfucking->{'wet'}};
         @com = @{$self->comment->{'wet'}};
@@ -420,16 +409,16 @@ sub itsfucking_comment
         @arr = @{$self->itsfucking->{'alright'}};
         @com = @{$self->comment->{'alright'}};
     }
+    # Above 18C, anything >= 80% humidity
+    elsif ( $humidity >= 80 )
+    {
+        @arr = @{$self->itsfucking->{'humid'}};
+        @com = @{$self->comment->{'humid'}};
+    }
     elsif ( $feel_c < 25 ) # 18 to 24
     {
         @arr = @{$self->itsfucking->{'nice'}};
         @com = @{$self->comment->{'nice'}};
-    }
-    # Above 25C, anything >= 90% humidity
-    elsif ( $humidity >= 90 )
-    {
-        @arr = @{$self->itsfucking->{'humid'}};
-        @com = @{$self->comment->{'humid'}};
     }
     elsif ( $feel_c < 31 ) # 25 - 30
     {
