@@ -292,15 +292,6 @@ sub discord_on_message_create
                             my $object = $command->{'object'};
                             my $function = $command->{'function'};
 
-                            # Track command usage in the DB
-                            # Need to re-think this. I want to have insight into bot usage for troubleshooting but this doesn't really accomplish it.
-                            #$self->stats->add_command(
-                            #    'command'       => lc $command->{'name'},
-                            #    'channel_id'    => $channel_id,
-                            #    'user_id'       => $author->{'id'},
-                            #    'timestamp'     => time
-                            #);
-
                             $hash->{'content'} = $msg;  # We've made some changes to the message content, let's make sure those get passed on to the command.
                             $object->$function($hash);
                         }
@@ -376,6 +367,7 @@ sub add_command
     $self->{'commands'}->{$name}{'name'} = ucfirst $name;
     $self->{'commands'}->{$name}{'access'} = $command->access;
     $self->{'commands'}->{$name}{'usage'} = $command->usage;
+    $self->{'commands'}->{$name}{'info'} = $command->{'info'};
     $self->{'commands'}->{$name}{'description'} = $command->description;
     $self->{'commands'}->{$name}{'pattern'} = $command->pattern;
     $self->{'commands'}->{$name}{'function'} = $command->function;
@@ -432,23 +424,36 @@ sub create_webhook
             {
                 $callback->($json);
             }
-            elsif ( $json->{'code'} == 50013 ) # No permission
+            elsif ( defined $json and $json->{'code'} == 50013 ) # No permission
             {
                 say localtime(time) . ": Unable to create webhook in $channel - Need Manage Webhooks permission";
-                $callback->(undef);
             }
             else
             {
                 say localtime(time) . ": Unable to create webhook in $channel - Unknown reason";
-                $callback->(undef);
             }
+            $callback->(undef);
         });
     }
     else
     {
-        my $json = $discord->create_webhook($channel); # Blocking
+        my $json = $discord->create_webhook($channel, $params); # Blocking
 
-        return defined $json->{'name'} ? $json : undef;
+        say Dumper($json);
+
+        if ( defined $json->{'name'} ) # Success
+        {
+            return $json;
+        }
+        elsif ( defined $json and $json->{'code'} == 50013 ) # No permission
+        {
+            say localtime(time) . ": Unable to create webhook in $channel - Need Manage Webhooks permission";
+        }
+        else
+        {
+            say localtime(time) . ": Unable to create webhook in $channel - Unknown reason";
+        }
+        return undef;
     }
 }
 

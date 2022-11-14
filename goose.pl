@@ -49,6 +49,7 @@ use Command::Invite;
 use Command::Technobabble;
 use Command::FeatureFlag;
 use Command::Coin;
+use Command::Starboard;
 use Data::Dumper;
 
 # Fallback to "config.ini" if the user does not pass in a config file.
@@ -99,6 +100,7 @@ $bot->add_command( Command::Invite->new         ('bot' => $bot) );
 $bot->add_command( Command::Technobabble->new   ('bot' => $bot) );
 $bot->add_command( Command::FeatureFlag->new    ('bot' => $bot) );
 $bot->add_command( Command::Coin->new           ('bot' => $bot) );
+$bot->add_command( Command::Starboard->new      ('bot' => $bot) );
 
 # Start the bot
 $bot->start();

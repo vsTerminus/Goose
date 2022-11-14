@@ -2,6 +2,7 @@ package Command::Help;
 use feature 'say';
 
 use Moo;
+use Data::Dumper;
 use strictures 2;
 use namespace::clean;
 
@@ -59,9 +60,15 @@ sub cmd_help
         {
             my $help_str = "__**" . $command->{'name'} . "**__: \n\n`" . $command->{'description'} . "`\n\n";
             $help_str .= "__**Usage:**__\n\n" . $command->{'usage'};
+            my $info_str = $command->{'info'} if defined $command->{'info'};
 
             # Reply via DM, ack the message with a checkmark reaction
-            $discord->send_ack_dm($channel, $msg->{'id'}, $author->{'id'}, $help_str);
+            $discord->send_ack_dm($channel, $msg->{'id'}, $author->{'id'}, $help_str, sub {
+                # Commands may also implement additional info / FAQ, which we can send as a separate message.
+                $discord->send_dm($author->{'id'}, "__**Info / FAQ:**__\n\n" . $info_str) if $info_str;
+            });
+
+            
         }
         else
         {
