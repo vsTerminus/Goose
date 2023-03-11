@@ -21,6 +21,7 @@ use namespace::clean;
 has bot         => ( is => 'ro' );
 has discord     => ( is => 'lazy', builder => sub { shift->bot->discord } );
 has db          => ( is => 'lazy', builder => sub { shift->bot->db } );
+has ff          => ( is => 'lazy', builder => sub { shift->bot->ff } );
 has maps        => ( is => 'lazy', builder => sub { shift->bot->maps } );
 has openweather => ( is => 'lazy', builder => sub { shift->bot->openweather } );
 
@@ -219,7 +220,7 @@ async weather_by_coords => sub
     {
 
         my $weather_found = 0;
-        if ( $address =~ /Canada$/ )
+        if ( $address =~ /Canada$/ and $self->ff->get_flag("use_environment_canada") )
         {
             my ($city, $province) = ($address =~ /^(?:.*, )?([^,]+), ([^,]+), Canada$/);
             $province = substr($province,0,2);
