@@ -30,6 +30,7 @@ use Component::DuckAPI;
 use Component::LizardAPI;
 use Component::AVWX;
 use Component::SomeRandomAPI;
+use Component::FeatureFlag;
 
 use namespace::clean;
 
@@ -73,6 +74,7 @@ has session             => ( is => 'rw', default => sub { {} } );
 has status_timer        => ( is => 'rw' );
 
 has db                  => ( is => 'lazy', builder => sub { Component::Database->new(%{shift->config->{'db'}}) } );
+has ff                  => ( is => 'lazy', builder => sub { Component::FeatureFlag->new('db' => shift->db) } );
 has youtube             => ( is => 'lazy', builder => sub { Component::YouTube->new(%{shift->config->{'youtube'}}) } );
 has openweather         => ( is => 'lazy', builder => sub { Component::OpenWeather->new(%{shift->config->{'weather'}}) } );
 has environmentcanada   => ( is => 'lazy', builder => sub { Component::EnvironmentCanada->new() } );

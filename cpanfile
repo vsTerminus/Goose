@@ -26,6 +26,7 @@ requires 'Geo::Distance';               # Calculate the distance pilots are from
 requires 'Geo::ICAO';                   # Used for decoding the ICAO code in METARs
 requires 'Games::Cards';                # For picking random playing cards
 requires 'Unicode::UTF8';
+requires 'Switch';                      # More compact than if else blocks
 
 
 # Testing
