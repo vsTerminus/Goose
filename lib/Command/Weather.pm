@@ -28,7 +28,7 @@ has openweather => ( is => 'lazy', builder => sub { shift->bot->openweather } );
 # The rest are specific to this command
 has name        => ( is => 'ro', default => 'Weather' );
 has access      => ( is => 'ro', default => 0 ); # Public
-has description => ( is => 'ro', default => 'Current Weather Conditions. Powered by Google Maps, Dark Sky, and Environment Canada' );
+has description => ( is => 'ro', default => 'Current Weather Conditions. Powered by Google Maps, Open Weather, and Environment Canada' );
 has pattern     => ( is => 'ro', default => '^(?:w(?!ink)e?(?:ather)?) ?([^\s].*)?$' );
 has function    => ( is => 'ro', default => sub { return \&cmd_weather } );
 
@@ -69,10 +69,10 @@ EOF
 # There are two parts to this command:
 #
 # 1. Geocode the address the user requests with Google Maps
-# 2. Pass the coordinates from GMaps to Dark Sky for the weather
+# 2. Pass the coordinates from GMaps to OpenWeather for the weather
 #
 # Also, the location can be cached for the duration of runtime,
-# while the weather should be cached for 1 hour.
+# while the weather should be cached for 5 minutes.
 # This cuts down on unnecessary API calls, as I have a limit on both.
 async cmd_weather => sub
 {
@@ -235,13 +235,13 @@ async weather_by_coords => sub
         }
         unless ( $weather_found )
         {
-            $self->bot->log->debug("Requesting weather for $lat,$lon from Dark Sky");
+            $self->bot->log->debug("Requesting weather for $lat,$lon from Open Weather");
             $json = await $self->bot->openweather->weather($lat, $lon);
         }
 
         # Cache the results;
         $self->cache->{'weather'}{"$lat,$lon"}{'json'} = $json;
-        $self->cache->{'weather'}{"$lat,$lon"}{'expires'} = time + 3600; # Good for one hour.
+        $self->cache->{'weather'}{"$lat,$lon"}{'expires'} = time + 300; # Good for five minutes.
 
         my $formatted_weather = $self->format_weather($json);
         $formatted_weather =~ s/FUCKING.*$/**FUCKING, AUSTRIA**/ if $address =~ /Fucking, Austria/;
