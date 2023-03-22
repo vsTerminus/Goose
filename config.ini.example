@@ -111,7 +111,13 @@ api_key = xxx
 [duolingo]
 use_duolingo = 1
 username = TheLegend27
-password = Pa55w0rd
+# The login POST request is now protected with ReCaptcha, but once we have a JWT everything else still works and the token practically never expires.
+# Log in with a browser and use the console to get the jwt_token and csrf_token values:
+#    document.cookie.match(new RegExp('(^| )jwt_token=([^;]+)'))[0].slice(11);
+#    document.cookie.match(new RegExp('(^| )csrf_token=([^;]+)'))[0].slice(12);
+# Remove the quotes and paste below:
+jwt = xxxxxx.yyyyyyyy.zzzzzzzz
+csrf = samplecsrf==
 
 # Peeled API by Grinnz
 # The API does not have a key, which is why I am putting it in a config variable only.

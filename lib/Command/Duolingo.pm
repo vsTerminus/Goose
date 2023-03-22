@@ -57,9 +57,9 @@ sub cmd_duolingo
     }
 
     # Check for login
-    unless ( $self->duo->jwt )
+    unless ( $self->duo->jwt and length $self->duo->jwt > 0 )
     {
-        $self->duo->login_p()->then(sub{ $self->cmd_duolingo($msg) });
+        $self->discord->send_message($channel, ":x: Unable to log in; Config is missing JWT");
         return;
     }
 

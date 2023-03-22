@@ -28,7 +28,6 @@ has ua              => ( is => 'lazy', builder => sub
     return $ua;
 });
 has username        => ( is => 'ro' );
-has password        => ( is => 'ro' );
 has jwt             => ( is => 'rw' );
 has csrf            => ( is => 'rw' );
 has user_id         => ( is => 'rw' );
@@ -52,55 +51,15 @@ sub login_p
 {
     my ($self) = @_;
 
+    
+
     $self->_set_ua('web');
     my $promise = Mojo::Promise->new;
     my $url = $self->login_url;
     say "Login URL: $url";
 
-    $self->ua->post_p($url => json =>
-        {
-            login       => $self->username,
-            password    => $self->password,
-        }
-    )->then(sub
-        {
-            my $tx = shift;
-            my $json = $tx->res->json;
-            my $headers = $tx->res->headers;
-            if ( $json->{'response'} eq 'OK' )
-            {
-                $self->user_id($json->{'user_id'});
-                $self->jwt($headers->header('jwt'));
-
-                say "Login OK. User_id: " . $self->user_id;
-
-                # Extract JWT and CSRF from cookies
-                my $jar = $self->ua->cookie_jar;
-                foreach my $cookie ( @{$jar->find(Mojo::URL->new($self->login_url) )} )
-                {
-                    $self->jwt($cookie->value) if $cookie->name eq 'jwt_token';
-                    $self->csrf($cookie->value) if $cookie->name eq 'csrf_token';
-                }
-                
-                say "CSRF: " . $self->csrf;
-                say "JWT: " . $self->jwt;
-
-                $json->{'csrf'} = $self->csrf;
-                $json->{'jwt'} = $self->jwt;
-
-                $promise->resolve($json);
-            }
-            else
-            {
-                $promise->resolve($json);
-            }
-        }
-    )->catch(sub
-        {
-            my $err = shift;
-            $promise->resolve($err);
-        }
-    );
+    say "Login is now protected by ReCaptcha as of February 2023.";
+    $promise->resolve("Login is now protected by ReCaptcha as of February 2023");
 
     return $promise;
 }

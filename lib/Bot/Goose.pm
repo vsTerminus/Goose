@@ -89,7 +89,8 @@ has duolingo            => ( is => 'lazy', builder => sub {
     my $self = shift; 
     Component::Duolingo->new(
         'username'  => $self->config->{'duolingo'}{'username'},
-        'password'  => $self->config->{'duolingo'}{'password'},
+        'jwt'       => $self->config->{'duolingo'}{'jwt'},
+        'csrf'      => $self->config->{'duolingo'}{'csrf'},
     ); 
 });
 has hoggit              => ( is => 'lazy', builder => sub { Component::Hoggit->new() } );
