@@ -21,6 +21,7 @@ has log                 => ( is => 'lazy', builder => sub { shift->bot->log } );
 has duo                 => ( is => 'lazy', builder => sub { shift->bot->duolingo } );
 has db                  => ( is => 'lazy', builder => sub { shift->bot->db } );
 has cache               => ( is => 'rw',   default => sub { {} });
+has ff                  => ( is => 'lazy', builder => sub { shift->bot->ff } );
 
 has name                => ( is => 'ro', default => 'Duolingo' );
 has access              => ( is => 'ro', default => 0 ); # 0 = Public, 1 = Bot-Owner Only
@@ -41,23 +42,26 @@ sub cmd_duolingo
 {
     my ($self, $msg) = @_;
 
+    my $channel = $msg->{'channel_id'};
+    my $author = $msg->{'author'};
+    my $args = $msg->{'content'};
+    my $pattern = $self->pattern;
+    $args =~ s/$pattern//;
+    my $duo_user;
+
+    my $use_duo = $self->ff->get_flag("use_duolingo");
+    unless ( $use_duo )
+    {
+        $self->discord->send_message($channel, ":x: Command is currently disabled");
+        return;
+    }
+
     # Check for login
     unless ( $self->duo->jwt )
     {
         $self->duo->login_p()->then(sub{ $self->cmd_duolingo($msg) });
         return;
     }
-
-
-    my $channel = $msg->{'channel_id'};
-    my $author = $msg->{'author'};
-
-    my $args = $msg->{'content'};
-    
-    my $pattern = $self->pattern;
-    $args =~ s/$pattern//;
-
-    my $duo_user;
 
     # !duo
     if ( length $args == 0 )
