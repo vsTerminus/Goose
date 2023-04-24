@@ -28,6 +28,7 @@ sub main
     my $expected_id = $info_id;
 
 =head1 This test is unnecessary because the second one does it to determine the ID, but you can uncomment to run if you want.
+=cut
 
     $duo->web_user_info_p($info_name)->then(sub
     {
@@ -36,8 +37,6 @@ sub main
 
         is( $got_id, $expected_id, "Retrieve Web User Info using a username" );
     })->wait;
-
-=cut
 
     $duo->android_user_info_p($info_name)->then(sub
     {

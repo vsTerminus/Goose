@@ -9,32 +9,22 @@ use File::Remove qw(remove);
 
 my $config = Config::Tiny->read( 'xt/duo/duolingo.ini' );
 my $username = $config->{'login'}{'username'};
-my $password = $config->{'login'}{'password'};
+my $jwt = $config->{'login'}{'jwt'};
+my $csrf = $config->{'login'}{'csrf'};
 
-say "Login as: " . $username . '//' . $password;
+say "Login as: " . $username;
 
 my $cookie_file = 'xt/duo/cookies.txt';
-
-remove($cookie_file);
-ok(!-f $cookie_file, "Existing cookies removed");
 
 require_ok( 'Component::Duolingo' );
 
 my $duo = Component::Duolingo->new(
-    'username' => $username,
-    'password' => $password,
+    'username'  => $username,
 );
 
-$duo->login_p()->wait;
-sleep(1) while !$duo->jwt;
+ok(-f $cookie_file, "Found cookies.txt");
+ok($duo->load_cookies($cookie_file), "Loaded cookies.txt");
 ok($duo->jwt, "JWT Captured");
 ok($duo->csrf, "CSRF Captured");
-
-my $ua = $duo->ua;
-my $cookie_jar = $ua->cookie_jar;
-$cookie_jar->with_roles('+Persistent')->file($cookie_file);
-$cookie_jar->save;
-
-ok(-f $cookie_file, "Session Stored");
 
 done_testing();

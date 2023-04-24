@@ -17,12 +17,13 @@ my $my_id = $config->{'users'}{'my_id'};
 my $my_name = $config->{'login'}{'username'};
 my $duo = Component::Duolingo->new(
     'username' => $my_name,
-    'password' => 'Not Required'
 );
 
 sub main
 {
     ok( $duo->load_cookies('xt/duo/cookies.txt'), 'Loaded Cookies'); # For now we are just going to assume the cookie is valid.
+    ok($duo->jwt, "JWT Captured");
+    ok($duo->csrf, "CSRF Captured");
 
     my $expected_id = $info_id;
     $duo->user_id_p($info_name)->then(sub
