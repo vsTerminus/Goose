@@ -17,7 +17,7 @@ has leaderboard_url => ( is => 'ro', default => 'https://duolingo-leaderboards-p
 has leaderboard_id  => ( is => 'ro', default => '7D9F5DD1-8423-491A-91F2-2532052038CE' ); # I don't understand the source of this value yet. I got it by sniffing the android app's traffic on two different accounts.
 has dict_base_url   => ( is => 'lazy', builder => sub { shift->_dict_base_url_p(); } );
 has ua_str_droid    => ( is => 'ro', default => 'Duodroid/4.58.2 Dalvik/2.1.0 (Linux; U; Android 9; Android SDK built for x86_64 Build/PSR1.180720.093)' );
-has ua_str_web      => ( is => 'ro', default => 'Mozilla/5.0 (Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0' );
+has ua_str_web      => ( is => 'ro', default => 'Mozilla/5.0 (Linux x86_64; rv:75.0) Gecko/20100101 Firefox/112.0' );
 has ua              => ( is => 'lazy', builder => sub 
 { 
     my $ua = Mojo::UserAgent->new->with_roles('+Queued');
@@ -76,10 +76,13 @@ sub load_cookies
     $cookie_jar->with_roles('+Persistent')->file($cookie_file);
     $cookie_jar->load;
 
-    foreach my $cookie ( @{$cookie_jar->find(Mojo::URL->new($self->login_url) )} )
+    foreach my $cookie ( @{$cookie_jar->all} )
     {
-        $self->jwt($cookie->value) if $cookie->name eq 'jwt_token';
-        $self->csrf($cookie->value) if $cookie->name eq 'csrf_token';
+        if ( $cookie->domain =~ "\.duolingo\.com" )
+        {
+            $self->jwt($cookie->value) if $cookie->name eq 'jwt_token';
+            $self->csrf($cookie->value) if $cookie->name eq 'csrf_token';
+        }
     }
 
     return $self->jwt;
@@ -199,7 +202,7 @@ sub web_user_info_p
     $url = $self->api_url . '/users/show?id=' . $user if ($user =~ /^\d+$/);
 
     say "URL: " . $url;
-    $self->ua->get_p($url)->then(sub
+    $self->ua->get_p($url, {'Authorization' => $self->jwt})->then(sub
     {
         my $tx = shift;
         $promise->resolve($tx->res->json);
