@@ -70,7 +70,7 @@ async weather => sub
         'humidity'              => $curr->at('relativeHumidity')->text,
     };
 
-    $json->{'windSpeed_km'} = 0 if $json->{'windSpeed_km'} eq '';
+    $json->{'windSpeed_km'} = 0 if $json->{'windSpeed_km'} eq '' or lc $json->{'windSpeed_km'} eq 'calm';
     $json->{'windGust_km'} = 0 if $json->{'windGust_km'} eq '';
 
     # Looks like the Current Conditions and WindChill and Humidex are sometimes blank with Environment Canada
