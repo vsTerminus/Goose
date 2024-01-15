@@ -323,7 +323,7 @@ sub _build_message
     }
     my @top3 = splice(@courses, 0, 3);
 
-    my $total_xp = $android->{'totalXp'};
+    my $total_xp = $android->{'totalXp'} // 0;
 
     my $query = $self->db->query('SELECT timezone FROM duolingo WHERE duolingo_id = ?', $android->{'id'});
     my $row = $query->fetchrow_hashref;
@@ -380,6 +380,7 @@ sub _build_message
     my @tiers = qw(Bronze Silver Gold Sapphire Ruby Emerald Amethyst Pearl Obsidian Diamond);
     my $tier = $leaderboard->{'tier'};
     my $streak = $leaderboard->{'streak_in_tier'};
+    my $days = $android->{'streak'} // 0;
     my $league = $tiers[$tier];
     my $league_emoji = _league_emoji($tier);
 
@@ -388,10 +389,10 @@ sub _build_message
     # Flag Language - Level
     # Streak - Exp Today
     #$msg .= $_ . "\n" foreach (@top3); # Display the most recent three languages
-    $msg .= $top3[0]; # Just the first line.
+    $msg .= $top3[0] // "Profile Unavailable"; # Just the first line.
     $msg .= $xp > 0 ? "\n$duo_fire_lit " : "\n$duo_fire_unlit ";
-    $msg .= $android->{'streak'} . " day";
-    $msg .= "s" if $android->{'streak'} != 1;
+    $msg .= $days . " day";
+    $msg .= "s" if $days != 1;
     $msg .= " ";
     $msg .= $xp > 0 ? "$duo_egg $xp XP Today ($num_lessons)" : "$duo_egg_cracked No lessons yet today";
     $msg .= "\n$league_emoji $league League";
