@@ -24,6 +24,7 @@ requires 'DateTime';                    # Used to get specifc-format unix epoch 
 requires 'Data::Dumper';                # Used for debugging
 requires 'Geo::Distance';               # Calculate the distance pilots are from airfields in Hoggit.pm
 requires 'Geo::ICAO';                   # Used for decoding the ICAO code in METARs
+requires 'Encode';                      # Used to decode the Airport strings returned by Geo::ICAO
 requires 'Games::Cards';                # For picking random playing cards
 requires 'Unicode::UTF8';
 requires 'Switch';                      # More compact than if else blocks

@@ -5,6 +5,7 @@ use utf8;
 use Moo;
 use strictures 2;
 use Geo::ICAO qw(code2airport);
+use Encode;
 use DateTime;
 use Data::Dumper;
 use namespace::clean;
@@ -125,7 +126,7 @@ sub cmd_metar
 
                     # We can rely on Airport, Datetime, and Wind always being present and in this order
                     # After that we have to start iterating and looking for patterns.
-                    my $airport = code2airport($parts[0]);
+                    my $airport = Encode::decode('utf8', code2airport($parts[0]));
                     my $datetime = _decode_time($parts[1]);
                     my $wind = _decode_wind($parts[2]);
                     if ( $parts[3] =~ /^(\d+)V(\d+)$/ )
