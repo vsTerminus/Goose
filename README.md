@@ -102,7 +102,7 @@ If it is not launching there are two very common scenarios to check first:
 
 If you are running this on Windows, I highly recommend Strawberry Perl. It comes with cpanminus, and seems to be the best option. Beyond that, it should work as long as you have the config filled out and have all the required modules installed.
 
-If you open an Issue I will do my best to respond quickly and hopefully with the info you need. It helps me if you include screenshots and/or copy/pasthe errors you're receiving. The more info you can give me, the less time of yours I have to waste asking for more info.
+If you open an Issue I will do my best to respond quickly and hopefully with the info you need. It helps me if you include screenshots and/or copy/paste the errors you're receiving. The more info you can give me, the less time of yours I have to waste asking for more info.
 
 Beyond that... Good luck?
 
