@@ -37,6 +37,8 @@ sub weather
     $url->path("/data/2.5/weather");
     $url->query("units=imperial&lat=$lat&lon=$lon&appid=$key");
 
+    say "OpenWeather URL: " . $url;
+
     $self->ua->get_p($url)->then(sub
         {
             my $tx = shift;

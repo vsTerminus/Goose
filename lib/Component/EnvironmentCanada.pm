@@ -70,6 +70,9 @@ async weather => sub
         'humidity'              => $curr->at('relativeHumidity')->text,
     };
 
+    $json->{'dewpoint_c'} = $curr->at('dewpoint')->text if ( defined $curr->at('dewpoint') );
+    $json->{'dewpoint'}   = ctof($json->{'dewpoint_c'}) if ( defined $curr->at('dewpoint') );
+
     $json->{'windSpeed_km'} = 0 if $json->{'windSpeed_km'} eq '' or lc $json->{'windSpeed_km'} eq 'calm';
     $json->{'windGust_km'} = 0 if $json->{'windGust_km'} eq '';
 

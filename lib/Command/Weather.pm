@@ -307,21 +307,40 @@ sub format_weather
     my $humidity = $json->{'humidity'};
     $humidity *= 100 if $humidity <= 1;
     $humidity = int($humidity);
+
+    # Conditions summary
+    my $summary = $json->{'summary'};
+
+    # Build the lines of the message
+    my $temperature =   "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n";
+
+    my $dewpoint = '';
+    my $dewpoint_f = round($json->{'dewpoint'}) if defined $json->{'dewpoint'};
+    my $dewpoint_c = round($json->{'dewpoint_c'}) if defined $json->{'dewpoint_c'};
+    if ( defined $dewpoint_f and defined $dewpoint_c )
+    {
+        $dewpoint =      "Dewpoint    | ${dewpoint_f}\N{DEGREE SIGN}F/${dewpoint_c}\N{DEGREE SIGN}C\n";
+    }
     
-    my $cond = $json->{'summary'};
-
-    my $fuckingweather = $self->content->itsfucking_comment($temp_f, $temp_c, $feel_f, $feel_c, $cond, $humidity);
-
-    my $winds = "Calm";
-    $winds = "$wind_dir ${wind_mi}mph/${wind_km}kph" unless $wind_mi == 0 or $wind_km == 0;
-    $winds .= " Gust ${gust_mi}mph/${gust_km}kph" unless $gust_mi == 0 or $gust_km == 0;
+    my $feels_like =    "Feels Like  | ${feel_f}\N{DEGREE SIGN}F/${feel_c}\N{DEGREE SIGN}C\n";
+    
+    my $conditions =    "Conditions  | $summary, ${humidity}% Humidity\n";
+    
+    my $wind_details = "Calm";
+    $wind_details = "$wind_dir ${wind_mi}mph/${wind_km}kph" unless $wind_mi == 0 or $wind_km == 0;
+    $wind_details .= " Gust ${gust_mi}mph/${gust_km}kph" unless $gust_mi == 0 or $gust_km == 0;
+    my $winds =         "Winds       | $wind_details\n";
+    
+    my $fuckingweather = "" . $self->content->itsfucking_comment($temp_f, $temp_c, $feel_f, $feel_c, $summary, $humidity);
 
     my $msg = "```c\n" .
-        "Temperature | ${temp_f}\N{DEGREE SIGN}F/${temp_c}\N{DEGREE SIGN}C\n" .
-        "Feels Like  | ${feel_f}\N{DEGREE SIGN}F/${feel_c}\N{DEGREE SIGN}C\n" .
-        "Conditions  | $cond, ${humidity}% Humidity\n" .
-        "Winds       | $winds```\n" .
-        "$fuckingweather";
+        $temperature .
+        $feels_like .
+        $dewpoint . 
+        $conditions . 
+        $winds .
+        "```\n" . 
+        $fuckingweather;
 
     return $msg;
 }
