@@ -2,6 +2,7 @@ package Command::Avatar;
 use feature 'say';
 
 use Moo;
+use Data::Dumper;
 use strictures 2;
 use namespace::clean;
 
@@ -22,106 +23,71 @@ has usage           => ( is => 'ro', default => <<EOF
 - `!avatar \@user` - Display someone else's avatar
 EOF
 );
-
-has avatars         => ( is => 'ro', default => sub {
-    [
-        'http://i.imgur.com/yjMRuF0.png',
-        'http://i.imgur.com/hI02I5p.png',
-        'http://i.imgur.com/Y91CzhM.png',
-        'http://i.imgur.com/y14nQAQ.png',
-        'http://i.imgur.com/gZeA5Tc.jpg',
-        'http://i.imgur.com/r2Qw3YE.jpg',
-        'http://i.imgur.com/STX2FxZ.png',
-        'http://i.imgur.com/GdCj0av.png',
-        'http://i.imgur.com/KnuqLXW.png',
-        'http://i.imgur.com/zsdbOj5.png',
-    ]
-});
     
 sub cmd_avatar
 {
     my ($self, $msg) = @_;
 
     my $discord = $self->discord;
-    my $channel = $msg->{'channel_id'};
+    my $channel_id = $msg->{'channel_id'};
+    my $guild_id = $msg->{'guild_id'};
     my $author = $msg->{'author'};
     my $args = $msg->{'content'};
     my $pattern = $self->pattern;
     $args =~ s/$pattern//i;
 
-    my $id = $author->{'id'};
+    my $user_id = $author->{'id'};
 
     if ( $args =~ /\<\@\!?(\d+)\>/ )
     {
-        $id = $1;
+        $user_id = $1;
     }
 
-    $discord->get_user($id, sub
+    # No API calls, just access information passively stored by the library.
+    my $guild_member = $discord->get_guild_member($guild_id, $user_id);
+
+    unless ( defined $guild_member )
     {
-        my $json = shift;
-        my $avatar = $json->{'avatar'};
-        my $name = $json->{'username'};
+        $discord->send_message($channel_id, ":x: I cannot find that user's avatar.");
+        return;
+    }
 
-        my $url = 'https://cdn.discordapp.com/avatars/' . $id . '/' . $avatar . '.jpg?size=1024';
+    my $guild_nick = $guild_member->nick if defined $guild_member;
+    my $guild_avatar_id = $guild_member->avatar if defined $guild_member;
+    my $global_name = $guild_member->{'user'}->{'global_name'};
+    my $discriminator = $guild_member->{'user'}->{'discriminator'};
+    my $user_name = $guild_member->{'user'}->{'username'};
+    my $user_avatar_id = $guild_member->{'user'}->{'avatar'};
 
-        my $embed = $self->to_embed($name, $url);
+    my $avatar_url = Mojo::URL->new('https://cdn.discordapp.com/');
+    $avatar_url->path( $guild_avatar_id ? 
+        "/guilds/$guild_id/users/$user_id/avatars/$guild_avatar_id.png" : 
+        "/avatars/$user_id/$user_avatar_id.png"
+    );
+    $avatar_url->query("size=1024");
 
-        # Send a message back to the channel
-        $self->send_message($channel, $embed);
-    });
-}
+    my $display_name;
+        if      ( defined $guild_nick )     { $display_name = "$guild_nick (\@$user_name)"; }   # Server Nickname
+        elsif   ( defined $global_name )    { $display_name = "$global_name (\@$user_name)"; }  # Global Name
+        elsif   ( $discriminator > 0 )      { $display_name = "$user_name\#$discriminator"; }   # Bots
+        else                                { $display_name = $user_name; }                     # Fallback
 
-# Creates an embed hashref with the name and avatar url
-sub to_embed
-{
-    my ($self, $name, $url) = @_;
-
-    my $embed = {
-        'title' => $name,
-        'url' => $url,
-        'type' => 'rich',
-        'color' => 0xa0c0e6,
-        'image' => {
-            'url' => $url,
-            'width' => 256,
-            'height' => 256,
-        },
+    my $avatar_message = {
+        'content' => '',
+        'embed' => {
+            'title' => $display_name,
+            'url' => $avatar_url->to_string,
+            'type' => 'rich',
+            'color' => 0xa0c0e6,
+            'image' => {
+                'url' => $avatar_url->to_string,
+                'width' => 256,
+                'height' => 256,
+            }
+        }
     };
 
-    return $embed;
-}
-
-# Takes an embed hashref and sends it as either a message or webhook
-sub send_message
-{
-    my ($self, $channel, $embed) = @_;
-
-    my $bot = $self->bot;
-    my $discord = $self->discord;
-
-    if ( my $hook = $bot->has_webhook($channel) )
-    {
-        my $num = rand(scalar @{$self->{'avatars'}});
-
-        my $message = {
-            'content' => '',
-            'embeds' => [ $embed ],
-            'username' => 'Avatar',
-            'avatar_url' => $self->{'avatars'}[$num],
-        };
-
-        $discord->send_webhook($channel, $hook, $message);
-    }
-    else
-    {
-        my $message = {
-            'content' => '',
-            'embed' => $embed
-        };
-
-        $discord->send_message($channel, $message);
-    }
-  
+    $discord->send_message($channel_id, $avatar_message);
 }
 
 1;
