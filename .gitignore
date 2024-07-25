@@ -11,3 +11,6 @@ prod/
 xt/duo/duolingo.ini
 xt/duo/cookies.txt
 xt/peeled/peeled.ini
+
+# Ignore VS Code metadata
+.vscode/
