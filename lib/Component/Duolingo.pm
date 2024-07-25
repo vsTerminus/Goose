@@ -162,7 +162,7 @@ sub android_user_info
     }
 
     # If we're here we have an ID
-    my $fields = 'name,username,streak,streakData,xpGoal,timezone,trackingProperties,id,picture,totalXp,currentCourseId,courses{authorId,fromLanguage,id,healthEnabled,learningLanguage,preload,title,xp,crowns}';
+    my $fields = 'name,username,streak,streakData,xpGoal,timezone,trackingProperties,id,picture,totalXp,currentCourseId,courses{authorId,fromLanguage,id,healthEnabled,learningLanguage,preload,title,xp}';
     my $url = $self->android_api_url . '/users/' . $id . '?fields=' . $fields;
 
     say "URL: $url";

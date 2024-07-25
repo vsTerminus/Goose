@@ -297,7 +297,6 @@ sub _build_message
     my $leaderboard = $args->{'leaderboard'};
 
     # Some custom emoji used here
-    my $duo_crown = "<:duo_crown:975971308355592252>";
     my $duo_xp_silver = "<:duo_xp_silver:975965671479459870>";
     my $duo_xp_gold = "<:duo_xp_gold:975986422941114378>";
     my $duo_fire_lit = "<:duo_fire_lit:975968995796725790>";
@@ -313,12 +312,9 @@ sub _build_message
         my $title = $course->{'title'};
         my $lang_abbr = $course->{'learningLanguage'};
         my $flag = $self->_flag($lang_abbr);
-        my $crowns = $course->{'crowns'} . ' Crown';
-        $crowns .= 's' unless $course->{'crowns'} == 1;
         my $course_xp = $course->{'xp'};
    
-        my $msg = "$flag $title $duo_xp_silver $course_xp Course XP $duo_crown $crowns";
-        #my $msg = "$flag $title $duo_crown $crowns";
+        my $msg = "$flag $title $duo_xp_silver $course_xp Course XP";
         push @courses, $msg;
     }
     my @top3 = splice(@courses, 0, 3);
